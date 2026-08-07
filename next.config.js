@@ -8,6 +8,14 @@ const nextConfig = {
       { protocol: "https", hostname: "onepiece.limitlesstcg.com" },
     ],
   },
+  // @sparticuz/chromium et puppeteer-core (synchronisation Kaizoku) livrent
+  // des fichiers binaires resolus par chemin relatif — si webpack les
+  // regroupe normalement, ces chemins cassent et le binaire chromium n'est
+  // plus trouvé au runtime sur Vercel ("input directory .../bin does not
+  // exist"). Cette option les exclut du bundling.
+  experimental: {
+    serverComponentsExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  },
 };
 
 module.exports = nextConfig;
