@@ -37,7 +37,6 @@ export default function CardsPage() {
   const [importStatus, setImportStatus] = useState<string>("");
   const [importBusy, setImportBusy] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
-  const [apitcgTestResult, setApitcgTestResult] = useState<any>(null);
   const [previewResult, setPreviewResult] = useState<any>(null);
 
   const buildParams = useCallback((offset: number) => {
@@ -51,23 +50,46 @@ export default function CardsPage() {
     return params;
   }, [filters, leaderKey]);
 
+  const [cardsError, setCardsError] = useState<string | null>(null);
+
   const loadCards = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/cards?${buildParams(0).toString()}`);
-    const data = await res.json();
-    setCards(data.cards ?? []);
-    setTotalFiltered(data.total ?? 0);
-    setHasMore(!!data.hasMore);
-    setLoading(false);
+    setCardsError(null);
+    try {
+      const res = await fetch(`/api/cards?${buildParams(0).toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? `Erreur ${res.status}`);
+      setCards(data.cards ?? []);
+      setTotalFiltered(data.total ?? 0);
+      setHasMore(!!data.hasMore);
+    } catch (e: any) {
+      // Avant ce correctif : une réponse 500 à corps vide faisait planter
+      // res.json() (SyntaxError "Unexpected end of JSON input"), l'erreur
+      // n'était jamais rattrapée, et setLoading(false) n'était donc jamais
+      // appelé — les cases de cartes restaient vides indéfiniment sans
+      // aucun message. Le catch corrige à la fois le blocage et le silence.
+      setCardsError(e?.message ?? "Impossible de charger les cartes.");
+      setCards([]);
+      setTotalFiltered(0);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
   }, [buildParams]);
 
   async function loadMore() {
     setLoadingMore(true);
-    const res = await fetch(`/api/cards?${buildParams(cards.length).toString()}`);
-    const data = await res.json();
-    setCards((prev) => [...prev, ...(data.cards ?? [])]);
-    setHasMore(!!data.hasMore);
-    setLoadingMore(false);
+    try {
+      const res = await fetch(`/api/cards?${buildParams(cards.length).toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? `Erreur ${res.status}`);
+      setCards((prev) => [...prev, ...(data.cards ?? [])]);
+      setHasMore(!!data.hasMore);
+    } catch (e: any) {
+      setCardsError(e?.message ?? "Impossible de charger la suite des cartes.");
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   useEffect(() => {
@@ -192,16 +214,6 @@ export default function CardsPage() {
     setImportBusy(false);
   }
 
-  async function runApitcgTest() {
-    setImportBusy(true);
-    setImportStatus("Test de l'API TCG en cours...");
-    const res = await fetch("/api/admin/apitcg-test");
-    const data = await res.json();
-    setApitcgTestResult(data);
-    setImportStatus(data.ok ? "Test réussi — regarde le résultat ci-dessous." : `Erreur : ${data.error ?? "voir résultat brut ci-dessous"}`);
-    setImportBusy(false);
-  }
-
   async function runSeedCoach() {
     setImportBusy(true);
     setImportStatus("Chargement du contenu Coach rédigé à la main...");
@@ -297,7 +309,6 @@ export default function CardsPage() {
               <button onClick={runFullImport} disabled={importBusy} className="btn btn-primary">3. Importer (confirmation requise)</button>
               <button onClick={runSync} disabled={importBusy} className="btn">4. Synchroniser les nouveautés</button>
               <button onClick={runSeedCoach} disabled={importBusy} className="btn btn-primary">🦅 Charger le contenu Coach (deck actuel)</button>
-              <button onClick={runApitcgTest} disabled={importBusy} className="btn">🔌 Tester l'API TCG (nouvelle source)</button>
             </div>
             <div className="text-xs text-textMuted mb-2">
               L'import calcule la note de chaque carte pour Mihawk et Shanks en même temps.
@@ -341,17 +352,6 @@ export default function CardsPage() {
                     {testResult.errors.map((e: any) => `${e.cardNumber}: ${e.error}`).join(" | ")}
                   </div>
                 )}
-              </div>
-            )}
-
-            {apitcgTestResult && (
-              <div className="mt-3">
-                <div className="text-xs text-textMuted mb-2">
-                  Statut : {apitcgTestResult.status} · Clés de premier niveau : {apitcgTestResult.topLevelKeys?.join(", ") ?? "—"}
-                </div>
-                <pre className="bg-panel2 p-3 rounded-lg text-[10px] text-steel/80 overflow-x-auto max-h-96 overflow-y-auto">
-                  {JSON.stringify(apitcgTestResult.sampleCards ?? apitcgTestResult, null, 2)}
-                </pre>
               </div>
             )}
           </div>
@@ -494,6 +494,12 @@ export default function CardsPage() {
               <div className="skeleton h-3 w-1/2 mt-2 rounded" />
             </div>
           ))}
+        </div>
+      ) : cardsError ? (
+        <div className="card-tile p-8 text-center">
+          <div className="text-danger font-medium mb-1">Impossible de charger les cartes</div>
+          <div className="text-sm text-textMuted mb-3">{cardsError}</div>
+          <button onClick={loadCards} className="btn text-xs py-1.5 px-3">Réessayer</button>
         </div>
       ) : cards.length === 0 ? (
         <div className="card-tile p-8 text-center">

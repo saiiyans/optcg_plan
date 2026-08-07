@@ -125,7 +125,43 @@ export const DEFAULT_OBJECTIVES: DefaultObjective[] = [
   { category: "matchups", order: 12, text: "Mihawk et Shanks vs les 6 nouveaux leaders OP17 (Newgate, Luffy Noir, Kaido, Big Mom, Xebec, miroir Shanks) dès la sortie du set le 22 août" },
 ];
 
+// Liste complète des leaders OPTCG (toutes couleurs/variantes), tirée de la
+// base officielle Bandai (via le dataset punk-records), à jour jusqu'à
+// OP16 / ST36. Les leaders les plus fréquents dans la méta actuelle sont
+// volontairement laissés en tête de liste (voir META_PRIORITY_LEADERS
+// ci-dessous) pour rester visibles même une fois la liste complète ajoutée.
 export const OPPONENT_LEADERS = [
+  "Ace et Newgate (Bleu)", "Baggy (Bleu)", "Belo Betty (Rouge/Jaune)", "Boa Hancock (Bleu)",
+  "Boa Hancock (Bleu/Jaune)", "Brook (Vert/Noir)", "Calgara (Jaune)", "Carrot (Vert)",
+  "Charlotte Katakuri (Jaune)", "Charlotte Katakuri (Violet)", "Charlotte Pudding (Violet/Jaune)",
+  "Crocodile (Noir)", "César Clown (Rouge/Bleu)", "Don Quijote Doflamingo (Bleu)",
+  "Don Quijote Doflamingo (Violet)", "Don Quijote Rosinante (Vert/Bleu)",
+  "Don Quijote Rosinante (Violet/Jaune)", "Dracule Mihawk (Vert)", "Edward Newgate (Rouge)",
+  "Ener (Jaune)", "Ener (Violet)", "Eustass \"Captain\" Kidd (Jaune)", "Foxy (Violet)",
+  "Gecko Moria (Noir)", "Gecko Moria (Noir/Jaune)", "Gol D. Roger (Rouge/Violet)",
+  "Hannyabal (Bleu/Violet)", "Hody Jones (Vert)", "Imu (Noir)", "Jewelry Bonney (Jaune)",
+  "Jewelry Bonney (Rouge/Jaune)", "Jewelry Bonney (Vert)", "Jinbe (Bleu)", "Jinbe (Vert)",
+  "King (Violet/Noir)", "Koala (Noir/Jaune)", "Kobby (Rouge/Noir)", "Krieg (Rouge/Vert)",
+  "Kuzan (Bleu)", "Kyros (Noir/Jaune)", "Lim (Vert/Violet)", "Lucy (Rouge/Bleu)",
+  "Luffy et Ace (Rouge/Vert)", "Marco (Rouge/Bleu)", "Marshall D. Teach (Noir)",
+  "Marshall D. Teach (Noir/Jaune)", "Monkey D. Dragon (Rouge)", "Monkey D. Luffy (Bleu/Violet)",
+  "Monkey D. Luffy (Jaune)", "Monkey D. Luffy (Noir/Jaune)", "Monkey D. Luffy (Rouge)",
+  "Monkey D. Luffy (Rouge/Vert)", "Monkey D. Luffy (Vert/Bleu)", "Monkey D. Luffy (Vert/Violet)",
+  "Monkey D. Luffy (Violet)", "Monkey D. Luffy (Violet/Noir)", "Nami (Bleu)", "Nami (Bleu/Jaune)",
+  "Nefertari Vivi (Rouge/Bleu)", "Nico Robin (Violet/Jaune)", "Oden Kozuki (Rouge/Vert)",
+  "Perona (Vert/Noir)", "Portgas D. Ace (Bleu/Jaune)", "Portgas D. Ace (Rouge)",
+  "Portgas D. Ace (Rouge/Bleu)", "Rebecca (Bleu)", "Reiju Vinsmoke (Bleu/Violet)",
+  "Rob Lucci (Noir)", "Roronoa Zoro (Vert)", "Sabo (Rouge/Jaune)", "Sabo (Rouge/Noir)",
+  "Sanji (Bleu/Violet)", "Sanji (Rouge)", "Sengoku (Violet)", "Shanks (Rouge)",
+  "Shirahoshi (Vert/Jaune)", "Silvers Rayleigh (Rouge)", "Smoker (Noir)", "Smoker (Rouge/Vert)",
+  "Sugar (Rouge/Violet)", "Tony-Tony Chopper (Rouge/Vert)", "Trafalgar Law (Rouge)",
+  "Trafalgar Law (Vert/Jaune)", "Usopp (Bleu/Noir)", "Uta (Rouge/Violet)", "Uta (Vert)",
+  "Végapunk (Jaune)", "Yamato (Noir)", "Yamato (Vert/Jaune)",
+];
+
+// Sous-ensemble mis en avant dans les analyses de méta (Objectifs, etc.) —
+// distinct de la liste complète du menu déroulant ci-dessus.
+export const META_PRIORITY_LEADERS = [
   "Enel (OP15-058)",
   "Luffy Vert/Bleu (OP16-022)",
   "Marshall D. Teach (OP16-080/119)",

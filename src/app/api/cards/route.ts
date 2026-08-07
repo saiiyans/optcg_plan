@@ -58,28 +58,41 @@ export async function GET(req: NextRequest) {
     where.cardNumber = { in: [] }; // aucun deck de référence pour ce leader -> aucun résultat, jamais une erreur
   }
 
-  const [total, cards] = await Promise.all([
-    db.card.count({ where }),
-    db.card.findMany({
-      where,
-      include: { ratings: { where: { leaderContext: leader.leaderContext } } },
-      orderBy: { cardNumber: "asc" },
-      skip: offset,
-      take: limit,
-    }),
-  ]);
+  try {
+    const [total, cards] = await Promise.all([
+      db.card.count({ where }),
+      db.card.findMany({
+        where,
+        include: { ratings: { where: { leaderContext: leader.leaderContext } } },
+        orderBy: { cardNumber: "asc" },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
 
-  const result = cards.map((c: (typeof cards)[number]) => ({
-    ...c,
-    rating: c.ratings[0] ?? null,
-    deckQuantity: leader.key === "mihawk" ? findDeckQuantity(c.cardNumber) : 0,
-  }));
+    const result = cards.map((c: (typeof cards)[number]) => ({
+      ...c,
+      rating: c.ratings[0] ?? null,
+      deckQuantity: leader.key === "mihawk" ? findDeckQuantity(c.cardNumber) : 0,
+    }));
 
-  return NextResponse.json({
-    ok: true,
-    count: result.length,
-    total,
-    hasMore: offset + result.length < total,
-    cards: result,
-  });
+    return NextResponse.json({
+      ok: true,
+      count: result.length,
+      total,
+      hasMore: offset + result.length < total,
+      cards: result,
+    });
+  } catch (e: any) {
+    // Sans ce catch, une erreur Prisma (ex. DATABASE_URL absente/invalide sur
+    // Vercel, base injoignable) faisait planter la route avec un corps 500
+    // vide — le client crashait alors sur "Unexpected end of JSON input" au
+    // lieu d'afficher un message compréhensible. Le message d'erreur réel
+    // aide à distinguer "base non connectée" de "base vide" de tout autre cas.
+    console.error("GET /api/cards failed:", e);
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? String(e), cards: [], total: 0, count: 0, hasMore: false },
+      { status: 500 }
+    );
+  }
 }
