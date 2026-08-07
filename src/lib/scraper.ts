@@ -75,11 +75,11 @@ export async function listAllCardNumbers(
   const cardNumbers = new Set<string>();
   let page = 1;
   let totalFoundOnSite = 0;
+  let currentUrl = searchUrl;
   const HARD_PAGE_CAP = 100; // garde-fou anti boucle infinie, largement au-dessus du besoin réel
 
   while (page <= HARD_PAGE_CAP) {
-    const pageUrl = page === 1 ? searchUrl : appendPageParam(searchUrl, page);
-    const html = await politeFetch(pageUrl);
+    const html = await politeFetch(currentUrl);
     const $ = cheerio.load(html);
 
     // Le nombre total de résultats est annoncé en toutes lettres sur la page,
@@ -100,28 +100,30 @@ export async function listAllCardNumbers(
     });
 
     const newOnThisPage = cardNumbers.size - beforeCount;
-
-    // On ne se fie plus au numéro de dernière page affiché dans le widget de
-    // pagination (Limitless n'affiche qu'une fenêtre de pages proches, pas
-    // le vrai dernier numéro tant qu'on n'en est pas proche — ça faisait
-    // arrêter l'import bien avant la fin). On s'arrête uniquement quand :
-    // - la page ne contient plus aucune carte nouvelle (fin réelle atteinte), ou
-    // - on a déjà trouvé au moins autant de cartes que l'annonce du site.
     onProgress?.(page, null);
 
-    if (newOnThisPage === 0) break;
+    // On ne devine plus le paramètre de pagination : on suit le vrai lien
+    // "page suivante" (»), exactement comme le ferait quelqu'un qui clique
+    // dessus dans un navigateur. Sur la dernière page, ce lien n'existe
+    // plus (ou n'est plus un <a> cliquable) — c'est notre condition d'arrêt
+    // naturelle, avec la sécurité supplémentaire du compteur de nouvelles
+    // cartes trouvées.
+    let nextHref: string | undefined;
+    $("a").each((_, el) => {
+      const text = $(el).text().trim();
+      if (text === "»" || text === "Next" || text === "›" || text === "Next »") {
+        nextHref = $(el).attr("href");
+      }
+    });
+
+    if (!nextHref || newOnThisPage === 0) break;
     if (totalFoundOnSite > 0 && cardNumbers.size >= totalFoundOnSite) break;
 
+    currentUrl = new URL(nextHref, currentUrl).toString();
     page++;
   }
 
   return { cardNumbers: Array.from(cardNumbers), totalFoundOnSite };
-}
-
-function appendPageParam(url: string, page: number): string {
-  const u = new URL(url);
-  u.searchParams.set("page", String(page));
-  return u.toString();
 }
 
 /**
