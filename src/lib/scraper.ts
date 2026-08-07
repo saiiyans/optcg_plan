@@ -73,57 +73,54 @@ export async function listAllCardNumbers(
   onProgress?: (page: number, totalPages: number | null) => void
 ): Promise<{ cardNumbers: string[]; totalFoundOnSite: number }> {
   const cardNumbers = new Set<string>();
-  let page = 1;
-  let totalFoundOnSite = 0;
-  let currentUrl = searchUrl;
-  const HARD_PAGE_CAP = 100; // garde-fou anti boucle infinie, largement au-dessus du besoin réel
 
-  while (page <= HARD_PAGE_CAP) {
-    const html = await politeFetch(currentUrl);
-    const $ = cheerio.load(html);
+  // Extrait le "color:xxx" et "lang:xxx" éventuels de la recherche fournie,
+  // pour les réappliquer à chaque sous-requête par set.
+  const colorMatch = searchUrl.match(/color%3A(\w+)|color:(\w+)/i);
+  const color = colorMatch ? (colorMatch[1] || colorMatch[2]) : "green";
 
-    // Le nombre total de résultats est annoncé en toutes lettres sur la page,
-    // ex: "688 cards found where category is (...)"
-    if (totalFoundOnSite === 0) {
-      const bodyText = $.root().text();
-      const match = bodyText.match(/([\d,]+)\s+cards? found/i);
-      if (match) totalFoundOnSite = parseInt(match[1].replace(/,/g, ""), 10);
+  // Étape 1 : découvre dynamiquement la liste de tous les sets existants
+  // depuis le catalogue — jamais codée en dur, donc une nouvelle extension
+  // est prise en compte automatiquement au prochain import, sans changer
+  // le code.
+  const catalogHtml = await politeFetch(`${BASE}/cards`);
+  const $catalog = cheerio.load(catalogHtml);
+  const setCodes = new Set<string>();
+  $catalog("a[href*='/cards/']").each((_, el) => {
+    const href = $catalog(el).attr("href") || "";
+    // Les liens de set ressemblent à /cards/op07-500-years-in-the-future —
+    // on ne garde que le préfixe de code (ex: OP07, ST32, EB01, PRB02).
+    const m = href.match(/\/cards\/([a-z]+\d+)-/i);
+    if (m) setCodes.add(m[1].toUpperCase());
+  });
+
+  onProgress?.(0, setCodes.size);
+
+  // Étape 2 : pour chaque set, une requête scopée — le nombre de cartes par
+  // set (au maximum ~320) reste toujours sous la taille de page par défaut
+  // du site, donc jamais besoin de paginer.
+  let i = 0;
+  for (const code of setCodes) {
+    i++;
+    const setSearchUrl = `${BASE}/cards/?q=${encodeURIComponent(`set:${code} color:${color} lang:en`)}`;
+    try {
+      const html = await politeFetch(setSearchUrl);
+      const $ = cheerio.load(html);
+      // Les vignettes pointent vers /cards/XXNN-NNN (parfois /cards/en/XXNN-NNN
+      // selon la page) — on accepte les deux formes, avec ou sans suffixe ?v=.
+      $("a[href*='/cards/']").each((_, el) => {
+        const href = $(el).attr("href") || "";
+        const m = href.match(/\/cards\/(?:en\/)?([A-Z0-9]+-\d+)/i);
+        if (m) cardNumbers.add(m[1].toUpperCase());
+      });
+    } catch {
+      // Un set inaccessible ne doit pas arrêter tout l'import — on continue
+      // avec les suivants.
     }
-
-    const beforeCount = cardNumbers.size;
-
-    // Chaque vignette de carte est un lien vers /cards/en/XXXX-NNN (avec ou sans ?v=)
-    $("a[href*='/cards/en/']").each((_, el) => {
-      const href = $(el).attr("href") || "";
-      const m = href.match(/\/cards\/en\/([A-Z0-9]+-\d+)/i);
-      if (m) cardNumbers.add(m[1].toUpperCase());
-    });
-
-    const newOnThisPage = cardNumbers.size - beforeCount;
-    onProgress?.(page, null);
-
-    // On ne devine plus le paramètre de pagination : on suit le vrai lien
-    // "page suivante" (»), exactement comme le ferait quelqu'un qui clique
-    // dessus dans un navigateur. Sur la dernière page, ce lien n'existe
-    // plus (ou n'est plus un <a> cliquable) — c'est notre condition d'arrêt
-    // naturelle, avec la sécurité supplémentaire du compteur de nouvelles
-    // cartes trouvées.
-    let nextHref: string | undefined;
-    $("a").each((_, el) => {
-      const text = $(el).text().trim();
-      if (text === "»" || text === "Next" || text === "›" || text === "Next »") {
-        nextHref = $(el).attr("href");
-      }
-    });
-
-    if (!nextHref || newOnThisPage === 0) break;
-    if (totalFoundOnSite > 0 && cardNumbers.size >= totalFoundOnSite) break;
-
-    currentUrl = new URL(nextHref, currentUrl).toString();
-    page++;
+    onProgress?.(i, setCodes.size);
   }
 
-  return { cardNumbers: Array.from(cardNumbers), totalFoundOnSite };
+  return { cardNumbers: Array.from(cardNumbers), totalFoundOnSite: cardNumbers.size };
 }
 
 /**
