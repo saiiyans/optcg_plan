@@ -30,7 +30,7 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3.5 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-2.5 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
                 active ? "bg-emerald-dim text-emerald-bright" : "text-steel hover:text-ivory hover:bg-panel2"
               }`}
             >

@@ -74,10 +74,10 @@ export async function listAllCardNumbers(
 ): Promise<{ cardNumbers: string[]; totalFoundOnSite: number }> {
   const cardNumbers = new Set<string>();
   let page = 1;
-  let totalPages: number | null = null;
   let totalFoundOnSite = 0;
+  const HARD_PAGE_CAP = 100; // garde-fou anti boucle infinie, largement au-dessus du besoin réel
 
-  while (true) {
+  while (page <= HARD_PAGE_CAP) {
     const pageUrl = page === 1 ? searchUrl : appendPageParam(searchUrl, page);
     const html = await politeFetch(pageUrl);
     const $ = cheerio.load(html);
@@ -90,6 +90,8 @@ export async function listAllCardNumbers(
       if (match) totalFoundOnSite = parseInt(match[1].replace(/,/g, ""), 10);
     }
 
+    const beforeCount = cardNumbers.size;
+
     // Chaque vignette de carte est un lien vers /cards/en/XXXX-NNN (avec ou sans ?v=)
     $("a[href*='/cards/en/']").each((_, el) => {
       const href = $(el).attr("href") || "";
@@ -97,19 +99,19 @@ export async function listAllCardNumbers(
       if (m) cardNumbers.add(m[1].toUpperCase());
     });
 
-    // Détecte la pagination ("1 2 3 ... 14 »")
-    if (totalPages === null) {
-      const pageLinks = $("a, li")
-        .map((_, el) => $(el).text().trim())
-        .get()
-        .filter((t) => /^\d+$/.test(t))
-        .map(Number);
-      if (pageLinks.length) totalPages = Math.max(...pageLinks);
-    }
+    const newOnThisPage = cardNumbers.size - beforeCount;
 
-    onProgress?.(page, totalPages);
+    // On ne se fie plus au numéro de dernière page affiché dans le widget de
+    // pagination (Limitless n'affiche qu'une fenêtre de pages proches, pas
+    // le vrai dernier numéro tant qu'on n'en est pas proche — ça faisait
+    // arrêter l'import bien avant la fin). On s'arrête uniquement quand :
+    // - la page ne contient plus aucune carte nouvelle (fin réelle atteinte), ou
+    // - on a déjà trouvé au moins autant de cartes que l'annonce du site.
+    onProgress?.(page, null);
 
-    if (!totalPages || page >= totalPages) break;
+    if (newOnThisPage === 0) break;
+    if (totalFoundOnSite > 0 && cardNumbers.size >= totalFoundOnSite) break;
+
     page++;
   }
 

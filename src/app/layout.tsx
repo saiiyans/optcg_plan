@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
 
               {/* Centre : navigation desktop uniquement — sur mobile elle est en bas d'écran */}
-              <nav className="hidden md:flex items-center gap-1 text-sm">
+              <nav className="hidden md:flex items-center gap-0.5 text-sm overflow-x-auto max-w-[min(60vw,900px)] scrollbar-thin">
                 <NavLinks variant="top" />
               </nav>
 
