@@ -46,6 +46,8 @@ export default function HomePage() {
         </div>
       </div>
 
+      <MissionDuJourWidget />
+
       <GameCounterWidget />
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -58,7 +60,73 @@ export default function HomePage() {
   );
 }
 
-/** Petit composant partagé : bouton "Réessayer" affiché en cas d'échec. */
+type LoadState = "loading" | "ready" | "error";
+
+function MissionDuJourWidget() {
+  const [state, setState] = useState<LoadState>("loading");
+  const [mission, setMission] = useState<any>(null);
+  const [weakness, setWeakness] = useState<any>(null);
+
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const d = await fetchWithTimeout("/api/coach/today");
+      setMission(d.mission);
+      setWeakness(d.weakness);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return (
+    <div className="card-tile p-5 border-emerald/40">
+      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">🎯 Mission du jour</h3>
+      {state === "loading" ? (
+        <div className="space-y-2">
+          <div className="skeleton h-5 w-3/4" />
+          <div className="skeleton h-4 w-full" />
+        </div>
+      ) : state === "error" ? (
+        <RetryBlock message="Impossible de charger le diagnostic du jour." onRetry={load} />
+      ) : !mission?.hasData ? (
+        <div className="text-xs font-mono text-steel/60">
+          Données insuffisantes — {mission?.reason ?? "pas encore assez de parties enregistrées."}
+        </div>
+      ) : (
+        <>
+          <div className="text-white text-sm font-semibold mb-1">{mission.mission}</div>
+          <div className="text-xs text-steel/70 mb-2">{mission.why}</div>
+          <div className="text-[10px] font-mono text-steel/50 uppercase tracking-wider mb-3">
+            Basé sur {mission.sampleSize} partie{mission.sampleSize > 1 ? "s" : ""} contre {mission.opponentLeader}
+          </div>
+        </>
+      )}
+
+      {state === "ready" && (
+        <div className="pt-3 border-t border-line mt-1">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-red-400 mb-1">Faiblesse actuelle</div>
+          {!weakness?.hasData ? (
+            <div className="text-xs font-mono text-steel/60">Données insuffisantes — {weakness?.reason}</div>
+          ) : (
+            <div className="text-xs text-steel/80">
+              <span className="text-white">{weakness.topMistake}</span> — présente sur {weakness.count}/{weakness.totalWithMistake} parties notées récemment.
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2 mt-4">
+        <Link href="/prep" className="btn btn-primary text-xs py-2 px-3">Enregistrer une partie</Link>
+      </div>
+    </div>
+  );
+}
+
 function RetryBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="text-xs text-red-400 flex items-center justify-between gap-2">
@@ -67,8 +135,6 @@ function RetryBlock({ message, onRetry }: { message: string; onRetry: () => void
     </div>
   );
 }
-
-type LoadState = "loading" | "ready" | "error";
 
 function GameCounterWidget() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");

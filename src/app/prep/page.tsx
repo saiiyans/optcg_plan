@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { WEEKS, OPPONENT_LEADERS, MY_DECKS, TOURNAMENT_DATE } from "@/lib/planningData";
 import { MATCHUP_GUIDES, OPTCG_RESOURCES } from "@/lib/matchupGuide";
 import { LeaderImage } from "@/components/LeaderImage";
+import { QUICK_MISTAKES } from "@/lib/coachDiagnostic";
 
 type Tab = "planning" | "journal" | "stats" | "objectifs" | "matchups";
 
@@ -88,7 +89,15 @@ function JournalTab() {
     result: "Victoire",
     cardsToWatch: "",
     notes: "",
+    turnOrder: "",
+    mulligan: "",
+    openingHandQuality: "",
+    mainMistake: "",
+    mostUsefulCard: "",
+    uselessCard: "",
+    keyTurn: "",
   });
+  const [showQuickDetails, setShowQuickDetails] = useState(false);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -108,8 +117,16 @@ function JournalTab() {
       alert("Renseigne au moins la date et le leader adverse.");
       return;
     }
-    await fetch("/api/matches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    setForm((f) => ({ ...f, opponentLeader: "", cardsToWatch: "", notes: "" }));
+    const payload = {
+      ...form,
+      mulligan: form.mulligan === "" ? null : form.mulligan === "true",
+    };
+    await fetch("/api/matches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    setForm((f) => ({
+      ...f,
+      opponentLeader: "", cardsToWatch: "", notes: "",
+      turnOrder: "", mulligan: "", openingHandQuality: "", mainMistake: "", mostUsefulCard: "", uselessCard: "", keyTurn: "",
+    }));
     load();
   }
 
@@ -230,6 +247,63 @@ function JournalTab() {
             <textarea className="input w-full" rows={2} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
         </div>
+
+        <button
+          onClick={() => setShowQuickDetails((s) => !s)}
+          className="text-xs font-mono text-emerald-bright mt-3 flex items-center gap-1"
+        >
+          {showQuickDetails ? "▲ Masquer les détails (facultatif)" : "▼ Ajouter des détails (facultatif, ~15s)"}
+        </button>
+
+        {showQuickDetails && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-line">
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Premier / Second</label>
+              <select className="input w-full" value={form.turnOrder} onChange={(e) => setForm((f) => ({ ...f, turnOrder: e.target.value }))}>
+                <option value="">—</option>
+                <option>Premier</option>
+                <option>Second</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Mulligan</label>
+              <select className="input w-full" value={form.mulligan} onChange={(e) => setForm((f) => ({ ...f, mulligan: e.target.value }))}>
+                <option value="">—</option>
+                <option value="true">Oui</option>
+                <option value="false">Non</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Qualité de la main initiale</label>
+              <select className="input w-full" value={form.openingHandQuality} onChange={(e) => setForm((f) => ({ ...f, openingHandQuality: e.target.value }))}>
+                <option value="">—</option>
+                <option>Bonne</option>
+                <option>Correcte</option>
+                <option>Mauvaise</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Tour / moment décisif</label>
+              <input className="input w-full" placeholder="ex. Tour 4" value={form.keyTurn} onChange={(e) => setForm((f) => ({ ...f, keyTurn: e.target.value }))} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Erreur principale</label>
+              <select className="input w-full" value={form.mainMistake} onChange={(e) => setForm((f) => ({ ...f, mainMistake: e.target.value }))}>
+                <option value="">—</option>
+                {QUICK_MISTAKES.map((m) => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Carte la plus utile</label>
+              <input className="input w-full" placeholder="ex. OP14-023" value={form.mostUsefulCard} onChange={(e) => setForm((f) => ({ ...f, mostUsefulCard: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Carte inutile</label>
+              <input className="input w-full" placeholder="ex. OP14-030" value={form.uselessCard} onChange={(e) => setForm((f) => ({ ...f, uselessCard: e.target.value }))} />
+            </div>
+          </div>
+        )}
+
         <button onClick={addMatch} className="btn btn-primary mt-3">Ajouter la partie</button>
       </div>
 

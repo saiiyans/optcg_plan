@@ -21,14 +21,28 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const { date, mode, myDeck, opponentLeader, result, cardsToWatch, notes } = body;
+  const {
+    date, mode, myDeck, opponentLeader, result, cardsToWatch, notes,
+    turnOrder, mulligan, openingHandQuality, mainMistake, mostUsefulCard, uselessCard, keyTurn,
+  } = body;
 
   if (!date || !mode || !myDeck || !opponentLeader || !result) {
     return NextResponse.json({ ok: false, error: "Champs requis manquants (date, mode, myDeck, opponentLeader, result)." }, { status: 400 });
   }
 
   const match = await db.match.create({
-    data: { date, mode, myDeck, opponentLeader, result, cardsToWatch: cardsToWatch || null, notes: notes || null },
+    data: {
+      date, mode, myDeck, opponentLeader, result,
+      cardsToWatch: cardsToWatch || null,
+      notes: notes || null,
+      turnOrder: turnOrder || null,
+      mulligan: typeof mulligan === "boolean" ? mulligan : null,
+      openingHandQuality: openingHandQuality || null,
+      mainMistake: mainMistake || null,
+      mostUsefulCard: mostUsefulCard || null,
+      uselessCard: uselessCard || null,
+      keyTurn: keyTurn || null,
+    },
   });
 
   return NextResponse.json({ ok: true, match });
