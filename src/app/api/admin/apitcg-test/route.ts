@@ -20,7 +20,9 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch("https://apitcg.com/api/one-piece/cards?color=Green", {
+    // On interroge d'abord SANS filtre — ça nous montre les vrais noms de
+    // champs et de paramètres avant de deviner comment filtrer par couleur.
+    const res = await fetch("https://apitcg.com/api/one-piece/cards", {
       headers: { "x-api-key": apiKey },
     });
     const text = await res.text();
@@ -34,10 +36,10 @@ export async function GET() {
     return NextResponse.json({
       ok: res.ok,
       status: res.status,
-      // On ne renvoie qu'un échantillon (2 cartes) + les clés du niveau
+      // On ne renvoie qu'un échantillon (3 cartes) + les clés du niveau
       // racine, pour inspecter la forme des données sans noyer la réponse.
       topLevelKeys: Object.keys(json),
-      sampleCards: Array.isArray(json?.data) ? json.data.slice(0, 2) : Array.isArray(json) ? json.slice(0, 2) : json,
+      sampleCards: Array.isArray(json?.data) ? json.data.slice(0, 3) : Array.isArray(json) ? json.slice(0, 3) : json,
     });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message ?? String(e) }, { status: 500 });
