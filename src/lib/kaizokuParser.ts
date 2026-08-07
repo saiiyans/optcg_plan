@@ -13,13 +13,16 @@ import { LEADERS } from "./leaders";
  * donc pas la lire de façon fiable. Le texte affiché à l'écran, lui, est
  * stable et facile à copier depuis n'importe quel navigateur ou téléphone.
  *
- * Format attendu (un bloc par partie, dans cet ordre, tel qu'affiché par la
- * page — les espaces/retours à la ligne exacts n'ont pas d'importance) :
- *
- *   07/08/2026
- *   11:25
- *   Dracule Mihawk [OP14-020]
- *   Rocks.D.Xebec [OP17-039] Won
+ * Approche par blocs plutôt qu'un unique gros regex séquentiel : chaque
+ * bloc commence à une ligne "date\nheure" et s'étend jusqu'au bloc suivant
+ * (ou la fin du texte). À l'intérieur d'un bloc, on ne cherche que deux
+ * choses — toutes les paires "Nom [NUMERO]" présentes, et le mot
+ * Won/Lost/Tied — sans présumer de ce qu'il peut y avoir entre les deux
+ * (tabulations, colonnes de numéro de carte dupliquées, espaces
+ * variables...). Le premier couple nom/numéro rencontré est toujours MON
+ * leader (il apparaît juste après l'heure), le dernier est toujours celui
+ * de l'adversaire (il précède directement Won/Lost) — peu importe combien
+ * de tokens intermédiaires la page ajoute selon la mise en page copiée.
  */
 
 export interface ParsedKaizokuMatch {
@@ -38,13 +41,21 @@ export interface ParsedKaizokuMatch {
 export interface KaizokuParseResult {
   matches: ParsedKaizokuMatch[];
   // Blocs reconnus comme "une tentative de partie" mais qu'on n'a pas pu
-  // interpréter entièrement (ex. résultat "Tied" non géré) — signalés à
-  // l'utilisateur plutôt que silencieusement ignorés.
+  // interpréter entièrement (ex. résultat "Tied", ou une seule paire
+  // nom/numéro trouvée) — signalés à l'utilisateur plutôt que
+  // silencieusement ignorés.
   warnings: string[];
 }
 
-const ENTRY_RE =
-  /(\d{2})\/(\d{2})\/(\d{4})\s*\n\s*(\d{2}:\d{2})\s*\n\s*([^[\n]+?)\s*\[([A-Z0-9-]+)\]\s*\n+\s*([^[\n]+?)\s*\[([A-Z0-9-]+)\]\s*(Won|Lost|Tied)/g;
+const DATE_TIME_RE = /(\d{2})\/(\d{2})\/(\d{4})\s*\n\s*(\d{2}:\d{2})/;
+const BLOCK_RE = new RegExp(
+  DATE_TIME_RE.source + "\\s*\\n([\\s\\S]*?)(?=\\d{2}/\\d{2}/\\d{4}\\s*\\n\\s*\\d{2}:\\d{2}|$)",
+  "g"
+);
+// Une paire "Nom [NUMERO]" — le nom peut contenir espaces, points, tirets
+// (ex. "Rocks.D.Xebec"), tout sauf un crochet ou une tabulation/retour ligne.
+const PAIR_RE = /([^[\]\n\t]+?)\s*\[([A-Z0-9-]+)\]/g;
+const RESULT_RE = /\b(Won|Lost|Tied)\b/;
 
 function resolveMyDeck(cardNumber: string): string {
   const setPrefix = cardNumber.match(/^([A-Z]+\d*)/)?.[1] ?? "";
@@ -55,17 +66,38 @@ function resolveMyDeck(cardNumber: string): string {
 export function parseKaizokuText(raw: string): KaizokuParseResult {
   const matches: ParsedKaizokuMatch[] = [];
   const warnings: string[] = [];
+  let blockCount = 0;
 
-  for (const m of raw.matchAll(ENTRY_RE)) {
-    const [, dd, mm, yyyy, time, myLeaderName, myCard, opponentName, opponentCard, resultRaw] = m;
+  for (const m of raw.matchAll(BLOCK_RE)) {
+    blockCount++;
+    const [, dd, mm, yyyy, time, blockBody] = m;
+    const dateLabel = `${dd}/${mm}/${yyyy} ${time}`;
 
-    if (resultRaw === "Tied") {
-      warnings.push(`Match ${dd}/${mm}/${yyyy} ${time} contre ${opponentName.trim()} : résultat "Tied" (égalité) non géré, ignoré — ajoute-le manuellement si besoin.`);
+    const pairs = [...blockBody.matchAll(PAIR_RE)];
+    const resultMatch = blockBody.match(RESULT_RE);
+
+    if (pairs.length < 2) {
+      warnings.push(`Bloc ${dateLabel} : impossible d'y trouver deux leaders (mon deck + adversaire), ignoré.`);
+      continue;
+    }
+    if (!resultMatch) {
+      warnings.push(`Bloc ${dateLabel} : aucun résultat "Won"/"Lost" trouvé, ignoré.`);
+      continue;
+    }
+    if (resultMatch[1] === "Tied") {
+      warnings.push(`Bloc ${dateLabel} : résultat "Tied" (égalité) non géré, ignoré — ajoute-le manuellement si besoin.`);
       continue;
     }
 
+    const myPair = pairs[0];
+    const oppPair = pairs[pairs.length - 1];
+    const myLeaderName = myPair[1].trim();
+    const myCard = myPair[2];
+    const opponentName = oppPair[1].trim();
+    const opponentCard = oppPair[2];
+    const resultRaw = resultMatch[1];
+
     const date = `${yyyy}-${mm}-${dd}`;
-    const opponentTrim = opponentName.trim();
     const kaizokuId = `kz_${date}_${time.replace(":", "")}_${opponentCard}_${resultRaw}`;
 
     matches.push({
@@ -73,16 +105,16 @@ export function parseKaizokuText(raw: string): KaizokuParseResult {
       date,
       time,
       myDeck: resolveMyDeck(myCard),
-      myLeaderName: myLeaderName.trim(),
+      myLeaderName,
       myLeaderCardNumber: myCard,
-      opponentLeader: `${opponentTrim} (${opponentCard})`,
-      opponentName: opponentTrim,
+      opponentLeader: `${opponentName} (${opponentCard})`,
+      opponentName,
       opponentCardNumber: opponentCard,
       result: resultRaw === "Won" ? "Victoire" : "Défaite",
     });
   }
 
-  if (matches.length === 0 && warnings.length === 0) {
+  if (blockCount === 0) {
     warnings.push(
       "Aucune partie reconnue dans le texte collé. Copie bien le tableau complet depuis la page d'historique Kaizoku (colonnes Date / Leader / Opponent / Result)."
     );

@@ -1,6 +1,6 @@
-// Schéma de la base de données locale (SQLite)
-// Couvre les 8 tables demandées : Cards, CardPrints, Sets, PersonalRatings,
-// Decks, DeckCards, ImportLogs, LegalityUpdates.
+// Schéma de la base de données (PostgreSQL, hébergée sur Neon)
+// Couvre les tables Cards, CardPrints, Sets, PersonalRatings, Decks,
+// DeckCards, ImportLogs, LegalityUpdates, TournamentDecks, Match, etc.
 
 generator client {
   provider = "prisma-client-js"

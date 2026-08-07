@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { COMBOS } from "@/lib/comboLab";
+import { CardThumb } from "@/components/CardThumb";
 
 export default function ComboLabPage() {
   return (
@@ -29,9 +29,9 @@ export default function ComboLabPage() {
             </div>
             {combo.badge && <div className="inline-block badge badge-gold mb-2">{combo.badge}</div>}
             {combo.note && <p className="text-xs text-steel/70 mb-3">{combo.note}</p>}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {combo.cards.map((c) => (
-                <Link key={c} href={`/cards/${c}`} className="badge badge-green">{c}</Link>
+                <CardThumb key={c} cardNumber={c} size={56} />
               ))}
             </div>
           </div>

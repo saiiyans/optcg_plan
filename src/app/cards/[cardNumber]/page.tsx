@@ -8,6 +8,7 @@ import { BackButton } from "@/components/BackButton";
 import { computeLeaderTournamentStats } from "@/lib/leaderTournamentStats";
 import { LEADERS } from "@/lib/leaders";
 import { notFound } from "next/navigation";
+import { CardThumb } from "@/components/CardThumb";
 
 export default async function CardDetail({ params }: { params: { cardNumber: string } }) {
   const cardNumber = params.cardNumber.toUpperCase();
@@ -109,10 +110,10 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
                   <div className="mt-1 text-xs"><span className="text-gold font-mono uppercase text-[10px]">Common mistake — </span><span className="text-steel/80">{card.mihawkCommonMistake}</span></div>
                 )}
                 {card.mihawkSynergies && JSON.parse(card.mihawkSynergies).length > 0 && (
-                  <div className="mt-2 text-xs flex items-center gap-1.5 flex-wrap">
-                    <span className="text-gold font-mono uppercase text-[10px]">Synergies —</span>
+                  <div className="mt-2 text-xs flex items-start gap-2 flex-wrap">
+                    <span className="text-gold font-mono uppercase text-[10px] pt-2">Synergies —</span>
                     {(JSON.parse(card.mihawkSynergies) as string[]).map((s) => (
-                      <Link key={s} href={`/cards/${s}`} className="badge badge-green">{s}</Link>
+                      <CardThumb key={s} cardNumber={s} size={48} />
                     ))}
                   </div>
                 )}

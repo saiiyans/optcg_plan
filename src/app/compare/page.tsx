@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { CardThumb } from "@/components/CardThumb";
 
 export default function Compare() {
   const [inputs, setInputs] = useState(["", "", "", ""]);
@@ -41,8 +42,8 @@ export default function Compare() {
           <table className="w-full text-sm border-collapse">
             <tbody>
               {[
+                ["Carte", (c: any) => <CardThumb cardNumber={c.cardNumber} size={72} />],
                 ["Nom", (c: any) => c.name],
-                ["Numéro", (c: any) => c.cardNumber],
                 ["Catégorie", (c: any) => c.category],
                 ["Coût", (c: any) => c.cost ?? "—"],
                 ["Puissance", (c: any) => c.power ?? "—"],

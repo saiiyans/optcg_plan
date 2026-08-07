@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MATCHUP_CENTER, DIFFICULTY_LABEL } from "@/lib/matchupCenter";
 import { BackButton } from "@/components/BackButton";
+import { CardThumb } from "@/components/CardThumb";
 
 export default function MatchupDetailPage({ params }: { params: { slug: string } }) {
   const m = MATCHUP_CENTER.find((x) => x.slug === params.slug);
@@ -34,9 +34,9 @@ export default function MatchupDetailPage({ params }: { params: { slug: string }
         {m.keyCards.length > 0 && (
           <>
             <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-1">Key Cards</div>
-            <div className="flex flex-wrap gap-1.5 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               {m.keyCards.map((c) => (
-                <Link key={c} href={`/cards/${c}`} className="badge badge-green">{c}</Link>
+                <CardThumb key={c} cardNumber={c} size={56} />
               ))}
             </div>
           </>

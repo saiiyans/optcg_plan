@@ -12,7 +12,7 @@ import {
   HAWKEYE_RULES,
 } from "@/lib/deckProfile";
 import { LeaderImage } from "@/components/LeaderImage";
-import Link from "next/link";
+import { CardThumb } from "@/components/CardThumb";
 
 export default function DeckProfilePage() {
   const totalCards = MIHAWK_REFERENCE_DECK.cards.reduce((s, c) => s + c.quantity, 0);
@@ -29,12 +29,9 @@ export default function DeckProfilePage() {
           </div>
         </div>
         <div className="text-xs font-mono text-steel/60 mb-3">{totalCards} cartes hors Leader · Style : {MIHAWK_DECK_STYLE}</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        <div className="flex flex-wrap gap-2">
           {MIHAWK_REFERENCE_DECK.cards.map((c) => (
-            <Link key={c.cardNumber} href={`/cards/${c.cardNumber}`} className="bg-panel2 rounded-lg px-2.5 py-1.5 text-xs font-mono hover:border hover:border-emerald flex items-center justify-between">
-              <span className="text-steel/80 truncate">{c.cardNumber}</span>
-              <span className="text-emerald-bright shrink-0 ml-1">×{c.quantity}</span>
-            </Link>
+            <CardThumb key={c.cardNumber} cardNumber={c.cardNumber} quantity={c.quantity} size={64} />
           ))}
         </div>
       </div>
