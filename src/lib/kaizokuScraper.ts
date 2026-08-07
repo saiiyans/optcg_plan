@@ -31,9 +31,30 @@ export async function scrapeKaizokuText(): Promise<string> {
     });
 
     const page = await browser.newPage();
+    // Un user-agent de vrai navigateur de bureau — certains sites servent
+    // un rendu différent (ou bloquent) aux user-agents par défaut de
+    // Puppeteer/headless Chrome.
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    );
+
     await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
-    // Laisse le temps à React de terminer son rendu.
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+
+    // Attend activement que le tableau de matchs soit vraiment rendu
+    // (présence d'une date au format JJ/MM/AAAA dans le texte de la page)
+    // plutôt qu'un délai fixe qui peut être trop court sur une fonction
+    // serverless froide. Retombe sur le texte actuel si le délai max est
+    // atteint, pour ne jamais bloquer indéfiniment.
+    try {
+      await page.waitForFunction(
+        () => /\d{2}\/\d{2}\/\d{4}/.test(document.body.innerText),
+        { timeout: 15000 }
+      );
+    } catch {
+      // Continue quand même — le texte capturé ci-dessous servira au
+      // diagnostic même s'il est incomplet.
+    }
+
     const text = await page.evaluate(() => document.body.innerText);
     await browser.close();
     return text;
