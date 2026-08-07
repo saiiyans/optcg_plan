@@ -1,0 +1,44 @@
+.wrap {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  background: #08120d;
+  border: 1px solid #1f3327;
+  border-radius: 8px;
+  color: #e9f3ec;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: #3ecf7e;
+}
+
+.list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #0d1712;
+  border: 1px solid #2c4736;
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.item {
+  padding: 9px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #e9f3ec;
+}
+
+.item:hover,
+.item.active {
+  background: #1f6b45;
+}

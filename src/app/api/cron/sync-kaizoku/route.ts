@@ -49,7 +49,10 @@ export async function GET(req: NextRequest) {
   try {
     browser = await puppeteer.launch({
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
+      // @sparticuz/chromium v149+ n'expose plus de defaultViewport prêt à
+      // l'emploi (seuls args/graphics/executablePath restent dans son
+      // API) — on fixe donc une taille raisonnable nous-mêmes.
+      defaultViewport: { width: 1280, height: 900 },
       executablePath: await chromium.executablePath(),
       headless: true,
     });
