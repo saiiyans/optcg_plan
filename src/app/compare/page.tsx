@@ -42,7 +42,7 @@ export default function Compare() {
           <table className="w-full text-sm border-collapse">
             <tbody>
               {[
-                ["Carte", (c: any) => <CardThumb cardNumber={c.cardNumber} size={72} />],
+                ["Carte", (c: any) => <CardThumb cardNumber={c.cardNumber} imageUrl={c.imageUrl} size={72} />],
                 ["Nom", (c: any) => c.name],
                 ["Catégorie", (c: any) => c.category],
                 ["Coût", (c: any) => c.cost ?? "—"],

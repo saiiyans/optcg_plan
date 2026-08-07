@@ -514,9 +514,9 @@ function MatchupsTab() {
   const [journalStats, setJournalStats] = useState<Record<string, { wins: number; losses: number; total: number }> | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [syncResult, setSyncResult] = useState<{ inserted: number; skipped: number; error?: string } | null>(null);
 
-  async function refreshFromJournal() {
-    setRefreshing(true);
+  async function recomputeFromJournal() {
     const res = await fetch("/api/matches");
     const data = await res.json();
     const matches: any[] = data.matches ?? [];
@@ -530,6 +530,23 @@ function MatchupsTab() {
     }
     setJournalStats(stats);
     setLastRefresh(new Date());
+  }
+
+  async function refreshFromJournal() {
+    setRefreshing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/matches/refresh-kaizoku", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setSyncResult({ inserted: 0, skipped: 0, error: data?.error ?? `Erreur ${res.status}` });
+      } else {
+        setSyncResult({ inserted: data.inserted ?? 0, skipped: data.skipped ?? 0 });
+      }
+    } catch (e: any) {
+      setSyncResult({ inserted: 0, skipped: 0, error: e?.message ?? "Erreur réseau." });
+    }
+    await recomputeFromJournal();
     setRefreshing(false);
   }
 
@@ -555,14 +572,21 @@ function MatchupsTab() {
         </p>
         <div className="flex items-center gap-3 flex-wrap">
           <button onClick={refreshFromJournal} disabled={refreshing} className="btn btn-primary">
-            {refreshing ? "Calcul..." : "🔄 Rafraîchir depuis mes parties"}
+            {refreshing ? "Synchronisation..." : "🔄 Rafraîchir depuis mes parties"}
           </button>
           <span className="text-xs font-mono text-steel/60">
             {lastRefresh
-              ? `Calculé à partir de tes parties loguées, ${lastRefresh.toLocaleTimeString("fr-FR")}.`
-              : "Ce bouton ne fait pas de recherche internet en direct (pas possible sans clé d'API payante) — il recalcule tes propres statistiques depuis le Journal."}
+              ? `Synchronisé avec Card D. Kaizoku puis recalculé, ${lastRefresh.toLocaleTimeString("fr-FR")}.`
+              : "Va chercher tes nouvelles parties sur Card D. Kaizoku, les importe, puis recalcule tes statistiques."}
           </span>
         </div>
+        {syncResult && (
+          <div className={`text-xs font-mono mt-2 ${syncResult.error ? "text-danger" : "text-emerald-bright"}`}>
+            {syncResult.error
+              ? `Synchronisation Kaizoku impossible : ${syncResult.error} (stats quand même recalculées depuis le Journal existant.)`
+              : `${syncResult.inserted} nouvelle(s) partie(s) importée(s), ${syncResult.skipped} déjà connue(s).`}
+          </div>
+        )}
       </div>
 
       {MATCHUP_GUIDES.map((guide) => (
