@@ -218,6 +218,11 @@ model Match {
   cardsToWatch   String?
   notes          String?
   createdAt      DateTime @default(now())
+  // Clé de déduplication pour l'import automatique depuis Card D. Kaizoku —
+  // construite à partir de date+heure+adversaire+résultat, null pour toute
+  // partie saisie manuellement. Le champ étant @unique, une seconde
+  // tentative d'import du même match échoue simplement au lieu de dupliquer.
+  kaizokuId      String?  @unique
 
   @@index([myDeck])
   @@index([opponentLeader])

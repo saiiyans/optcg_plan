@@ -118,8 +118,77 @@ function JournalTab() {
     load();
   }
 
+  const [kaizokuText, setKaizokuText] = useState("");
+  const [kaizokuBusy, setKaizokuBusy] = useState(false);
+  const [kaizokuResult, setKaizokuResult] = useState<{ parsed: number; inserted: number; skipped: number; warnings: string[] } | null>(null);
+  const [kaizokuMode, setKaizokuMode] = useState<"Simulateur" | "Boutique">("Simulateur");
+  const [showKaizoku, setShowKaizoku] = useState(false);
+
+  async function importKaizoku() {
+    if (!kaizokuText.trim()) return;
+    setKaizokuBusy(true);
+    setKaizokuResult(null);
+    try {
+      const res = await fetch("/api/matches/sync-kaizoku", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawText: kaizokuText, mode: kaizokuMode }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? `Erreur ${res.status}`);
+      setKaizokuResult({ parsed: data.parsed, inserted: data.inserted, skipped: data.skipped, warnings: data.warnings ?? [] });
+      if (data.inserted > 0) {
+        setKaizokuText("");
+        load();
+      }
+    } catch (e: any) {
+      setKaizokuResult({ parsed: 0, inserted: 0, skipped: 0, warnings: [e?.message ?? "Erreur inconnue."] });
+    } finally {
+      setKaizokuBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <div className="card-tile rounded-sm p-5">
+        <button onClick={() => setShowKaizoku((s) => !s)} className="flex items-center justify-between w-full text-left">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-gold">Importer depuis Card D. Kaizoku</h3>
+          <span className="text-textMuted text-xs">{showKaizoku ? "Masquer ▲" : "Ouvrir ▼"}</span>
+        </button>
+        {showKaizoku && (
+          <div className="mt-3 pt-3 border-t border-line space-y-3">
+            <div className="text-xs text-steel/70">
+              Va sur ta page d'historique Kaizoku, sélectionne tout le tableau de matchs (Ctrl+A / Cmd+A dans la zone du tableau, ou copie manuellement), colle-le ci-dessous. Les parties déjà importées sont automatiquement ignorées — tu peux recoller la même page plusieurs fois sans risque de doublon.
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-mono uppercase text-steel/60">Mode</label>
+              <select className="input" value={kaizokuMode} onChange={(e) => setKaizokuMode(e.target.value as "Simulateur" | "Boutique")}>
+                <option>Simulateur</option>
+                <option>Boutique</option>
+              </select>
+            </div>
+            <textarea
+              className="input w-full font-mono text-xs"
+              rows={8}
+              placeholder={"07/08/2026\n11:25\nDracule Mihawk [OP14-020]\n\nRocks.D.Xebec [OP17-039] Won\n..."}
+              value={kaizokuText}
+              onChange={(e) => setKaizokuText(e.target.value)}
+            />
+            <button onClick={importKaizoku} disabled={kaizokuBusy || !kaizokuText.trim()} className="btn btn-primary">
+              {kaizokuBusy ? "Import en cours..." : "Analyser et importer"}
+            </button>
+            {kaizokuResult && (
+              <div className="text-xs font-mono bg-panel2 p-3 rounded-lg space-y-1">
+                <div>{kaizokuResult.parsed} partie(s) reconnue(s) · <span className="text-emerald-bright">{kaizokuResult.inserted} ajoutée(s)</span> · {kaizokuResult.skipped} déjà connue(s) (ignorée(s))</div>
+                {kaizokuResult.warnings.map((w, i) => (
+                  <div key={i} className="text-gold">⚠ {w}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="card-tile rounded-sm p-5">
         <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Enregistrer une partie</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
