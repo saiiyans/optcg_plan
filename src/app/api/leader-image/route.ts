@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 import { scrapeCardDetail } from "@/lib/scraper";
 import { getLeader } from "@/lib/leaders";
 

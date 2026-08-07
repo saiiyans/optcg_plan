@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Sans ceci, Next.js peut mettre en cache la réponse de cette route et
+// renvoyer indéfiniment le même résultat, même après une correction du
+// scraper ou un nouveau déploiement — cette route scrape un site externe
+// en direct, elle ne doit jamais être servie depuis un cache.
+export const dynamic = "force-dynamic";
 import { listAllCardNumbers, testScrapeSample } from "@/lib/scraper";
 
 const DEFAULT_SEARCH_URL =

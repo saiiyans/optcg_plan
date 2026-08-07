@@ -37,6 +37,7 @@ export default function CardsPage() {
   const [importStatus, setImportStatus] = useState<string>("");
   const [importBusy, setImportBusy] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
+  const [apitcgTestResult, setApitcgTestResult] = useState<any>(null);
   const [previewResult, setPreviewResult] = useState<any>(null);
 
   const buildParams = useCallback((offset: number) => {
@@ -191,6 +192,16 @@ export default function CardsPage() {
     setImportBusy(false);
   }
 
+  async function runApitcgTest() {
+    setImportBusy(true);
+    setImportStatus("Test de l'API TCG en cours...");
+    const res = await fetch("/api/admin/apitcg-test");
+    const data = await res.json();
+    setApitcgTestResult(data);
+    setImportStatus(data.ok ? "Test réussi — regarde le résultat ci-dessous." : `Erreur : ${data.error ?? "voir résultat brut ci-dessous"}`);
+    setImportBusy(false);
+  }
+
   async function runSeedCoach() {
     setImportBusy(true);
     setImportStatus("Chargement du contenu Coach rédigé à la main...");
@@ -286,6 +297,7 @@ export default function CardsPage() {
               <button onClick={runFullImport} disabled={importBusy} className="btn btn-primary">3. Importer (confirmation requise)</button>
               <button onClick={runSync} disabled={importBusy} className="btn">4. Synchroniser les nouveautés</button>
               <button onClick={runSeedCoach} disabled={importBusy} className="btn btn-primary">🦅 Charger le contenu Coach (deck actuel)</button>
+              <button onClick={runApitcgTest} disabled={importBusy} className="btn">🔌 Tester l'API TCG (nouvelle source)</button>
             </div>
             <div className="text-xs text-textMuted mb-2">
               L'import calcule la note de chaque carte pour Mihawk et Shanks en même temps.
@@ -329,6 +341,17 @@ export default function CardsPage() {
                     {testResult.errors.map((e: any) => `${e.cardNumber}: ${e.error}`).join(" | ")}
                   </div>
                 )}
+              </div>
+            )}
+
+            {apitcgTestResult && (
+              <div className="mt-3">
+                <div className="text-xs text-textMuted mb-2">
+                  Statut : {apitcgTestResult.status} · Clés de premier niveau : {apitcgTestResult.topLevelKeys?.join(", ") ?? "—"}
+                </div>
+                <pre className="bg-panel2 p-3 rounded-lg text-[10px] text-steel/80 overflow-x-auto max-h-96 overflow-y-auto">
+                  {JSON.stringify(apitcgTestResult.sampleCards ?? apitcgTestResult, null, 2)}
+                </pre>
               </div>
             )}
           </div>

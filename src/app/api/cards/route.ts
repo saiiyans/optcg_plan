@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { findDeckQuantity, MIHAWK_REFERENCE_DECK } from "@/lib/deckReference";
 import { getLeader } from "@/lib/leaders";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_PAGE_SIZE = 60;
 
 export async function GET(req: NextRequest) {
