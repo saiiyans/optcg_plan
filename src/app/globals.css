@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  /* Plusieurs couches de dégradés très subtils plutôt qu'un noir uniforme —
+     ça crée de la profondeur sans virer au néon. */
+  background:
+    radial-gradient(ellipse 1000px 600px at 12% -8%, rgba(63, 196, 124, 0.10), transparent 55%),
+    radial-gradient(ellipse 700px 500px at 88% 0%, rgba(228, 185, 79, 0.05), transparent 50%),
+    linear-gradient(180deg, #0d1914 0%, #07100d 55%);
+  min-height: 100dvh;
+}
+
+::selection {
+  background: rgba(228, 185, 79, 0.3);
+}
+
+*:focus-visible {
+  outline: 2px solid #3fc47c;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Cartes / panneaux — profondeur via bordure légère + ombre discrète */
+.card-tile {
+  background: linear-gradient(180deg, #0d1914 0%, #13221b 100%);
+  border: 1px solid rgba(144, 196, 164, 0.16);
+  border-radius: 12px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -14px rgba(0, 0, 0, 0.65);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-tile:hover {
+  border-color: rgba(144, 196, 164, 0.30);
+}
+
+.star {
+  color: #23342a;
+}
+.star.filled {
+  color: #e4b94f;
+}
+
+.btn {
+  @apply bg-panel2 border border-line text-steel text-sm font-medium px-4 py-2.5 rounded-lg hover:border-lineStrong hover:text-ivory active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100;
+}
+.btn-primary {
+  @apply bg-emerald-dim border-emerald text-emerald-bright;
+}
+.input {
+  @apply bg-ink border border-line text-ivory text-sm px-3.5 py-2.5 rounded-lg placeholder:text-textMuted;
+}
+.input:focus {
+  border-color: #3fc47c;
+}
+.badge {
+  @apply text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-panel2 border border-line text-steel;
+}
+.badge-green {
+  @apply bg-emerald-dim border-emerald text-emerald-bright;
+}
+.badge-red {
+  @apply bg-red-950 border-red-800 text-red-400;
+}
+.badge-gold {
+  @apply bg-transparent border-gold text-gold;
+}
+
+/* Nouveaux badges — cohérents avec la légende du cahier des charges */
+.badge-winning-core {
+  @apply text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold/15 border border-gold text-gold;
+}
+.badge-tech {
+  @apply text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-950/60 border border-violet-700 text-violet-300;
+}
+.badge-flexible {
+  @apply text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-800/60 border border-slate-500 text-slate-300;
+}
+
+/* Chips de filtres rapides */
+.chip {
+  @apply text-xs font-medium px-3.5 py-2 rounded-full bg-panel2 border border-line text-steel hover:border-lineStrong hover:text-ivory transition-colors whitespace-nowrap;
+}
+.chip-active {
+  @apply bg-emerald-dim border-emerald text-emerald-bright;
+}
+
+/* Vignette statistique compacte (StatsOverview) */
+.stat-tile {
+  @apply card-tile px-4 py-3.5;
+}
+
+/* Skeleton loader — même ratio que les cartes, pour un chargement soigné */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+.skeleton {
+  background: #13221b;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+/* Enveloppe pour tableaux : défilement horizontal fluide sur mobile plutôt
+   qu'un tableau tassé illisible ou qui casse la mise en page. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+.table-scroll table {
+  min-width: 480px;
+}
+
+/* Grilles de filtres : empilées sur mobile, alignées en ligne à partir de sm */
+.filters-row {
+  @apply flex flex-col sm:flex-row sm:flex-wrap gap-2.5 sm:items-center;
+}
+.filters-row .input,
+.filters-row select.input {
+  @apply w-full sm:w-auto;
+}
+
+@media (max-width: 480px) {
+  h1 {
+    letter-spacing: 0;
+  }
+}

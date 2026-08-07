@@ -1,0 +1,245 @@
+// Schéma de la base de données locale (SQLite)
+// Couvre les 8 tables demandées : Cards, CardPrints, Sets, PersonalRatings,
+// Decks, DeckCards, ImportLogs, LegalityUpdates.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Une "Card" = une carte de gameplay unique (un numéro officiel : OP14-033, ST32-003...).
+// Les illustrations alternatives (aa, fa, prize card...) ne créent PAS de nouvelle Card :
+// elles sont regroupées comme des CardPrints de la même Card.
+model Card {
+  id             String   @id @default(cuid())
+  cardNumber     String   @unique // ex: OP14-033
+  name           String
+  category       String   // Character | Event | Stage
+  color          String   // Green (peut contenir plusieurs couleurs pour multicolore)
+  setCode        String   // ex: OP14, EB01, ST32
+  rarity         String?
+  cost           Int?
+  power          Int?
+  counter        Int?     // valeur numérique du Counter (0 si absent)
+  attribute      String?  // Slash / Strike / Wisdom / Special / Ranged
+  types          String   // ex: "Supernovas/Beautiful Pirates" (types & affiliations bruts)
+  officialText   String?  // texte d'effet officiel complet
+  triggerText    String?
+  imageUrl       String   // URL distante officielle (pas de copie locale par défaut)
+  localImagePath String?  // renseigné uniquement si la mise en cache locale est explicitement autorisée
+  cardUrl        String   // URL de la fiche Limitless
+  sourceUrl      String   // URL de la requête/source ayant permis l'import
+  releaseDate    String?
+  legalityStatus String?  // ex: "Standard: legal / Extra: legal"
+  block          String?  // ex: "Block 4"
+  language       String   @default("en")
+  importedAt     DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Champs verrouillés dès qu'une correction manuelle est faite, pour ne
+  // jamais l'écraser silencieusement lors d'une resynchronisation.
+  manuallyEditedFields String? // liste JSON des noms de champs corrigés à la main
+
+  // --- Contenu "Coach" — rédigé à la main, jamais généré en masse ---
+  // Explications pédagogiques originales (pas le texte officiel, pas une
+  // traduction) + analyse spécifique Mihawk. coachReviewed=false tant que
+  // rien n'a été rédigé pour cette carte ; l'app affiche alors un message
+  // clair plutôt que d'inventer du contenu.
+  coachReviewed        Boolean  @default(false)
+  coachExplanationEn   String?
+  coachExplanationFr   String?
+  mihawkAnalysisFr     String?
+  mihawkPros           String? // JSON string[]
+  mihawkCons           String? // JSON string[]
+  mihawkSynergies      String? // JSON string[] de cardNumber
+  mihawkCommonUse      String?
+  mihawkCommonMistake  String?
+
+  prints         CardPrint[]
+  ratings        PersonalRating[]
+  deckCards      DeckCard[]
+
+  @@index([color])
+  @@index([setCode])
+  @@index([category])
+}
+
+// Une "CardPrint" = une illustration/édition précise de la carte (aa, fa, prize card, réimpression...).
+model CardPrint {
+  id           String   @id @default(cuid())
+  cardId       String
+  card         Card     @relation(fields: [cardId], references: [id])
+  printLabel   String   // ex: "Alternate Art", "Prize Card", "Reprint PRB02"
+  imageUrl     String
+  setCode      String
+  variantIndex Int      @default(0) // correspond au paramètre ?v= de Limitless
+  importedAt   DateTime @default(now())
+
+  @@index([cardId])
+}
+
+model Set {
+  id          String   @id @default(cuid())
+  setCode     String   @unique // ex: OP14, EB01
+  name        String
+  block       String?
+  releaseDate String?
+  cardCount   Int?
+  importedAt  DateTime @default(now())
+}
+
+// Notation personnelle "compatibilité Mihawk" (0 à 5 étoiles) + note personnelle libre.
+model PersonalRating {
+  id               String   @id @default(cuid())
+  cardId           String
+  card             Card     @relation(fields: [cardId], references: [id])
+  leaderContext    String   @default("Mihawk OP14-020") // pour permettre d'autres leaders plus tard (ex: Shanks OP17)
+  stars            Int      // 0 à 5, calculé automatiquement puis modifiable à la main
+  autoStars        Int      // valeur calculée par le moteur de notation, jamais écrasée par l'édition manuelle
+  justification    String   // explication de la note, éditable
+  confidence       String   // "élevé" | "moyen" | "données insuffisantes"
+  recommendedCount Int?     // quantité recommandée (0 à 4)
+  personalNotes    String?
+  isManualOverride Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+
+  @@unique([cardId, leaderContext])
+}
+
+model Deck {
+  id        String     @id @default(cuid())
+  name      String
+  leaderCardNumber String // ex: OP14-020
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  cards     DeckCard[]
+}
+
+model DeckCard {
+  id       String @id @default(cuid())
+  deckId   String
+  deck     Deck   @relation(fields: [deckId], references: [id])
+  cardId   String
+  card     Card   @relation(fields: [cardId], references: [id])
+  quantity Int    @default(1) // maximum 4, contrôlé côté application
+  status   String @default("in_deck") // in_deck | favorite | owned | shopping_list | testing
+
+  @@unique([deckId, cardId, status])
+}
+
+// Journal de chaque exécution de l'importateur : ce qui a réussi, ce qui a échoué.
+model ImportLog {
+  id            String   @id @default(cuid())
+  runType       String   // "preview" | "test_5" | "full_import" | "sync"
+  sourceUrl     String
+  cardsFound    Int
+  cardsImported Int
+  cardsUpdated  Int
+  cardsSkipped  Int
+  errors        String?  // JSON des erreurs rencontrées
+  startedAt     DateTime @default(now())
+  finishedAt    DateTime?
+}
+
+// Historique des changements de légalité (bannissements, rotations de blocs...).
+model LegalityUpdate {
+  id         String   @id @default(cuid())
+  cardNumber String
+  format     String   // "Standard" | "Extra"
+  oldStatus  String?
+  newStatus  String
+  effectiveDate String?
+  sourceUrl  String?
+  recordedAt DateTime @default(now())
+}
+
+// Une decklist de tournoi récupérée sur onepiecetopdecks.com (catégorie "OP16 Winning Decks").
+// Filtre strict à l'import : deckProfile = "op14mihawk" ET leaderCardNumber = "OP14-020".
+model TournamentDeck {
+  id               String   @id @default(cuid())
+  uniqueKey        String   @unique // leader+player+date+tournament+host+placement, pour dédupliquer sans jamais écraser un ancien résultat par erreur
+  leaderCardNumber String   // OP14-020
+  deckProfile      String   // op14mihawk
+  deckColor        String   // Green
+  deckName         String   // "G Mihawk"
+  format           String   @default("OP16")
+  player           String
+  country          String
+  date             String   // tel qu'affiché sur la source, ex "8/2/2026"
+  placementRaw     String   // ex: "1st (8-1)", "T4 (4-1)", "2nd Place"
+  wins             Int?
+  losses           Int?
+  undefeated       Boolean  @default(false)
+  status           String   // "winner" | "top_performer" | "unverified"
+  proofLevel       String?  // "gold" (1st) | "silver" (top4/top8) | "bronze" (résultat positif sans top4)
+  tournamentType   String   // ex: FS, SB, 3v3, EXGrand, Area Qualifiers
+  host             String
+  participants     Int?     // extrait de hs=Nom(58) si présent
+  cardCountNonLeader Int    // nombre de cartes hors Leader détecté par le parseur
+  validationStatus String   // "valid" (exactement 50) | "needs_review"
+  rawDecklist      String   // chaîne compacte brute d'origine, jamais modifiée
+  sourceUrl        String
+  importedAt       DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  savedToMyDecks   Boolean  @default(false) // ajouté par l'utilisateur à sa rubrique "Mes Decks"
+
+  cards TournamentDeckCard[]
+
+  @@index([deckProfile])
+  @@index([status])
+  @@index([date])
+}
+
+model TournamentDeckCard {
+  id             String         @id @default(cuid())
+  tournamentDeckId String
+  tournamentDeck TournamentDeck @relation(fields: [tournamentDeckId], references: [id])
+  cardNumber     String         // numéro brut ; peut ne pas exister encore dans Card si carte non-verte (ex: leader)
+  quantity       Int
+
+  @@index([tournamentDeckId])
+  @@index([cardNumber])
+}
+
+// --- Préparation tournoi (fusion de l'ancien planning/journal HTML) ---
+
+// Une partie jouée en simulateur ou en boutique, notée pour suivre les matchups.
+model Match {
+  id             String   @id @default(cuid())
+  date           String   // ISO (yyyy-mm-dd)
+  mode           String   // "Simulateur" | "Boutique"
+  myDeck         String   // "Mihawk OP14-020" | "Shanks OP17"
+  opponentLeader String
+  result         String   // "Victoire" | "Défaite"
+  cardsToWatch   String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([myDeck])
+  @@index([opponentLeader])
+}
+
+// Un item de la checklist Objectifs (méta / cartes / stratégies / matchups).
+// Les items par défaut sont semés une seule fois ; l'utilisateur peut en
+// ajouter d'autres (isDefault=false) et cocher/décocher n'importe lequel.
+model ObjectiveItem {
+  id        String  @id @default(cuid())
+  category  String  // "meta" | "cartes" | "strat" | "matchups"
+  text      String
+  isDefault Boolean @default(true)
+  done      Boolean @default(false)
+  order     Int     @default(0)
+
+  @@index([category])
+}
+
+// Bloc libre "5 infos importantes" par semaine du planning (semaine 1 à 7).
+model WeeklyInfo {
+  weekNumber Int      @id
+  content    String   @default("")
+  updatedAt  DateTime @updatedAt
+}

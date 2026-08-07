@@ -1,0 +1,316 @@
+"use client";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
+import { WEEKS, TOURNAMENT_DATE } from "@/lib/planningData";
+import { computeGameCounterStats } from "@/lib/gameCounter";
+
+/** Fetch avec délai maximum — évite qu'un widget reste bloqué en
+ * "Chargement..." pour toujours si le réseau ne répond jamais. */
+async function fetchWithTimeout(url: string, ms = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error(`Erreur serveur (${res.status})`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export default function HomePage() {
+  const daysLeft = useMemo(() => {
+    const diff = Math.ceil((new Date(TOURNAMENT_DATE).getTime() - Date.now()) / 86400000);
+    return diff >= 0 ? diff : 0;
+  }, []);
+
+  const currentWeek = useMemo(() => {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const past = WEEKS.filter((w) => w.startDate <= todayISO);
+    return past.length ? past[past.length - 1] : WEEKS[0];
+  }, []);
+
+  const dailyTarget = Math.round((currentWeek.sim + currentWeek.bout) / 7);
+
+  return (
+    <div className="space-y-6">
+      <div className="card-tile p-5 flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Prochain événement</div>
+          <div className="text-white text-lg font-display">Tournoi One Piece Card Game</div>
+          <div className="text-xs font-mono text-steel/60 mt-0.5">20 septembre 2026 · Semaine {currentWeek.n} en cours ({currentWeek.range})</div>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="text-3xl font-mono text-gold">{daysLeft}</div>
+          <div className="text-[10px] uppercase tracking-wider text-steel/60">jours restants</div>
+        </div>
+      </div>
+
+      <GameCounterWidget />
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <TrainingWidget dailyTarget={dailyTarget} weekTarget={currentWeek.sim + currentWeek.bout} />
+        <ObjectivesWidget />
+      </div>
+
+      <SimWinrateWidget />
+    </div>
+  );
+}
+
+/** Petit composant partagé : bouton "Réessayer" affiché en cas d'échec. */
+function RetryBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="text-xs text-red-400 flex items-center justify-between gap-2">
+      <span>{message}</span>
+      <button onClick={onRetry} className="btn text-[10px] py-1 px-2 shrink-0">Réessayer</button>
+    </div>
+  );
+}
+
+type LoadState = "loading" | "ready" | "error";
+
+function GameCounterWidget() {
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [stats, setStats] = useState<ReturnType<typeof computeGameCounterStats> | null>(null);
+
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const d = await fetchWithTimeout("/api/matches");
+      const matches = d.matches ?? [];
+      setStats(computeGameCounterStats(matches));
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (state === "loading") {
+    return <div className="card-tile p-5"><div className="skeleton h-20 w-full" /></div>;
+  }
+  if (state === "error" || !stats) {
+    return (
+      <div className="card-tile p-5 flex items-center justify-between">
+        <span className="text-xs text-red-400">Impossible de charger le compteur de parties.</span>
+        <button onClick={load} className="btn text-xs py-1.5 px-3">Réessayer</button>
+      </div>
+    );
+  }
+
+  const pct = stats.totalTarget > 0 ? Math.min(100, Math.round((stats.totalPlayed / stats.totalTarget) * 100)) : 0;
+  const statusLabel = stats.status === "avance" ? "En avance" : stats.status === "retard" ? "En retard" : "Dans le rythme";
+  const statusColor = stats.status === "avance" ? "text-emerald-bright" : stats.status === "retard" ? "text-red-400" : "text-gold";
+
+  return (
+    <div className="card-tile p-5">
+      <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
+        <div>
+          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Compteur de parties</div>
+          <div className="text-2xl font-mono text-white mt-1">
+            {stats.totalPlayed} <span className="text-steel/50 text-lg">/ {stats.totalTarget}</span>
+          </div>
+          <div className="text-xs text-steel/60 mt-0.5">{stats.remaining} parties restantes avant le tournoi</div>
+        </div>
+        <span className={`badge ${stats.status === "avance" ? "badge-green" : stats.status === "retard" ? "badge-red" : "badge-gold"} shrink-0`}>
+          {statusLabel}
+        </span>
+      </div>
+      <div className="w-full h-2 bg-panel2 rounded-full overflow-hidden">
+        <div className="h-full bg-emerald-dim transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs font-mono text-steel/60">
+        <span>Semaine {stats.currentWeekN} : {stats.playedThisWeek} / {stats.weekTarget}</span>
+        <span>Attendu à date : {stats.expectedByToday}</span>
+        <span>Rythme nécessaire : ~{stats.dailyPaceNeeded}/jour ({stats.daysLeft}j restants)</span>
+      </div>
+    </div>
+  );
+}
+
+function TrainingWidget({ dailyTarget, weekTarget }: { dailyTarget: number; weekTarget: number }) {
+  const [state, setState] = useState<LoadState>("loading");
+  const [gamesToday, setGamesToday] = useState(0);
+  const [gamesThisWeek, setGamesThisWeek] = useState(0);
+
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const d = await fetchWithTimeout("/api/matches");
+      const matches = d.matches ?? [];
+      const todayISO = new Date().toISOString().slice(0, 10);
+      setGamesToday(matches.filter((m: any) => m.date === todayISO).length);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 6);
+      const weekAgoISO = weekAgo.toISOString().slice(0, 10);
+      setGamesThisWeek(matches.filter((m: any) => m.date >= weekAgoISO && m.date <= todayISO).length);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const pct = dailyTarget > 0 ? Math.min(100, Math.round((gamesToday / dailyTarget) * 100)) : 0;
+
+  return (
+    <div className="card-tile p-5">
+      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Entraînement</h3>
+      {state === "error" ? (
+        <RetryBlock message="Impossible de charger tes parties." onRetry={load} />
+      ) : (
+        <>
+          <div className="flex items-end justify-between mb-2">
+            <div>
+              <div className="text-2xl font-mono text-white">
+                {state === "loading" ? "…" : gamesToday} <span className="text-steel/50 text-base">/ {dailyTarget}</span>
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-steel/60">parties aujourd'hui (objectif du jour)</div>
+            </div>
+          </div>
+          <div className="w-full h-2 bg-panel2 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-dim transition-all" style={{ width: `${state === "loading" ? 0 : pct}%` }} />
+          </div>
+          <div className="text-xs font-mono text-steel/60 mt-3">
+            Cette semaine : <span className="text-white">{state === "loading" ? "…" : gamesThisWeek}</span> / {weekTarget} parties visées
+          </div>
+        </>
+      )}
+      <Link href="/prep" className="text-xs font-mono text-emerald-bright hover:underline mt-2 inline-block">
+        Logger une partie →
+      </Link>
+    </div>
+  );
+}
+
+function ObjectivesWidget() {
+  const [state, setState] = useState<LoadState>("loading");
+  const [items, setItems] = useState<any[]>([]);
+
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const d = await fetchWithTimeout("/api/objectives");
+      setItems(d.items ?? []);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function toggle(id: string, done: boolean) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, done } : it)));
+    try {
+      await fetchWithTimeout(`/api/objectives/${id}`);
+    } catch {
+      // Optimiste : on ne bloque pas l'UI pour un échec de sauvegarde isolé.
+    }
+    fetch(`/api/objectives/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ done }) }).catch(() => {});
+  }
+
+  const done = items.filter((i) => i.done).length;
+  const pending = items.filter((i) => !i.done);
+
+  return (
+    <div className="card-tile p-5">
+      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">
+        Objectifs {state === "ready" && `— ${done} / ${items.length} complétés`}
+      </h3>
+      {state === "loading" ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => <div key={i} className="skeleton h-4 w-full" />)}
+        </div>
+      ) : state === "error" ? (
+        <RetryBlock message="Impossible de charger les objectifs." onRetry={load} />
+      ) : items.length === 0 ? (
+        <div className="text-xs font-mono text-steel/60">Aucun objectif pour l'instant.</div>
+      ) : pending.length === 0 ? (
+        <div className="text-xs font-mono text-emerald-bright">Tous les objectifs sont cochés 🎉</div>
+      ) : (
+        <ul className="space-y-1.5">
+          {pending.slice(0, 5).map((it) => (
+            <li key={it.id} className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={it.done} onChange={(e) => toggle(it.id, e.target.checked)} className="mt-1 shrink-0" />
+              <span className="text-white text-xs leading-snug">{it.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link href="/prep" className="text-xs font-mono text-emerald-bright hover:underline mt-3 inline-block">
+        Voir tous les objectifs →
+      </Link>
+    </div>
+  );
+}
+
+function SimWinrateWidget() {
+  const [state, setState] = useState<LoadState>("loading");
+  const [matches, setMatches] = useState<any[]>([]);
+
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const d = await fetchWithTimeout("/api/matches?mode=Simulateur");
+      setMatches(d.matches ?? []);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const total = matches.length;
+  const wins = matches.filter((m) => m.result === "Victoire").length;
+  const losses = total - wins;
+  const winPct = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+  return (
+    <div className="card-tile p-5">
+      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">
+        Winrate simulateur
+      </h3>
+      {state === "loading" ? (
+        <div className="skeleton h-24 w-full" />
+      ) : state === "error" ? (
+        <RetryBlock message="Impossible de charger tes parties." onRetry={load} />
+      ) : total === 0 ? (
+        <div className="text-xs font-mono text-steel/60">
+          Aucune partie en mode Simulateur enregistrée pour l'instant. Logue tes parties dans{" "}
+          <Link href="/prep" className="text-emerald-bright hover:underline">Préparation Tournoi</Link>.
+        </div>
+      ) : (
+        <div className="flex items-center gap-6 flex-wrap">
+          <div
+            className="w-32 h-32 rounded-full shrink-0"
+            style={{ background: `conic-gradient(#4ade80 0% ${winPct}%, #7f1d1d ${winPct}% 100%)` }}
+          >
+            <div className="w-full h-full rounded-full flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-ink flex items-center justify-center">
+                <span className="text-lg font-mono text-white">{winPct}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="text-sm font-mono space-y-1">
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" /> {wins} victoire{wins > 1 ? "s" : ""}</div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-red-900 inline-block" /> {losses} défaite{losses > 1 ? "s" : ""}</div>
+            <div className="text-steel/60 text-xs mt-1">{total} partie{total > 1 ? "s" : ""} au total sur simulateur</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
