@@ -35,6 +35,7 @@ export default function CardsPage() {
   const [showImport, setShowImport] = useState(false);
 
   const [importStatus, setImportStatus] = useState<string>("");
+  const [importErrors, setImportErrors] = useState<{ cardNumber: string; error: string }[]>([]);
   const [importBusy, setImportBusy] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
   const [previewResult, setPreviewResult] = useState<any>(null);
@@ -153,6 +154,7 @@ export default function CardsPage() {
     if (!confirm("Importer toutes les cartes vertes (leaders compris) trouvées sur Limitless ? Cela peut prendre plusieurs minutes, mais tu peux garder l'onglet ouvert sans crainte de blocage cette fois.")) return;
     setImportBusy(true);
     setImportStatus("Récupération de la liste complète des cartes...");
+    setImportErrors([]);
 
     const listRes = await fetch(`/api/import/preview?mode=count&url=${encodeURIComponent(SEARCH_URL)}`);
     const listData = await listRes.json();
@@ -168,6 +170,7 @@ export default function CardsPage() {
 
     let logId: string | null = null;
     let totalImported = 0, totalUpdated = 0, totalSkipped = 0;
+    const allErrors: { cardNumber: string; error: string }[] = [];
     setImportProgress({ done: 0, total: allNumbers.length });
 
     for (let i = 0; i < batches.length; i++) {
@@ -189,11 +192,13 @@ export default function CardsPage() {
       totalImported += data.imported;
       totalUpdated += data.updated;
       totalSkipped += data.skipped;
+      if (data.errors?.length) allErrors.push(...data.errors);
       setImportProgress({ done: Math.min((i + 1) * BATCH_SIZE, allNumbers.length), total: allNumbers.length });
       setImportStatus(`Import en cours... ${Math.min((i + 1) * BATCH_SIZE, allNumbers.length)} / ${allNumbers.length} cartes traitées.`);
     }
 
     setImportStatus(`Import terminé : ${totalImported} ajoutées, ${totalUpdated} mises à jour, ${totalSkipped} erreurs.`);
+    setImportErrors(allErrors);
     setImportProgress(null);
     setImportBusy(false);
     loadCards();
@@ -325,6 +330,27 @@ export default function CardsPage() {
               </div>
             )}
             {importStatus && <div className="text-xs text-steel">{importStatus}</div>}
+
+            {importErrors.length > 0 && (
+              <div className="mt-3 text-xs">
+                <div className="text-danger mb-1">
+                  {importErrors.length} carte(s) en erreur — messages groupés (jusqu'à 5 exemples par type) :
+                </div>
+                <div className="bg-panel2 p-3 rounded-lg font-mono max-h-64 overflow-y-auto space-y-2">
+                  {Object.entries(
+                    importErrors.reduce<Record<string, string[]>>((acc, e) => {
+                      (acc[e.error] ??= []).push(e.cardNumber);
+                      return acc;
+                    }, {})
+                  ).map(([message, cardNumbers]) => (
+                    <div key={message}>
+                      <div className="text-danger">{message} <span className="text-steel/60">({cardNumbers.length} carte(s))</span></div>
+                      <div className="text-steel/60">{cardNumbers.slice(0, 5).join(", ")}{cardNumbers.length > 5 ? "…" : ""}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {previewResult && (
               <div className="mt-3 text-xs font-mono bg-panel2 p-3 rounded-lg">
