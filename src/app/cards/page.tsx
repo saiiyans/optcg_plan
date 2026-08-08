@@ -15,6 +15,7 @@ const EMPTY_FILTERS = {
   maxCost: "",
   minStars: "",
   set: "",
+  color: "",
   inDeckOnly: false,
   reviewed: "",
   q: "",
@@ -241,6 +242,7 @@ export default function CardsPage() {
   if (filters.maxCost) activeChips.push({ key: "maxCost", label: `Cost ≤${filters.maxCost}` });
   if (filters.minStars) activeChips.push({ key: "minStars", label: `${filters.minStars}★+` });
   if (filters.set) activeChips.push({ key: "set", label: `Set ${filters.set}` });
+  if (filters.color) activeChips.push({ key: "color", label: filters.color === "all" ? "Toutes couleurs" : `Couleur ${filters.color}` });
   if (filters.inDeckOnly) activeChips.push({ key: "inDeckOnly", label: "In My Deck" });
   if (filters.reviewed) activeChips.push({ key: "reviewed", label: filters.reviewed === "true" ? "Coach Reviewed" : "Not Reviewed" });
   if (filters.q) activeChips.push({ key: "q", label: `"${filters.q}"` });
@@ -427,6 +429,23 @@ export default function CardsPage() {
           value={filters.set}
           onChange={(e) => setFilters((f) => ({ ...f, set: e.target.value }))}
         />
+      </div>
+
+      {/* FILTRE PAR COULEUR — "Vert" reste le comportement par défaut de
+          l'app (deck Mihawk) ; "Toutes" retire le filtre couleur côté API. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] uppercase tracking-wider text-textMuted mr-1">Couleur :</span>
+        <button onClick={() => setFilters((f) => ({ ...f, color: "" }))} className={`chip ${filters.color === "" ? "chip-active" : ""}`}>
+          Vert (défaut)
+        </button>
+        {["Red", "Blue", "Purple", "Black", "Yellow"].map((c) => (
+          <button key={c} onClick={() => toggle("color", c)} className={`chip ${filters.color === c ? "chip-active" : ""}`}>
+            {c}
+          </button>
+        ))}
+        <button onClick={() => setFilters((f) => ({ ...f, color: "all" }))} className={`chip ${filters.color === "all" ? "chip-active" : ""}`}>
+          Toutes
+        </button>
       </div>
 
       {/* FILTRE ÉTOILES — 1 à 5, se combine avec tous les autres */}

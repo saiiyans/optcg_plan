@@ -19,6 +19,9 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
   if (!card) notFound();
 
   const deckQty = findDeckQuantity(card.cardNumber);
+  // Préfère l'image locale (public/cards/...) à l'URL distante Limitless,
+  // sans jamais modifier imageUrl en base — voir /api/admin/link-local-images.
+  const displayImageUrl = card.localImagePath || card.imageUrl;
   const leaderPanels = await Promise.all(
     LEADERS.map(async (leader) => ({
       leader,
@@ -33,7 +36,7 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       <div className="space-y-3">
         <div className="relative w-full aspect-[5/7] card-tile overflow-hidden">
-          {card.imageUrl && <Image src={card.imageUrl} alt={card.name} fill className="object-cover" />}
+          {displayImageUrl && <Image src={displayImageUrl} alt={card.name} fill className="object-cover" />}
         </div>
         {card.prints.length > 0 && (
           <div>

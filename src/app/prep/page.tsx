@@ -5,6 +5,12 @@ import { MATCHUP_GUIDES, OPTCG_RESOURCES } from "@/lib/matchupGuide";
 import { LeaderImage } from "@/components/LeaderImage";
 import { QUICK_MISTAKES } from "@/lib/coachDiagnostic";
 
+// Page d'historique de matchs personnelle sur Card D. Kaizoku (même
+// deviceId/playerId utilisés par la synchronisation automatique et le
+// bouton "Rafraîchir depuis mes parties" de l'onglet Matchups).
+const KAIZOKU_HISTORY_URL =
+  "https://www.cardkaizoku.com/matchhistory/search?deviceId=e29ac874724b98687ab5663ff84515eaa9bba570&playerId=fDimCsmSzViWrxSA3Sx9ECNzoZ1I&page=1";
+
 type Tab = "planning" | "journal" | "stats" | "objectifs" | "matchups";
 
 export default function PrepPage() {
@@ -168,10 +174,20 @@ function JournalTab() {
   return (
     <div className="space-y-6">
       <div className="card-tile rounded-sm p-5">
-        <button onClick={() => setShowKaizoku((s) => !s)} className="flex items-center justify-between w-full text-left">
-          <h3 className="font-mono text-xs uppercase tracking-widest text-gold">Importer depuis Card D. Kaizoku</h3>
-          <span className="text-textMuted text-xs">{showKaizoku ? "Masquer ▲" : "Ouvrir ▼"}</span>
-        </button>
+        <div className="flex items-center justify-between">
+          <button onClick={() => setShowKaizoku((s) => !s)} className="flex items-center gap-3 text-left">
+            <h3 className="font-mono text-xs uppercase tracking-widest text-gold">Importer depuis Card D. Kaizoku</h3>
+            <span className="text-textMuted text-xs">{showKaizoku ? "Masquer ▲" : "Ouvrir ▼"}</span>
+          </button>
+          <a
+            href={KAIZOKU_HISTORY_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="btn text-xs py-1.5 px-3 shrink-0"
+          >
+            🔗 Voir mes matchs sur Kaizoku
+          </a>
+        </div>
         {showKaizoku && (
           <div className="mt-3 pt-3 border-t border-line space-y-3">
             <div className="text-xs text-steel/70">

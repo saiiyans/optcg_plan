@@ -16,13 +16,22 @@ export async function GET(req: NextRequest) {
   const maxCost = sp.get("maxCost");
   const minStars = sp.get("minStars");
   const inDeckOnly = sp.get("inDeckOnly") === "true";
+  const color = sp.get("color"); // null/absent -> comportement historique (Vert uniquement)
   const query = sp.get("q")?.trim();
   const reviewed = sp.get("reviewed"); // "true" | "false" | null
   const leader = getLeader(sp.get("leader"));
   const limit = Math.min(parseInt(sp.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE, 200);
   const offset = Math.max(parseInt(sp.get("offset") ?? "0", 10) || 0, 0);
 
-  const where: Record<string, any> = { color: { contains: "Green", mode: "insensitive" } };
+  const where: Record<string, any> = {};
+  // "color=all" retire le filtre couleur ; sinon on filtre sur la couleur
+  // demandée, avec "Green" comme comportement par défaut historique de
+  // cette route (inchangé si le paramètre color n'est pas fourni).
+  if (color === "all") {
+    // pas de filtre couleur
+  } else {
+    where.color = { contains: color || "Green", mode: "insensitive" };
+  }
   if (category) where.category = category;
   if (setCode) where.setCode = { contains: setCode, mode: "insensitive" };
   if (attribute) where.attribute = attribute;
@@ -72,6 +81,10 @@ export async function GET(req: NextRequest) {
 
     const result = cards.map((c: (typeof cards)[number]) => ({
       ...c,
+      // Préfère l'image locale (public/cards/...) si elle a été liée via
+      // /api/admin/link-local-images — imageUrl (Limitless) reste le repli
+      // pour toute carte sans fichier local, jamais modifiée en base.
+      imageUrl: c.localImagePath || c.imageUrl,
       rating: c.ratings[0] ?? null,
       deckQuantity: leader.key === "mihawk" ? findDeckQuantity(c.cardNumber) : 0,
     }));
