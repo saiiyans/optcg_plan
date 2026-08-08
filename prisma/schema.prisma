@@ -27,7 +27,8 @@ model Card {
   counter        Int?     // valeur numérique du Counter (0 si absent)
   attribute      String?  // Slash / Strike / Wisdom / Special / Ranged
   types          String   // ex: "Supernovas/Beautiful Pirates" (types & affiliations bruts)
-  officialText   String?  // texte d'effet officiel complet
+  officialText   String?  // texte d'effet officiel complet (anglais, tel que scrapé)
+  officialTextFr String?  // traduction française du texte officiel — ne remplace jamais officialText
   triggerText    String?
   imageUrl       String   // URL distante officielle (pas de copie locale par défaut)
   localImagePath String?  // renseigné uniquement si la mise en cache locale est explicitement autorisée
@@ -44,11 +45,12 @@ model Card {
   // jamais l'écraser silencieusement lors d'une resynchronisation.
   manuallyEditedFields String? // liste JSON des noms de champs corrigés à la main
 
-  // --- Contenu "Coach" — rédigé à la main, jamais généré en masse ---
-  // Explications pédagogiques originales (pas le texte officiel, pas une
-  // traduction) + analyse spécifique Mihawk. coachReviewed=false tant que
-  // rien n'a été rédigé pour cette carte ; l'app affiche alors un message
-  // clair plutôt que d'inventer du contenu.
+  // --- Contenu "Coach" ---
+  // Historiquement pensé pour être rédigé à la main ; génération en masse
+  // via l'API Anthropic explicitement autorisée depuis cette mise à jour,
+  // pour couvrir l'ensemble des couleurs importées. coachReviewed=true dès que
+  // du contenu (manuel OU généré) existe ; false = l'app affiche un
+  // message clair plutôt que d'inventer du contenu à la volée.
   coachReviewed        Boolean  @default(false)
   coachExplanationEn   String?
   coachExplanationFr   String?
@@ -58,6 +60,9 @@ model Card {
   mihawkSynergies      String? // JSON string[] de cardNumber
   mihawkCommonUse      String?
   mihawkCommonMistake  String?
+  // Pour les cartes non-vertes (non jouables par Mihawk) : impact de cette
+  // carte quand elle apparaît dans le deck adverse, en français.
+  opponentMatchupNote  String?
 
   prints         CardPrint[]
   ratings        PersonalRating[]

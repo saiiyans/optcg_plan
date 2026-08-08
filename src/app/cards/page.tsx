@@ -135,6 +135,53 @@ export default function CardsPage() {
   const [importColors, setImportColors] = useState<string[]>(["green"]);
   const [colorProgress, setColorProgress] = useState<{ color: string; index: number; total: number } | null>(null);
 
+  // --- Génération de contenu Coach (traduction + explications) ---
+  const COACH_COLOR_ORDER = ["Green", "Red", "Purple", "Yellow", "Black"];
+  const [coachBusy, setCoachBusy] = useState(false);
+  const [coachStatus, setCoachStatus] = useState("");
+  const [coachColorIdx, setCoachColorIdx] = useState<number | null>(null);
+  const [coachDone, setCoachDone] = useState(0);
+  const [coachErrors, setCoachErrors] = useState<{ cardNumber: string; error: string }[]>([]);
+
+  async function runCoachGeneration() {
+    if (!confirm("Générer le contenu Coach (traduction FR + explications) pour toutes les couleurs, dans l'ordre Vert → Rouge → Violet → Jaune → Noir ? Ça appelle l'API Anthropic et peut prendre longtemps + avoir un coût.")) return;
+    setCoachBusy(true);
+    setCoachDone(0);
+    setCoachErrors([]);
+    let totalDone = 0;
+
+    for (let i = 0; i < COACH_COLOR_ORDER.length; i++) {
+      const color = COACH_COLOR_ORDER[i];
+      setCoachColorIdx(i);
+      let remaining = 1;
+      while (remaining > 0) {
+        setCoachStatus(`[${color}] Génération en cours... ${totalDone} carte(s) traitée(s) au total.`);
+        const res = await fetch("/api/admin/generate-coach-content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ color, limit: 5 }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          setCoachStatus(`[${color}] Erreur : ${data.error} — passage à la couleur suivante.`);
+          break;
+        }
+        totalDone += data.processed ?? 0;
+        setCoachDone(totalDone);
+        if (data.results) {
+          const errs = data.results.filter((r: any) => !r.ok).map((r: any) => ({ cardNumber: r.cardNumber, error: r.error }));
+          if (errs.length) setCoachErrors((prev) => [...prev, ...errs]);
+        }
+        remaining = data.remaining ?? 0;
+        if (data.processed === 0) break; // rien traité, on évite une boucle infinie
+      }
+    }
+
+    setCoachColorIdx(null);
+    setCoachStatus(`Génération terminée. ${totalDone} carte(s) traitée(s) au total.`);
+    setCoachBusy(false);
+  }
+
   function toggleImportColor(color: string) {
     setImportColors((prev) => (prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]));
   }
@@ -438,6 +485,35 @@ export default function CardsPage() {
                 )}
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* GÉNÉRATION CONTENU COACH — traduction + explications, via API Anthropic */}
+      <div className="card-tile p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-ivory">Contenu Coach (traduction FR + explications)</h3>
+        </div>
+        <p className="text-xs text-textMuted mt-1 mb-3">
+          Génère automatiquement, pour chaque carte pas encore traitée : traduction française du texte officiel, explication pédagogique, et — selon la couleur — analyse Mihawk ou impact matchup. Ordre : Vert → Rouge → Violet → Jaune → Noir.
+        </p>
+        <button onClick={runCoachGeneration} disabled={coachBusy} className="btn btn-primary">
+          {coachBusy ? "Génération en cours..." : "Générer le contenu Coach (toutes couleurs)"}
+        </button>
+        {coachColorIdx !== null && (
+          <div className="text-xs font-mono text-emerald-bright mt-2">
+            Couleur {coachColorIdx + 1} / {COACH_COLOR_ORDER.length} : {COACH_COLOR_ORDER[coachColorIdx]}
+          </div>
+        )}
+        {coachStatus && <div className="text-xs text-steel mt-2">{coachStatus}</div>}
+        {coachErrors.length > 0 && (
+          <div className="mt-3 text-xs">
+            <div className="text-danger mb-1">{coachErrors.length} carte(s) en erreur :</div>
+            <div className="bg-panel2 p-3 rounded-lg font-mono max-h-48 overflow-y-auto space-y-1">
+              {coachErrors.slice(0, 20).map((e, i) => (
+                <div key={i} className="text-steel/70">{e.cardNumber} : <span className="text-danger">{e.error}</span></div>
+              ))}
+            </div>
           </div>
         )}
       </div>

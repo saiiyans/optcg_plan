@@ -87,51 +87,68 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
               {card.coachReviewed && card.coachExplanationFr ? card.coachExplanationFr : "Explication à venir."}
             </p>
           </div>
-          <div className="pt-2 border-t border-line">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-bright mb-1">🦅 Mihawk Analysis</div>
-            {card.coachReviewed && card.mihawkAnalysisFr ? (
-              <>
-                <p className="text-sm text-steel/90 leading-relaxed mb-2">{card.mihawkAnalysisFr}</p>
-                <div className="grid sm:grid-cols-2 gap-3 text-xs">
-                  {card.mihawkPros && (
-                    <div>
-                      <div className="text-emerald-bright font-mono uppercase text-[10px] mb-1">Pros</div>
-                      {(JSON.parse(card.mihawkPros) as string[]).map((p) => <div key={p} className="text-steel/80">✓ {p}</div>)}
-                    </div>
-                  )}
-                  {card.mihawkCons && (
-                    <div>
-                      <div className="text-red-400 font-mono uppercase text-[10px] mb-1">Cons</div>
-                      {(JSON.parse(card.mihawkCons) as string[]).map((c) => <div key={c} className="text-steel/80">✗ {c}</div>)}
-                    </div>
-                  )}
-                </div>
-                {card.mihawkCommonUse && (
-                  <div className="mt-2 text-xs"><span className="text-gold font-mono uppercase text-[10px]">Common use — </span><span className="text-steel/80">{card.mihawkCommonUse}</span></div>
-                )}
-                {card.mihawkCommonMistake && (
-                  <div className="mt-1 text-xs"><span className="text-gold font-mono uppercase text-[10px]">Common mistake — </span><span className="text-steel/80">{card.mihawkCommonMistake}</span></div>
-                )}
-                {card.mihawkSynergies && JSON.parse(card.mihawkSynergies).length > 0 && (
-                  <div className="mt-2 text-xs flex items-start gap-2 flex-wrap">
-                    <span className="text-gold font-mono uppercase text-[10px] pt-2">Synergies —</span>
-                    {(JSON.parse(card.mihawkSynergies) as string[]).map((s) => (
-                      <CardThumb key={s} cardNumber={s} size={48} />
-                    ))}
+          {card.color?.toLowerCase().includes("green") ? (
+            <div className="pt-2 border-t border-line">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-bright mb-1">🦅 Mihawk Analysis</div>
+              {card.coachReviewed && card.mihawkAnalysisFr ? (
+                <>
+                  <p className="text-sm text-steel/90 leading-relaxed mb-2">{card.mihawkAnalysisFr}</p>
+                  <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                    {card.mihawkPros && (
+                      <div>
+                        <div className="text-emerald-bright font-mono uppercase text-[10px] mb-1">Pros</div>
+                        {(JSON.parse(card.mihawkPros) as string[]).map((p) => <div key={p} className="text-steel/80">✓ {p}</div>)}
+                      </div>
+                    )}
+                    {card.mihawkCons && (
+                      <div>
+                        <div className="text-red-400 font-mono uppercase text-[10px] mb-1">Cons</div>
+                        {(JSON.parse(card.mihawkCons) as string[]).map((c) => <div key={c} className="text-steel/80">✗ {c}</div>)}
+                      </div>
+                    )}
                   </div>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-steel/60">No Mihawk analysis available yet.</p>
-            )}
-          </div>
+                  {card.mihawkCommonUse && (
+                    <div className="mt-2 text-xs"><span className="text-gold font-mono uppercase text-[10px]">Common use — </span><span className="text-steel/80">{card.mihawkCommonUse}</span></div>
+                  )}
+                  {card.mihawkCommonMistake && (
+                    <div className="mt-1 text-xs"><span className="text-gold font-mono uppercase text-[10px]">Common mistake — </span><span className="text-steel/80">{card.mihawkCommonMistake}</span></div>
+                  )}
+                  {card.mihawkSynergies && JSON.parse(card.mihawkSynergies).length > 0 && (
+                    <div className="mt-2 text-xs flex items-start gap-2 flex-wrap">
+                      <span className="text-gold font-mono uppercase text-[10px] pt-2">Synergies —</span>
+                      {(JSON.parse(card.mihawkSynergies) as string[]).map((s) => (
+                        <CardThumb key={s} cardNumber={s} size={48} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-steel/60">No Mihawk analysis available yet.</p>
+              )}
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-line">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-red-400 mb-1">⚔️ Impact vs Mihawk</div>
+              {card.coachReviewed && card.opponentMatchupNote ? (
+                <p className="text-sm text-steel/90 leading-relaxed">{card.opponentMatchupNote}</p>
+              ) : (
+                <p className="text-sm text-steel/60">Analyse à venir.</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="card-tile p-4">
-          <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Texte officiel</div>
+          <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Texte officiel 🇬🇧</div>
           <p className="text-sm text-white leading-relaxed">{card.officialText ?? "Aucun effet On Play/Activate détecté."}</p>
           {card.triggerText && (
             <p className="text-sm text-emerald-bright mt-2">[Trigger] {card.triggerText}</p>
+          )}
+          {card.officialTextFr && (
+            <>
+              <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2 mt-4 pt-3 border-t border-line">Texte officiel — traduction 🇫🇷</div>
+              <p className="text-sm text-white leading-relaxed">{card.officialTextFr}</p>
+            </>
           )}
           <div className="text-xs text-steel/60 mt-3">Types : {card.types || "—"}</div>
         </div>
