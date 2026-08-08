@@ -5,8 +5,13 @@ import { useRouter } from "next/navigation";
 import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
 
-const SEARCH_URL =
-  "https://onepiece.limitlesstcg.com/cards/?q=category%3Aleader%2Ccharacter%2Cevent%2Cstage%20color%3Agreen%20lang%3Aen%20display%3Agrid%20sort%3Aid";
+function searchUrlForColor(color: string) {
+  return `https://onepiece.limitlesstcg.com/cards/?q=${encodeURIComponent(
+    `category:leader,character,event,stage color:${color} lang:en display:grid sort:id`
+  )}`;
+}
+
+const ALL_IMPORT_COLORS = ["green", "red", "blue", "purple", "black", "yellow"] as const;
 
 const EMPTY_FILTERS = {
   category: "",
@@ -102,6 +107,7 @@ export default function CardsPage() {
   // données (voir /api/library-stats), plus besoin de charger toutes les
   // cartes juste pour les compter.
   const [libraryTotal, setLibraryTotal] = useState<number | null>(null);
+  const [libraryTotalAllColors, setLibraryTotalAllColors] = useState<number | null>(null);
   const [leaderStats, setLeaderStats] = useState<{ fiveStarCount: number; inDeckCount: number } | null>(null);
   const [coachProgress, setCoachProgress] = useState<{ deckReviewed: number; deckTotal: number; libraryReviewed: number; libraryTotal: number } | null>(null);
   const [statsError, setStatsError] = useState(false);
@@ -113,6 +119,7 @@ export default function CardsPage() {
       const d = await res.json();
       if (!d.ok) throw new Error();
       setLibraryTotal(d.library.totalGreenCards);
+      setLibraryTotalAllColors(d.library.totalAllCards);
       setLeaderStats(d.leaderStats);
       setCoachProgress(d.coachProgress);
     } catch {
@@ -125,11 +132,17 @@ export default function CardsPage() {
   }, [loadStats]);
 
   const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
+  const [importColors, setImportColors] = useState<string[]>(["green"]);
+  const [colorProgress, setColorProgress] = useState<{ color: string; index: number; total: number } | null>(null);
+
+  function toggleImportColor(color: string) {
+    setImportColors((prev) => (prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]));
+  }
 
   async function runPreview() {
     setImportBusy(true);
-    setImportStatus("Comptage des cartes sur Limitless...");
-    const res = await fetch(`/api/import/preview?mode=count&url=${encodeURIComponent(SEARCH_URL)}`);
+    setImportStatus(`Comptage des cartes ${importColors[0] ?? "green"} sur Limitless...`);
+    const res = await fetch(`/api/import/preview?mode=count&url=${encodeURIComponent(searchUrlForColor(importColors[0] ?? "green"))}`);
     const data = await res.json();
     setPreviewResult(data);
     setImportStatus(data.ok ? "" : `Erreur : ${data.error}`);
@@ -138,8 +151,8 @@ export default function CardsPage() {
 
   async function runTest5() {
     setImportBusy(true);
-    setImportStatus("Test de l'importateur sur 5 cartes réelles...");
-    const res = await fetch(`/api/import/preview?mode=test5&url=${encodeURIComponent(SEARCH_URL)}`);
+    setImportStatus(`Test de l'importateur sur 5 cartes ${importColors[0] ?? "green"} réelles...`);
+    const res = await fetch(`/api/import/preview?mode=test5&url=${encodeURIComponent(searchUrlForColor(importColors[0] ?? "green"))}`);
     const data = await res.json();
     setTestResult(data);
     setImportStatus(data.ok ? "Test terminé — vérifie les résultats ci-dessous." : `Erreur : ${data.error}`);
@@ -151,67 +164,84 @@ export default function CardsPage() {
   // fonction Vercel. L'ancienne approche (tout en une seule requête) se
   // faisait couper avant la fin sur un gros volume — ce n'était pas un
   // problème de contenu, juste un dépassement de temps.
+  //
+  // Pour plusieurs couleurs à la fois : même logique, répétée une couleur
+  // après l'autre (jamais en parallèle) — scraper les 6 couleurs en une
+  // seule requête de comptage dépasserait très largement les limites de
+  // temps (~30s pour une couleur × 6 ≈ plusieurs minutes d'un coup), donc
+  // chaque couleur reste une étape courte et sûre à elle seule, comme
+  // avant.
   async function runFullImport() {
-    if (!confirm("Importer toutes les cartes vertes (leaders compris) trouvées sur Limitless ? Cela peut prendre plusieurs minutes, mais tu peux garder l'onglet ouvert sans crainte de blocage cette fois.")) return;
-    setImportBusy(true);
-    setImportStatus("Récupération de la liste complète des cartes...");
-    setImportErrors([]);
-
-    const listRes = await fetch(`/api/import/preview?mode=count&url=${encodeURIComponent(SEARCH_URL)}`);
-    const listData = await listRes.json();
-    if (!listData.ok) {
-      setImportStatus(`Erreur : ${listData.error}`);
-      setImportBusy(false);
+    if (importColors.length === 0) {
+      alert("Sélectionne au moins une couleur à importer.");
       return;
     }
-    const allNumbers: string[] = listData.allNumbers ?? [];
-    const BATCH_SIZE = 15;
-    const batches: string[][] = [];
-    for (let i = 0; i < allNumbers.length; i += BATCH_SIZE) batches.push(allNumbers.slice(i, i + BATCH_SIZE));
+    const colorLabel = importColors.length === ALL_IMPORT_COLORS.length ? "toutes les couleurs" : importColors.join(", ");
+    if (!confirm(`Importer les cartes ${colorLabel} (leaders compris) trouvées sur Limitless ? Avec plusieurs couleurs, cela peut prendre plusieurs minutes au total — tu peux garder l'onglet ouvert sans crainte de blocage.`)) return;
 
-    let logId: string | null = null;
-    let totalImported = 0, totalUpdated = 0, totalSkipped = 0;
-    const allErrors: { cardNumber: string; error: string }[] = [];
-    setImportProgress({ done: 0, total: allNumbers.length });
+    setImportBusy(true);
+    setImportErrors([]);
 
-    for (let i = 0; i < batches.length; i++) {
-      const isLast = i === batches.length - 1;
-      const res: Response = await fetch("/api/import/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ numbers: batches[i], sourceUrl: SEARCH_URL, logId, finish: isLast }),
-      });
-      const data: any = await res.json();
-      if (!data.ok) {
-        setImportStatus(`Erreur sur un lot : ${data.error} — les lots précédents restent importés.`);
-        setImportBusy(false);
-        setImportProgress(null);
-        loadCards();
-        return;
+    let grandTotalImported = 0, grandTotalUpdated = 0, grandTotalSkipped = 0;
+    const allErrorsAcrossColors: { cardNumber: string; error: string }[] = [];
+
+    for (let colorIdx = 0; colorIdx < importColors.length; colorIdx++) {
+      const color = importColors[colorIdx];
+      setColorProgress({ color, index: colorIdx + 1, total: importColors.length });
+      setImportStatus(`[${color}] Récupération de la liste complète des cartes...`);
+
+      const url = searchUrlForColor(color);
+      const listRes = await fetch(`/api/import/preview?mode=count&url=${encodeURIComponent(url)}`);
+      const listData = await listRes.json();
+      if (!listData.ok) {
+        setImportStatus(`[${color}] Erreur : ${listData.error} — passage à la couleur suivante.`);
+        continue;
       }
-      logId = data.logId;
-      totalImported += data.imported;
-      totalUpdated += data.updated;
-      totalSkipped += data.skipped;
-      if (data.errors?.length) allErrors.push(...data.errors);
-      setImportProgress({ done: Math.min((i + 1) * BATCH_SIZE, allNumbers.length), total: allNumbers.length });
-      setImportStatus(`Import en cours... ${Math.min((i + 1) * BATCH_SIZE, allNumbers.length)} / ${allNumbers.length} cartes traitées.`);
+      const allNumbers: string[] = listData.allNumbers ?? [];
+      const BATCH_SIZE = 15;
+      const batches: string[][] = [];
+      for (let i = 0; i < allNumbers.length; i += BATCH_SIZE) batches.push(allNumbers.slice(i, i + BATCH_SIZE));
+
+      let logId: string | null = null;
+      setImportProgress({ done: 0, total: allNumbers.length });
+
+      for (let i = 0; i < batches.length; i++) {
+        const isLast = i === batches.length - 1;
+        const res: Response = await fetch("/api/import/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ numbers: batches[i], sourceUrl: url, logId, finish: isLast }),
+        });
+        const data: any = await res.json();
+        if (!data.ok) {
+          setImportStatus(`[${color}] Erreur sur un lot : ${data.error} — les lots précédents restent importés, passage à la couleur suivante.`);
+          break;
+        }
+        logId = data.logId;
+        grandTotalImported += data.imported;
+        grandTotalUpdated += data.updated;
+        grandTotalSkipped += data.skipped;
+        if (data.errors?.length) allErrorsAcrossColors.push(...data.errors);
+        setImportProgress({ done: Math.min((i + 1) * BATCH_SIZE, allNumbers.length), total: allNumbers.length });
+        setImportStatus(`[${color}] Import en cours... ${Math.min((i + 1) * BATCH_SIZE, allNumbers.length)} / ${allNumbers.length} cartes traitées.`);
+      }
     }
 
-    setImportStatus(`Import terminé : ${totalImported} ajoutées, ${totalUpdated} mises à jour, ${totalSkipped} erreurs.`);
-    setImportErrors(allErrors);
+    setImportStatus(`Import terminé (${colorLabel}) : ${grandTotalImported} ajoutées, ${grandTotalUpdated} mises à jour, ${grandTotalSkipped} erreurs.`);
+    setImportErrors(allErrorsAcrossColors);
     setImportProgress(null);
+    setColorProgress(null);
     setImportBusy(false);
     loadCards();
   }
 
   async function runSync() {
     setImportBusy(true);
-    setImportStatus("Recherche de nouvelles cartes...");
+    setImportStatus(`Recherche de nouvelles cartes ${importColors[0] ?? "green"}...`);
     const res = await fetch("/api/import/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: SEARCH_URL }),
+      body: JSON.stringify({ url: searchUrlForColor(importColors[0] ?? "green") }),
     });
     const data = await res.json();
     setImportStatus(
@@ -277,6 +307,7 @@ export default function CardsPage() {
         ) : (
           <>
             <StatTile value={libraryTotal ?? "…"} label="Green Cards" />
+            <StatTile value={libraryTotalAllColors ?? "…"} label="Toutes couleurs" />
             <StatTile value={leaderKey === "mihawk" ? `${leaderStats?.inDeckCount ?? "…"}` : "—"} label="Cards In My Deck" />
             <StatTile value={leaderStats?.fiveStarCount ?? "…"} label={`5★ ${leader.label.split(" ")[0]}`} accent />
             <StatTile value={totalFiltered} label="Résultats filtrés" />
@@ -301,6 +332,26 @@ export default function CardsPage() {
         </button>
         {showImport && (
           <div className="mt-4 pt-4 border-t border-line">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="text-[10px] uppercase tracking-wider text-textMuted mr-1">Couleur(s) à importer :</span>
+              {ALL_IMPORT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => toggleImportColor(c)}
+                  disabled={importBusy}
+                  className={`chip ${importColors.includes(c) ? "chip-active" : ""}`}
+                >
+                  {c}
+                </button>
+              ))}
+              <button
+                onClick={() => setImportColors(importColors.length === ALL_IMPORT_COLORS.length ? [] : [...ALL_IMPORT_COLORS])}
+                disabled={importBusy}
+                className="chip"
+              >
+                {importColors.length === ALL_IMPORT_COLORS.length ? "Aucune" : "Toutes"}
+              </button>
+            </div>
             <div className="flex items-center gap-2 mb-3 text-xs text-textMuted flex-wrap">
               <StepPill n={1} label="Compter" />
               <span>→</span>
@@ -310,6 +361,11 @@ export default function CardsPage() {
               <span>→</span>
               <StepPill n={4} label="Synchroniser" />
             </div>
+            {colorProgress && (
+              <div className="text-xs font-mono text-emerald-bright mb-2">
+                Couleur {colorProgress.index} / {colorProgress.total} : {colorProgress.color}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-2 mb-3">
               <button onClick={runPreview} disabled={importBusy} className="btn">1. Compter les cartes</button>
               <button onClick={runTest5} disabled={importBusy} className="btn">2. Tester sur 5 cartes</button>

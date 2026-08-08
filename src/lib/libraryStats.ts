@@ -4,6 +4,7 @@ import { getLeader } from "./leaders";
 
 export interface LibraryStats {
   totalGreenCards: number; // références uniques importées (toutes catégories confondues)
+  totalAllCards: number; // toutes couleurs confondues
   cardsWithImage: number; // références avec une image (donc bien affichables partout)
   cardsWithoutImage: number;
 }
@@ -26,12 +27,14 @@ export interface LeaderCardStats {
  * sa propre requête, pour ne plus jamais avoir deux totaux différents.
  */
 export async function computeLibraryStats(): Promise<LibraryStats> {
-  const [totalGreenCards, cardsWithImage] = await Promise.all([
+  const [totalGreenCards, totalAllCards, cardsWithImage] = await Promise.all([
     db.card.count({ where: { color: { contains: "Green", mode: "insensitive" } } }),
+    db.card.count(),
     db.card.count({ where: { color: { contains: "Green", mode: "insensitive" }, imageUrl: { not: "" } } }),
   ]);
   return {
     totalGreenCards,
+    totalAllCards,
     cardsWithImage,
     cardsWithoutImage: totalGreenCards - cardsWithImage,
   };
