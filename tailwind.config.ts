@@ -6,33 +6,43 @@ const config: Config = {
     extend: {
       colors: {
         // Alias historiques (utilisés dans tout le code existant) — remappés
-        // vers la nouvelle palette "Premium Competitive TCG Dashboard" pour
-        // transformer visuellement l'app sans devoir renommer chaque classe.
-        ink: "#07100d", // --background
-        panel: "#0d1914", // --surface
-        panel2: "#13221b", // --surface-elevated
-        surfaceHover: "#192d23",
-        line: "rgba(144, 196, 164, 0.16)", // --border
-        lineStrong: "rgba(144, 196, 164, 0.30)", // --border-strong
+        // vers la palette "Competitive TCG Performance App" (refonte
+        // graphique). Aucune classe Tailwind n'a besoin de changer dans les
+        // ~50 fichiers qui les consomment déjà : seules les valeurs changent.
+        ink: "#090B0F", // --background
+        panel: "#10141B", // --surface
+        panel2: "#151A22", // --surface-elevated / cards-panels
+        surfaceHover: "#1A2029",
+        line: "rgba(255, 255, 255, 0.07)", // --border
+        lineStrong: "rgba(255, 255, 255, 0.16)", // --border-strong
         emerald: {
-          DEFAULT: "#3fc47c",
-          bright: "#66e49c",
-          dim: "#204f37", // --emerald-muted, utilisé comme fond de pastille
+          DEFAULT: "#36D98B", // --primary-accent
+          bright: "#7CF5B3", // --secondary-green
+          dim: "#122A20", // fond sombre desaturé pour pastilles/badges
         },
-        steel: "#aab9b0", // --text-secondary
-        textMuted: "#708078",
-        ivory: "#f4f1e8",
-        gold: "#e4b94f",
-        danger: "#ed6a6a",
+        steel: "#98A2B3", // --text-secondary
+        textMuted: "#667085", // --muted
+        ivory: "#F5F7FA", // --text
+        gold: "#F5C451", // --gold / achievement
+        danger: "#FF5C64", // --error / loss
       },
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-fraunces)", "Georgia", "serif"],
+        display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
         mono: ["'JetBrains Mono'", "'Courier New'", "monospace"],
       },
       boxShadow: {
-        card: "0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px -14px rgba(0,0,0,0.65)",
-        elevated: "0 1px 0 rgba(255,255,255,0.04) inset, 0 16px 40px -18px rgba(0,0,0,0.75)",
+        // Ombres très légères — la palette sombre + les bordures subtiles
+        // suffisent à créer la hiérarchie, pas besoin d'ombres marquées.
+        card: "0 1px 0 rgba(255,255,255,0.02) inset, 0 4px 16px -10px rgba(0,0,0,0.5)",
+        elevated: "0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 32px -16px rgba(0,0,0,0.6)",
+      },
+      borderRadius: {
+        // Système d'arrondis unifié pour la refonte (12-16px) — les classes
+        // rounded-lg/rounded-xl existantes en profitent automatiquement.
+        lg: "12px",
+        xl: "14px",
+        "2xl": "16px",
       },
     },
   },

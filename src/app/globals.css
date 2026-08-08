@@ -7,55 +7,57 @@ html {
 }
 
 body {
-  /* Plusieurs couches de dégradés très subtils plutôt qu'un noir uniforme —
-     ça crée de la profondeur sans virer au néon. */
+  /* Fond quasi uni, avec juste une amorce de profondeur en haut de page —
+     la consigne de refonte est explicite : rester sobre, ne pas mettre de
+     glow ni de dégradés partout, pour laisser les illustrations des cartes
+     One Piece (déjà très colorées) porter l'énergie visuelle. */
   background:
-    radial-gradient(ellipse 1000px 600px at 12% -8%, rgba(63, 196, 124, 0.10), transparent 55%),
-    radial-gradient(ellipse 700px 500px at 88% 0%, rgba(228, 185, 79, 0.05), transparent 50%),
-    linear-gradient(180deg, #0d1914 0%, #07100d 55%);
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(54, 217, 139, 0.05), transparent 60%),
+    #090B0F;
   min-height: 100dvh;
 }
 
 ::selection {
-  background: rgba(228, 185, 79, 0.3);
+  background: rgba(54, 217, 139, 0.25);
 }
 
 *:focus-visible {
-  outline: 2px solid #3fc47c;
+  outline: 2px solid #36D98B;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Cartes / panneaux — profondeur via bordure légère + ombre discrète */
+/* Cartes / panneaux — profondeur via bordure très subtile + ombre légère,
+   pas de dégradé marqué (direction "sobre, premium" plutôt que "glow"). */
 .card-tile {
-  background: linear-gradient(180deg, #0d1914 0%, #13221b 100%);
-  border: 1px solid rgba(144, 196, 164, 0.16);
-  border-radius: 12px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -14px rgba(0, 0, 0, 0.65);
-  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  background: #151A22;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 4px 16px -10px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 .card-tile:hover {
-  border-color: rgba(144, 196, 164, 0.30);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .star {
-  color: #23342a;
+  color: #262B33;
 }
 .star.filled {
-  color: #e4b94f;
+  color: #F5C451;
 }
 
 .btn {
-  @apply bg-panel2 border border-line text-steel text-sm font-medium px-4 py-2.5 rounded-lg hover:border-lineStrong hover:text-ivory active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100;
+  @apply bg-panel2 border border-line text-steel text-sm font-medium px-4 py-2.5 rounded-xl hover:border-lineStrong hover:text-ivory active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100;
 }
 .btn-primary {
   @apply bg-emerald-dim border-emerald text-emerald-bright;
 }
 .input {
-  @apply bg-ink border border-line text-ivory text-sm px-3.5 py-2.5 rounded-lg placeholder:text-textMuted;
+  @apply bg-ink border border-line text-ivory text-sm px-3.5 py-2.5 rounded-xl placeholder:text-textMuted transition-colors duration-150;
 }
 .input:focus {
-  border-color: #3fc47c;
+  border-color: #36D98B;
 }
 .badge {
   @apply text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-panel2 border border-line text-steel;
@@ -83,7 +85,7 @@ body {
 
 /* Chips de filtres rapides */
 .chip {
-  @apply text-xs font-medium px-3.5 py-2 rounded-full bg-panel2 border border-line text-steel hover:border-lineStrong hover:text-ivory transition-colors whitespace-nowrap;
+  @apply text-xs font-medium px-3.5 py-2 rounded-full bg-panel2 border border-line text-steel hover:border-lineStrong hover:text-ivory transition-colors duration-150 whitespace-nowrap;
 }
 .chip-active {
   @apply bg-emerald-dim border-emerald text-emerald-bright;
@@ -100,9 +102,9 @@ body {
   50% { opacity: 0.9; }
 }
 .skeleton {
-  background: #13221b;
+  background: #151A22;
   animation: skeleton-pulse 1.6s ease-in-out infinite;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 /* Enveloppe pour tableaux : défilement horizontal fluide sur mobile plutôt

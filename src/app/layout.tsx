@@ -1,11 +1,11 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { NavLinks } from "@/components/NavLinks";
 import { LeaderImage } from "@/components/LeaderImage";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const fraunces = Fraunces({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-fraunces", display: "swap" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-space-grotesk", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Green Card Library — Mihawk OP14-020",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="fr" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="bg-ink text-steel min-h-screen font-sans">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-24 md:pb-6">
           <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 mb-6 bg-ink/85 backdrop-blur-md border-b border-line">
