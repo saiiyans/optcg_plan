@@ -110,6 +110,10 @@ export const DEFAULT_OBJECTIVES: DefaultObjective[] = [
   { category: "strat", order: 3, text: "Matchups historiquement difficiles contre les piliers OP13 : Imu et Portgas D. Ace" },
   { category: "strat", order: 4, text: "Anticiper les nouvelles cartes de retrait (removal) apportées par OP17" },
   { category: "strat", order: 5, text: "Gérer le tempo face aux decks qui accélèrent la génération de DON!!" },
+  { category: "strat", order: 6, text: "[Conseil communautaire] Mulligan Mihawk — premier : garder Coffin Boat + Perona 1 coût + idéalement Tashigi/Shanks/Law. Second : même base + Perona 5 coût ou Tashigi + Law 6 coût" },
+  { category: "strat", order: 7, text: "[Conseil communautaire] Séquencer Shanks (OP14-027) avant Law & Bepo (ST24-004) pour garantir le bonus +2000 du leader (Law & Bepo n'a besoin que d'1 seul perso adverse déjà reposé par Shanks)" },
+  { category: "strat", order: 8, text: "[Conseil communautaire] Reconnaître le moment où l'adversaire est assez verrouillé pour ignorer le board et foncer sur son leader directement" },
+  { category: "strat", order: 9, text: "[Observation isolée, à vérifier] Jinbe signalé comme le matchup le plus défavorable par un joueur compétitif (un seul avis, pas une donnée de tournoi agrégée)" },
   // Matchups
   { category: "matchups", order: 1, text: "Mihawk vs Enel (OP15-058) — meilleur deck actuel, priorité haute — viser 5 parties minimum" },
   { category: "matchups", order: 2, text: "Shanks vs Enel (OP15-058) — même priorité, dès que le deck Shanks est jouable" },

@@ -13,6 +13,15 @@ import {
 } from "@/lib/deckProfile";
 import { LeaderImage } from "@/components/LeaderImage";
 import { CardThumb } from "@/components/CardThumb";
+import {
+  MIHAWK_GAME_PLAN,
+  MIHAWK_CORE_CARDS,
+  MIHAWK_MULLIGAN,
+  MIHAWK_TURN_GUIDE,
+  MIHAWK_PRINCIPLES,
+  MIHAWK_MATCHUP_NOTES,
+  MIHAWK_SOURCES,
+} from "@/lib/mihawkGamePlan";
 
 export default function DeckProfilePage() {
   const totalCards = MIHAWK_REFERENCE_DECK.cards.reduce((s, c) => s + c.quantity, 0);
@@ -122,6 +131,94 @@ export default function DeckProfilePage() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* GAME PLAN SOURCÉ (niveau 3 — conseils communautaires, à tester) */}
+      <div className="card-tile p-5 border-emerald/40">
+        <div className="flex items-center justify-between border-b border-line pb-2 mb-3">
+          <h2 className="font-mono text-xs uppercase tracking-widest text-gold">📚 Plan de jeu — guides communautaires</h2>
+          <span className="badge badge-gold text-[9px]">Conseil stratégique · Niveau 3</span>
+        </div>
+        <p className="text-xs text-steel/60 mb-3">
+          Synthétisé à partir de guides publics sur OP14-020 (voir sources en bas de section). Ce sont des conseils à tester et ajuster à ton feeling en partie, pas des règles officielles.
+        </p>
+        <p className="text-sm text-white mb-4">{MIHAWK_GAME_PLAN.summary}</p>
+
+        <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Rôle des cartes clés</div>
+        <div className="space-y-2 mb-4">
+          {MIHAWK_CORE_CARDS.map((c) => (
+            <div key={c.cardNumber} className="bg-panel2 rounded-lg p-3 flex gap-3 items-start">
+              <CardThumb cardNumber={c.cardNumber} size={48} showLabel={false} />
+              <div className="min-w-0">
+                <div className="text-xs font-mono text-white">{c.role} <span className="text-steel/50">({c.runCount})</span></div>
+                <div className="text-xs text-steel/70 mt-0.5">{c.note}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Mulligan</div>
+            <div className="text-xs text-steel/80 mb-2"><span className="text-emerald-bright">Premier :</span> {MIHAWK_MULLIGAN.goingFirst}</div>
+            <div className="text-xs text-steel/80"><span className="text-emerald-bright">Second :</span> {MIHAWK_MULLIGAN.goingSecond}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Principes généraux</div>
+            <ul className="space-y-1">
+              {MIHAWK_PRINCIPLES.map((p) => (
+                <li key={p} className="text-xs text-steel/70">• {p}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Courbe — premier</div>
+            <div className="space-y-1">
+              {MIHAWK_TURN_GUIDE.goingFirst.map((t) => (
+                <div key={t.turn} className="text-xs text-steel/70">
+                  <span className="text-white font-mono">T{t.turn} ({t.don} DON) :</span> {t.play}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Courbe — second</div>
+            <div className="space-y-1">
+              {MIHAWK_TURN_GUIDE.goingSecond.map((t) => (
+                <div key={t.turn} className="text-xs text-steel/70">
+                  <span className="text-white font-mono">T{t.turn} ({t.don} DON) :</span> {t.play}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Observations de matchups</div>
+          <div className="space-y-2">
+            {MIHAWK_MATCHUP_NOTES.map((m) => (
+              <div key={m.opponent} className="bg-panel2 rounded-lg p-3">
+                <div className="text-xs font-mono text-white">
+                  {m.opponent} <span className="badge badge-gold text-[9px] ml-1">{m.confidence}</span>
+                </div>
+                <div className="text-xs text-steel/70 mt-1">{m.note}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-3 border-t border-line">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-steel/50 mb-1">Sources</div>
+          {MIHAWK_SOURCES.map((s) => (
+            <div key={s.url} className="text-[10px] text-steel/50">
+              {s.name} — {s.date} —{" "}
+              <a href={s.url} target="_blank" rel="noreferrer" className="text-emerald-bright hover:underline">{s.url}</a>
+            </div>
+          ))}
         </div>
       </div>
 
