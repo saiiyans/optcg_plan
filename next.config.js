@@ -6,6 +6,8 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "limitlesstcg.nyc3.cdn.digitaloceanspaces.com" },
       { protocol: "https", hostname: "onepiece.limitlesstcg.com" },
+      // Source des images OP17 leak/reveal — voir /api/admin/import-op17-leaks
+      { protocol: "https", hostname: "spellmana.com" },
     ],
   },
   // @sparticuz/chromium et puppeteer-core (synchronisation Kaizoku) livrent

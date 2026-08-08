@@ -61,14 +61,19 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
             <span className="badge">{card.color}</span>
             {card.attribute && <span className="badge">{card.attribute}</span>}
             <span className={`badge ${card.legalityStatus?.toLowerCase().includes("illegal") ? "badge-red" : "badge-green"}`}>
-              {card.legalityStatus ?? "Légalité inconnue"}
+              {card.legalityStatus ?? (card.isLeak ? "Non légal — pas encore sorti" : "Légalité inconnue")}
             </span>
+            {card.isLeak && <span className="badge badge-gold">🔥 LEAK — non officiellement sorti</span>}
             {deckQty > 0 && <span className="badge badge-gold">x{deckQty} — Dans mon deck Mihawk</span>}
           </div>
         </div>
 
         <div className="grid grid-cols-4 gap-3 text-center">
-          <Stat label="Coût" value={card.cost ?? "—"} />
+          {card.category === "Leader" ? (
+            <Stat label="Vie" value={card.life ?? "—"} />
+          ) : (
+            <Stat label="Coût" value={card.cost ?? "—"} />
+          )}
           <Stat label="Puissance" value={card.power ?? "—"} />
           <Stat label="Counter" value={card.counter ? `+${card.counter}` : "—"} />
           <Stat label="Bloc" value={card.block ?? "—"} />

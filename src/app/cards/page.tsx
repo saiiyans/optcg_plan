@@ -22,6 +22,7 @@ const EMPTY_FILTERS = {
   set: "",
   color: "",
   inDeckOnly: false,
+  leaksOnly: false,
   reviewed: "",
   q: "",
 };
@@ -144,7 +145,7 @@ export default function CardsPage() {
   const [coachErrors, setCoachErrors] = useState<{ cardNumber: string; error: string }[]>([]);
 
   async function runCoachGeneration() {
-    if (!confirm("Générer le contenu Coach (traduction FR + explications) pour toutes les couleurs, dans l'ordre Vert → Rouge → Violet → Jaune → Noir ? Ça appelle l'API Anthropic et peut prendre longtemps + avoir un coût.")) return;
+    if (!confirm("Générer le contenu Coach (traduction FR + explications) pour toutes les couleurs, dans l'ordre Vert → Rouge → Violet → Jaune → Noir ? Ça appelle l'API Gemini (gratuite) et peut prendre longtemps vu le volume de cartes.")) return;
     setCoachBusy(true);
     setCoachDone(0);
     setCoachErrors([]);
@@ -321,6 +322,7 @@ export default function CardsPage() {
   if (filters.set) activeChips.push({ key: "set", label: `Set ${filters.set}` });
   if (filters.color) activeChips.push({ key: "color", label: filters.color === "all" ? "Toutes couleurs" : `Couleur ${filters.color}` });
   if (filters.inDeckOnly) activeChips.push({ key: "inDeckOnly", label: "In My Deck" });
+  if (filters.leaksOnly) activeChips.push({ key: "leaksOnly", label: "🔥 Leaks" });
   if (filters.reviewed) activeChips.push({ key: "reviewed", label: filters.reviewed === "true" ? "Coach Reviewed" : "Not Reviewed" });
   if (filters.q) activeChips.push({ key: "q", label: `"${filters.q}"` });
 
@@ -489,7 +491,7 @@ export default function CardsPage() {
         )}
       </div>
 
-      {/* GÉNÉRATION CONTENU COACH — traduction + explications, via API Anthropic */}
+      {/* GÉNÉRATION CONTENU COACH — traduction + explications, via API Gemini (gratuite) */}
       <div className="card-tile p-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-ivory">Contenu Coach (traduction FR + explications)</h3>
@@ -540,6 +542,7 @@ export default function CardsPage() {
         {leaderKey === "mihawk" && (
           <button onClick={() => toggle("inDeckOnly", true)} className={`chip ${filters.inDeckOnly ? "chip-active" : ""}`}>In My Deck</button>
         )}
+        <button onClick={() => toggle("leaksOnly", true)} className={`chip ${filters.leaksOnly ? "chip-active" : ""}`}>🔥 Leaks</button>
         <button onClick={() => toggle("reviewed", "true")} className={`chip ${filters.reviewed === "true" ? "chip-active" : ""}`}>✓ Coach Reviewed</button>
         <button onClick={() => toggle("reviewed", "false")} className={`chip ${filters.reviewed === "false" ? "chip-active" : ""}`}>○ Not Reviewed</button>
         <button onClick={() => setShowAdvanced((s) => !s)} className="chip ml-auto">
@@ -550,7 +553,7 @@ export default function CardsPage() {
       {/* FILTRE PAR SET (OP16, ST32, EB01...) — se combine avec tous les autres */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[10px] uppercase tracking-wider text-textMuted mr-1">Set :</span>
-        {["OP", "ST", "EB", "PRB"].map((prefix) => (
+        {["OP", "ST", "EB", "PRB", "OP17"].map((prefix) => (
           <button key={prefix} onClick={() => toggle("set", prefix)} className={`chip ${filters.set === prefix ? "chip-active" : ""}`}>
             {prefix}
           </button>

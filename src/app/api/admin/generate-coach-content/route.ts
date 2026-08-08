@@ -5,12 +5,14 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const BATCH_SIZE = 5; // petits lots, comme l'import — reste largement sous les limites de temps
+const GEMINI_MODEL = "gemini-2.5-flash-lite"; // quota gratuit le plus généreux (~1000-1500 req/jour, sans carte bancaire)
 
 /**
  * POST /api/admin/generate-coach-content
  * Body: { color?: string, limit?: number }
  *
- * Génère via l'API Anthropic, pour un lot de cartes pas encore "reviewed" :
+ * Génère via l'API Gemini (gratuite, sans carte bancaire — voir GEMINI_API_KEY
+ * ci-dessous), pour un lot de cartes pas encore "reviewed" :
  * - officialTextFr (traduction fidèle du texte officiel anglais)
  * - coachExplanationFr (explication pédagogique originale, en français)
  * - Si color === "Green" : mihawkAnalysisFr, mihawkPros, mihawkCons
@@ -22,9 +24,9 @@ const BATCH_SIZE = 5; // petits lots, comme l'import — reste largement sous le
  * couvrir toute une couleur, exactement comme l'import de cartes.
  */
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ ok: false, error: "ANTHROPIC_API_KEY non configurée sur Vercel." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "GEMINI_API_KEY non configurée sur Vercel." }, { status: 500 });
   }
 
   try {
@@ -48,28 +50,28 @@ export async function POST(req: NextRequest) {
       const prompt = buildPrompt(card, isGreen);
 
       try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-          },
-          body: JSON.stringify({
-            model: "claude-haiku-4-5",
-            max_tokens: 700,
-            messages: [{ role: "user", content: prompt }],
-          }),
-        });
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: "application/json", maxOutputTokens: 800 },
+            }),
+          }
+        );
 
         if (!res.ok) {
           const errText = await res.text();
           results.push({ cardNumber: card.cardNumber, ok: false, error: `API ${res.status}: ${errText.slice(0, 200)}` });
+          // Pause un peu plus longue après une erreur (souvent un 429 = quota atteint pour la minute)
+          await new Promise((r) => setTimeout(r, 2000));
           continue;
         }
 
         const data = await res.json();
-        const text = data.content?.[0]?.text ?? "";
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
         const parsed = parseResponse(text);
 
         if (!parsed) {
@@ -94,6 +96,11 @@ export async function POST(req: NextRequest) {
         });
 
         results.push({ cardNumber: card.cardNumber, ok: true });
+
+        // Petite pause de politesse entre deux appels — reste sous la limite
+        // de requêtes/minute du palier gratuit sans avoir besoin de logique
+        // de retry compliquée.
+        await new Promise((r) => setTimeout(r, 500));
       } catch (e: any) {
         results.push({ cardNumber: card.cardNumber, ok: false, error: e?.message ?? String(e) });
       }
@@ -109,7 +116,7 @@ export async function POST(req: NextRequest) {
 }
 
 function buildPrompt(card: any, isGreen: boolean): string {
-  const base = `Tu es un coach compétitif du jeu de cartes One Piece Card Game (OPTCG), expert du format actuel.
+  return `Tu es un coach compétitif du jeu de cartes One Piece Card Game (OPTCG), expert du format actuel.
 
 Voici une carte réelle du jeu, avec son texte officiel :
 Nom : ${card.name}
@@ -121,7 +128,7 @@ Puissance : ${card.power ?? "—"}
 Texte officiel (anglais) : ${card.officialText || "(aucun effet)"}
 ${card.triggerText ? `Trigger : ${card.triggerText}` : ""}
 
-Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre, pas de markdown), avec exactement ces clés :
+Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre), avec exactement ces clés :
 {
   "officialTextFr": "traduction française fidèle et complète du texte officiel ci-dessus — jamais de résumé, une vraie traduction",
   "coachExplanationFr": "2-3 phrases en français expliquant simplement ce que fait cette carte et pourquoi/quand elle est utile, dans un style pédagogique pour un joueur qui apprend"${
@@ -136,7 +143,6 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre, pas de markdown), a
 }
 
 Ne présente jamais une hypothèse comme une certitude absolue. Reste concis et concret.`;
-  return base;
 }
 
 function parseResponse(text: string): any | null {

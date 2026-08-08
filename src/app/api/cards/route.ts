@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const maxCost = sp.get("maxCost");
   const minStars = sp.get("minStars");
   const inDeckOnly = sp.get("inDeckOnly") === "true";
+  const leaksOnly = sp.get("leaksOnly") === "true";
   const color = sp.get("color"); // null/absent -> comportement historique (Vert uniquement)
   const query = sp.get("q")?.trim();
   const reviewed = sp.get("reviewed"); // "true" | "false" | null
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
     where.color = { contains: color || "Green", mode: "insensitive" };
   }
   if (category) where.category = category;
+  if (leaksOnly) where.isLeak = true;
   if (setCode) where.setCode = { contains: setCode, mode: "insensitive" };
   if (attribute) where.attribute = attribute;
   if (maxCost) where.cost = { lte: parseInt(maxCost, 10) };

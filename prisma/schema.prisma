@@ -24,8 +24,13 @@ model Card {
   rarity         String?
   cost           Int?
   power          Int?
+  life           Int?     // uniquement pour les Leaders — jamais stocké avant cette carte
   counter        Int?     // valeur numérique du Counter (0 si absent)
   attribute      String?  // Slash / Strike / Wisdom / Special / Ranged
+  // Statut "leak" — générique, pas propre à OP17, pour que tout futur set en
+  // période de reveal (OP18, etc.) puisse réutiliser le même champ sans
+  // migration supplémentaire.
+  isLeak         Boolean  @default(false)
   types          String   // ex: "Supernovas/Beautiful Pirates" (types & affiliations bruts)
   officialText   String?  // texte d'effet officiel complet (anglais, tel que scrapé)
   officialTextFr String?  // traduction française du texte officiel — ne remplace jamais officialText
@@ -71,6 +76,25 @@ model Card {
   @@index([color])
   @@index([setCode])
   @@index([category])
+  @@index([isLeak])
+}
+
+// Cartes leak/reveal dont l'ID numérique définitif OU une donnée requise
+// (couleur, etc.) n'est pas encore assez fiable pour rejoindre la table
+// Card canonique — jamais mélangées aux vraies cartes, jamais affichées
+// dans les filtres normaux. Un ID temporaire (temp_id) sert de clé, jamais
+// un OP17-NNN inventé.
+model PendingLeakCard {
+  id        String   @id @default(cuid())
+  tempId    String   @unique // ex: "OP17-JACK", "OP17-KING"
+  name      String
+  setCode   String   // ex: OP17
+  cardType  String?  // Leader | Character | Event | Stage — si connu
+  color     String?  // souvent inconnu, jamais deviné
+  reason    String   // pourquoi cette carte n'est pas encore canonique
+  createdAt DateTime @default(now())
+
+  @@index([setCode])
 }
 
 // Une "CardPrint" = une illustration/édition précise de la carte (aa, fa, prize card, réimpression...).

@@ -11,6 +11,7 @@ export interface CardTileData {
   counter: number | null;
   setCode: string;
   imageUrl: string;
+  isLeak?: boolean;
   legalityStatus: string | null;
   deckQuantity: number;
   rating: { stars: number; confidence: string } | null;
@@ -55,6 +56,7 @@ export function CardTile({ card, onSelect }: { card: CardTileData; onSelect: (n:
       {/* Badges — sous l'image, jamais dessus */}
       <div className="flex flex-wrap gap-1.5 pt-0.5">
         <span className={`badge ${legal ? "badge-green" : "badge-red"}`}>{legal ? "Legal" : "Illegal"}</span>
+        {card.isLeak && <span className="badge badge-gold">LEAK</span>}
         {card.deckQuantity > 0 && <span className="badge badge-green">In My Deck ×{card.deckQuantity}</span>}
       </div>
     </button>
