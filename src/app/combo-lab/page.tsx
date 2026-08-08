@@ -6,7 +6,7 @@ export default function ComboLabPage() {
     <div className="space-y-6">
       <div>
         <div className="text-[11px] font-mono uppercase tracking-widest text-gold">🧪 Combo Lab</div>
-        <h1 className="text-xl font-display text-white">Séquences clés du deck Mihawk</h1>
+        <h1 className="text-[28px] sm:text-3xl font-display font-bold text-white">Séquences clés du deck Mihawk</h1>
         <p className="text-xs text-steel/60 mt-1">Explications originales des enchaînements les plus utiles — pas le texte officiel des cartes.</p>
       </div>
 

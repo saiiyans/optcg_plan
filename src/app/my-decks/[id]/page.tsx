@@ -42,7 +42,7 @@ export default function PersonalDeckDetail() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="text-xs font-mono text-steel/60">{deck.leaderCardNumber}</div>
-            <h2 className="text-xl sm:text-2xl font-display text-white">{deck.name}</h2>
+            <h2 className="text-[26px] sm:text-3xl font-display font-bold text-white">{deck.name}</h2>
             <div className="text-xs font-mono text-steel/70 mt-1">
               {totalCards} cartes hors Leader · Créé le {new Date(deck.createdAt).toLocaleDateString("fr-FR")}
             </div>

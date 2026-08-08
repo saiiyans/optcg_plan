@@ -1,6 +1,7 @@
 import { computeLibraryStats, computeMyDeckStats } from "@/lib/libraryStats";
 import { db } from "@/lib/db";
 import { LEADERS } from "@/lib/leaders";
+import { LeaderImage } from "@/components/LeaderImage";
 
 export default async function Dashboard() {
   const [libStats, deckStats, lastLog] = await Promise.all([
@@ -45,7 +46,10 @@ export default async function Dashboard() {
       <div className="grid md:grid-cols-2 gap-4">
         {leaderStats.map(({ leader, fiveStar, fourStar, winningDecks, allDecks }) => (
           <div key={leader.key} className="card-tile p-5">
-            <span className={`badge ${leader.badgeClass} mb-3 inline-block`}>{leader.label}</span>
+            <span className={`badge ${leader.badgeClass} mb-3 inline-flex items-center gap-1.5`}>
+              <LeaderImage leaderKey={leader.key} size={16} />
+              {leader.label}
+            </span>
             <div className="grid grid-cols-2 gap-3">
               <MiniTile label="5 étoiles" value={fiveStar} accent />
               <MiniTile label="4 étoiles" value={fourStar} accent />
@@ -65,7 +69,7 @@ export default async function Dashboard() {
 function Tile({ label, value, accent, wide }: { label: string; value: string | number; accent?: boolean; wide?: boolean }) {
   return (
     <div className={`card-tile p-4 ${wide ? "col-span-2" : ""}`}>
-      <div className={`text-2xl font-mono ${accent ? "text-gold" : "text-emerald-bright"}`}>{value}</div>
+      <div className={`text-3xl font-mono font-bold ${accent ? "text-gold" : "text-emerald-bright"}`}>{value}</div>
       <div className="text-[10px] uppercase tracking-wider text-steel/60 mt-1">{label}</div>
     </div>
   );

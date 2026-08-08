@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { WEEKS, OPPONENT_LEADERS, MY_DECKS, TOURNAMENT_DATE } from "@/lib/planningData";
 import { MATCHUP_GUIDES, OPTCG_RESOURCES } from "@/lib/matchupGuide";
 import { LeaderImage } from "@/components/LeaderImage";
+import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
 import { QUICK_MISTAKES } from "@/lib/coachDiagnostic";
 
 // Page d'historique de matchs personnelle sur Card D. Kaizoku (même
@@ -351,8 +352,16 @@ function JournalTab() {
                 <tr key={m.id} className="border-b border-line/50">
                   <td className="py-1.5 font-mono text-xs">{m.date}</td>
                   <td className="text-xs">{m.mode}</td>
-                  <td><span className={`badge ${m.myDeck.includes("Mihawk") ? "badge-green" : "badge-gold"}`}>{m.myDeck.includes("Mihawk") ? "Mihawk" : "Shanks"}</span></td>
-                  <td className="text-xs">{m.opponentLeader}{m.cardsToWatch && <div className="text-steel/60">⚠ {m.cardsToWatch}</div>}</td>
+                  <td>
+                    <span className={`badge ${m.myDeck.includes("Mihawk") ? "badge-green" : "badge-gold"} inline-flex items-center gap-1`}>
+                      <LeaderImage leaderKey={m.myDeck.includes("Mihawk") ? "mihawk" : "shanks"} size={14} />
+                      {m.myDeck.includes("Mihawk") ? "Mihawk" : "Shanks"}
+                    </span>
+                  </td>
+                  <td className="text-xs">
+                    <OpponentLeaderBadge label={m.opponentLeader} size={20} />
+                    {m.cardsToWatch && <div className="text-steel/60">⚠ {m.cardsToWatch}</div>}
+                  </td>
                   <td><span className={`badge ${m.result === "Victoire" ? "badge-green" : "badge-red"}`}>{m.result === "Victoire" ? "V" : "D"}</span></td>
                   <td><button onClick={() => deleteMatch(m.id)} className="text-steel/60 hover:text-red-400">✕</button></td>
                 </tr>
@@ -428,7 +437,9 @@ function StatsTab() {
             <tbody>
               {oppRows.map((r) => (
                 <tr key={r.opp} className="border-b border-line/50">
-                  <td className={`py-1.5 ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>{r.opp}</td>
+                  <td className={`py-1.5 ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>
+                    <OpponentLeaderBadge label={r.opp} size={20} />
+                  </td>
                   <td className="text-center">{r.t}</td><td className="text-center">{r.w}</td><td className="text-center">{r.l}</td>
                   <td className={`text-center font-mono ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>{r.wr}%</td>
                 </tr>
@@ -607,7 +618,8 @@ function MatchupsTab() {
 
       {MATCHUP_GUIDES.map((guide) => (
         <div key={guide.leaderKey} className="card-tile p-5">
-          <span className={`badge ${guide.leaderKey === "mihawk" ? "badge-green" : "badge-gold"} mb-3 inline-block`}>
+          <span className={`badge ${guide.leaderKey === "mihawk" ? "badge-green" : "badge-gold"} mb-3 inline-flex items-center gap-1.5`}>
+            <LeaderImage leaderKey={guide.leaderKey} size={16} />
             {guide.leaderKey === "mihawk" ? "Mihawk OP14-020" : "Shanks OP17"}
           </span>
           <p className="text-sm text-white mb-3">{guide.gameplanSummary}</p>
@@ -638,7 +650,7 @@ function MatchupsTab() {
                 return (
                   <div key={i} className="bg-panel2 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
-                      <span className="text-white text-sm">{m.opponent}</span>
+                      <span className="text-white text-sm"><OpponentLeaderBadge label={m.opponent} size={22} /></span>
                       <span className={`badge ${badgeClass}`}>{m.difficulty}</span>
                     </div>
                     <p className="text-xs text-steel/70 mb-2">{m.why}</p>

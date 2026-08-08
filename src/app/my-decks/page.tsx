@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { LEADERS } from "@/lib/leaders";
+import { CardThumb } from "@/components/CardThumb";
 
 export default function MyDecksPage() {
   const [savedDecks, setSavedDecks] = useState<any[]>([]);
@@ -31,7 +32,7 @@ export default function MyDecksPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-display text-white">Mes Decks</h2>
+        <h2 className="text-[28px] sm:text-3xl font-display font-bold text-white">Mes Decks</h2>
       </div>
 
       <AddNewDeckSection onAdded={load} />
@@ -52,7 +53,10 @@ export default function MyDecksPage() {
               return (
                 <Link key={d.id} href={`/my-decks/${d.id}`} className="card-tile p-4 block hover:border-emerald transition-colors">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-white text-sm">{d.name}</span>
+                    <span className="text-white text-sm flex items-center gap-2">
+                      <CardThumb cardNumber={d.leaderCardNumber} size={28} showLabel={false} />
+                      {d.name}
+                    </span>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -92,7 +96,10 @@ export default function MyDecksPage() {
             {savedDecks.map((d) => (
               <Link key={d.id} href={`/decks/${d.id}`} className="card-tile p-4 block hover:border-emerald">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-white text-sm">{d.deckName}</span>
+                  <span className="text-white text-sm flex items-center gap-2">
+                    <CardThumb cardNumber={d.leaderCardNumber} size={28} showLabel={false} />
+                    {d.deckName}
+                  </span>
                   <div className="flex gap-1">
                     {d.status === "winner" && <span className="badge badge-gold">Winner</span>}
                     {d.undefeated && <span className="badge badge-green">Undefeated</span>}

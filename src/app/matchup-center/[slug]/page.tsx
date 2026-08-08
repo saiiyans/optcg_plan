@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { MATCHUP_CENTER, DIFFICULTY_LABEL } from "@/lib/matchupCenter";
 import { BackButton } from "@/components/BackButton";
 import { CardThumb } from "@/components/CardThumb";
+import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
 
 export default function MatchupDetailPage({ params }: { params: { slug: string } }) {
   const m = MATCHUP_CENTER.find((x) => x.slug === params.slug);
@@ -14,7 +15,7 @@ export default function MatchupDetailPage({ params }: { params: { slug: string }
 
       <div className="card-tile p-5">
         <div className="text-[11px] font-mono uppercase tracking-widest text-gold">VS</div>
-        <h1 className="text-xl font-display text-white mb-2">{m.opponent}</h1>
+        <h1 className="text-[28px] sm:text-3xl font-display font-bold text-white mb-2"><OpponentLeaderBadge label={m.opponent} size={32} /></h1>
         <div className="flex items-center gap-4 flex-wrap">
           <span className={`text-sm font-mono ${diff.color}`}>{diff.icon} {diff.label}</span>
           <span className="text-sm text-gold">{"★".repeat(m.trainingPriority)}{"☆".repeat(5 - m.trainingPriority)} Training Priority</span>

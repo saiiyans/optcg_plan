@@ -34,7 +34,7 @@ export default function DeckProfilePage() {
           <LeaderImage leaderKey="mihawk" size={40} />
           <div>
             <div className="text-[11px] font-mono uppercase tracking-widest text-gold">My Mihawk</div>
-            <h1 className="text-xl font-display text-white">{MIHAWK_DECK_NAME}</h1>
+            <h1 className="text-[28px] sm:text-3xl font-display font-bold text-white">{MIHAWK_DECK_NAME}</h1>
           </div>
         </div>
         <div className="text-xs font-mono text-steel/60 mb-3">{totalCards} cartes hors Leader · Style : {MIHAWK_DECK_STYLE}</div>

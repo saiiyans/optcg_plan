@@ -41,7 +41,7 @@ export default function HomePage() {
           <div className="text-xs font-mono text-steel/60 mt-0.5">20 septembre 2026 · Semaine {currentWeek.n} en cours ({currentWeek.range})</div>
         </div>
         <div className="text-right shrink-0">
-          <div className="text-3xl font-mono text-gold">{daysLeft}</div>
+          <div className="text-3xl font-mono font-bold text-gold">{daysLeft}</div>
           <div className="text-[10px] uppercase tracking-wider text-steel/60">jours restants</div>
         </div>
       </div>
@@ -218,7 +218,7 @@ function GameCounterWidget() {
       <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
         <div>
           <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Compteur de parties</div>
-          <div className="text-2xl font-mono text-white mt-1">
+          <div className="text-3xl md:text-4xl font-mono font-bold text-white mt-1">
             {stats.totalPlayed} <span className="text-steel/50 text-lg">/ {stats.totalTarget}</span>
           </div>
           <div className="text-xs text-steel/60 mt-0.5">{stats.remaining} parties restantes avant le tournoi</div>
@@ -276,7 +276,7 @@ function TrainingWidget({ dailyTarget, weekTarget }: { dailyTarget: number; week
         <>
           <div className="flex items-end justify-between mb-2">
             <div>
-              <div className="text-2xl font-mono text-white">
+              <div className="text-3xl font-mono font-bold text-white">
                 {state === "loading" ? "…" : gamesToday} <span className="text-steel/50 text-base">/ {dailyTarget}</span>
               </div>
               <div className="text-[10px] uppercase tracking-wider text-steel/60">parties aujourd'hui (objectif du jour)</div>
@@ -403,7 +403,7 @@ function SimWinrateWidget() {
         <div className="flex items-center gap-6 flex-wrap">
           <div
             className="w-32 h-32 rounded-full shrink-0"
-            style={{ background: `conic-gradient(#4ade80 0% ${winPct}%, #7f1d1d ${winPct}% 100%)` }}
+            style={{ background: `conic-gradient(#36D98B 0% ${winPct}%, #3A1418 ${winPct}% 100%)` }}
           >
             <div className="w-full h-full rounded-full flex items-center justify-center">
               <div className="w-20 h-20 rounded-full bg-ink flex items-center justify-center">
@@ -412,8 +412,8 @@ function SimWinrateWidget() {
             </div>
           </div>
           <div className="text-sm font-mono space-y-1">
-            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" /> {wins} victoire{wins > 1 ? "s" : ""}</div>
-            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-red-900 inline-block" /> {losses} défaite{losses > 1 ? "s" : ""}</div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald inline-block" /> {wins} victoire{wins > 1 ? "s" : ""}</div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-danger inline-block" /> {losses} défaite{losses > 1 ? "s" : ""}</div>
             <div className="text-steel/60 text-xs mt-1">{total} partie{total > 1 ? "s" : ""} au total sur simulateur</div>
           </div>
         </div>

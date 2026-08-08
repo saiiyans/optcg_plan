@@ -36,8 +36,8 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`px-2.5 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                active ? "bg-emerald-dim text-emerald-bright" : "text-steel hover:text-ivory hover:bg-panel2"
+              className={`px-2.5 py-2 rounded-xl font-medium whitespace-nowrap transition-colors duration-150 border-b-2 ${
+                active ? "bg-emerald-dim text-emerald-bright border-emerald" : "text-steel hover:text-ivory hover:bg-panel2 border-transparent"
               }`}
             >
               {item.label}
@@ -58,10 +58,11 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium ${
+            className={`relative flex flex-col items-center justify-center gap-0.5 min-h-[44px] py-2.5 text-[10px] font-medium transition-colors duration-150 ${
               active ? "text-emerald-bright" : "text-steel/70"
             }`}
           >
+            {active && <span className="absolute top-0.5 w-1 h-1 rounded-full bg-emerald" />}
             <span className="text-base leading-none">{item.icon}</span>
             {item.label}
           </Link>
@@ -70,10 +71,11 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
 
       <button
         onClick={() => setMoreOpen((o) => !o)}
-        className={`flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium ${
+        className={`relative flex flex-col items-center justify-center gap-0.5 min-h-[44px] py-2.5 text-[10px] font-medium transition-colors duration-150 ${
           moreActive || moreOpen ? "text-emerald-bright" : "text-steel/70"
         }`}
       >
+        {(moreActive || moreOpen) && <span className="absolute top-0.5 w-1 h-1 rounded-full bg-emerald" />}
         <span className="text-base leading-none">⋯</span>
         Plus
       </button>
@@ -90,7 +92,7 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMoreOpen(false)}
-                  className={`flex flex-col items-center justify-center gap-1 py-3 rounded-lg text-[11px] font-medium ${
+                  className={`flex flex-col items-center justify-center gap-1 min-h-[44px] py-3 rounded-xl text-[11px] font-medium transition-colors duration-150 ${
                     active ? "bg-emerald-dim text-emerald-bright" : "text-steel hover:bg-panel2"
                   }`}
                 >

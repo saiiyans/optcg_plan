@@ -27,7 +27,7 @@ export default async function DeckDetail({ params }: { params: { id: string } })
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
             <div className="text-xs font-mono text-steel/60">{deck.leaderCardNumber} · {deck.format}</div>
-            <h2 className="text-xl sm:text-2xl font-display text-white">
+            <h2 className="text-[26px] sm:text-3xl font-display font-bold text-white">
               {deck.deckName} — {deck.player} <span className="text-steel/60 text-lg sm:text-xl">· {deck.date}</span>
             </h2>
             <div className="text-sm font-mono text-steel/80 mt-1">

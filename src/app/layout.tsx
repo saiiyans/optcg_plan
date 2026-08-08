@@ -8,8 +8,18 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-space-grotesk", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Green Card Library — Mihawk OP14-020",
-  description: "Bibliothèque personnelle des cartes vertes du One Piece Card Game",
+  title: "Shopper — Coaching App",
+  description: "Ton coach personnel OPTCG — Mihawk & Shanks",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Shopper",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -20,9 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 mb-6 bg-ink/85 backdrop-blur-md border-b border-line">
             <div className="flex items-center justify-between gap-4">
               {/* Gauche : identité */}
-              <div className="min-w-0 shrink-0">
-                <h1 className="text-lg sm:text-xl font-display font-semibold text-ivory leading-none">Green Card Library</h1>
-                <div className="text-[11px] text-textMuted mt-0.5 hidden sm:block">Competitive Mihawk Deck Intelligence</div>
+              <div className="min-w-0 shrink-0 flex items-center gap-2.5">
+                <img src="/logo-header.png" alt="Shopper" className="h-9 w-auto shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-xl font-display font-semibold text-ivory leading-none">Shopper</h1>
+                  <div className="text-[11px] text-textMuted mt-0.5 hidden sm:block">Coaching App — Mihawk Deck Intelligence</div>
+                </div>
               </div>
 
               {/* Centre : navigation desktop uniquement — sur mobile elle est en bas d'écran */}
