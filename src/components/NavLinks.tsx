@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
+  { href: "/", label: "Accueil", icon: "🏠" },
   { href: "/cards", label: "Cartes", icon: "🃏" },
   { href: "/decks", label: "Winner Decks", icon: "🏆" },
   { href: "/my-decks", label: "Mes Decks", icon: "⭐" },
@@ -16,9 +17,9 @@ const ITEMS = [
 ];
 
 // La nav du bas (mobile) garde 4 accès directs + un bouton "Plus" qui ouvre
-// le reste — impossible d'afficher les 9 pages en zones tactiles correctes
+// le reste — impossible d'afficher les 10 pages en zones tactiles correctes
 // sur un petit écran, mais toutes doivent rester atteignables.
-const MOBILE_PRIMARY_HREFS = ["/cards", "/deck-profile", "/my-decks", "/prep"];
+const MOBILE_PRIMARY_HREFS = ["/", "/cards", "/prep", "/deck-profile"];
 const MOBILE_PRIMARY = ITEMS.filter((i) => MOBILE_PRIMARY_HREFS.includes(i.href));
 const MOBILE_MORE = ITEMS.filter((i) => !MOBILE_PRIMARY_HREFS.includes(i.href));
 
