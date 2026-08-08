@@ -81,6 +81,7 @@ export function CardThumb({
             alt={cardNumber}
             width={size}
             height={height}
+            unoptimized={imageUrl.includes("spellmana.com")}
             className="rounded-md border border-line group-hover:border-emerald-bright transition-colors object-cover"
             style={{ width: size, height }}
           />

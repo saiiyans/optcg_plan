@@ -33,6 +33,12 @@ export function CardTile({ card, onSelect }: { card: CardTileData; onSelect: (n:
             fill
             loading="lazy"
             sizes="240px"
+            // spellmana.com (source des cartes OP17 leak) bloque les
+            // requêtes serveur-à-serveur de l'optimiseur d'images de
+            // Vercel tout en autorisant les requêtes directes du
+            // navigateur — on contourne donc l'optimisation pour ce
+            // domaine précis plutôt que de laisser l'image casser.
+            unoptimized={card.imageUrl.includes("spellmana.com")}
             className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
           />
         )}
