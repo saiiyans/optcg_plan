@@ -33,9 +33,16 @@ export async function POST(req: NextRequest) {
   }
 
   const errors: { cardNumber: string; error: string }[] = [];
+  const conflicts: { cardNumber: string; existingName: string; scrapedName: string }[] = [];
   let imported = 0;
   let updated = 0;
   let skipped = 0;
+
+  // Normalisation légère pour comparer deux noms sans faux positifs sur la
+  // casse/ponctuation (ex. "Monkey.D.Luffy" vs "Monkey D. Luffy").
+  function normalizeName(n: string): string {
+    return n.toLowerCase().replace(/[.\s]+/g, "");
+  }
 
   for (const cardNumber of numbers) {
     try {
@@ -43,6 +50,17 @@ export async function POST(req: NextRequest) {
       const lockedFields: string[] = existing?.manuallyEditedFields ? JSON.parse(existing.manuallyEditedFields) : [];
 
       const scraped = await scrapeCardDetail(cardNumber);
+
+      // Garde-fou explicite : le numéro de carte est la seule clé fiable,
+      // jamais le nom. Si le nom scrapé diverge fortement du nom déjà en
+      // base pour ce même numéro, on bloque la mise à jour de cette carte
+      // et on remonte le conflit — plutôt que d'écraser silencieusement une
+      // donnée peut-être correcte par une donnée peut-être erronée.
+      if (existing && existing.name && scraped.name && normalizeName(existing.name) !== normalizeName(scraped.name)) {
+        skipped++;
+        conflicts.push({ cardNumber, existingName: existing.name, scrapedName: scraped.name });
+        continue;
+      }
 
       const data: Record<string, any> = {
         name: scraped.name,
@@ -111,6 +129,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const conflictsAsErrors = conflicts.map((c) => ({
+    cardNumber: c.cardNumber,
+    error: `⚠ Conflit nom/numéro — base="${c.existingName}" vs scrapé="${c.scrapedName}" — mise à jour bloquée, à vérifier manuellement.`,
+  }));
+  const allErrors = [...errors, ...conflictsAsErrors];
+
   const log = await db.importLog.findUnique({ where: { id: logId } });
   const prevErrors = log?.errors ? JSON.parse(log.errors) : [];
   await db.importLog.update({
@@ -119,10 +143,10 @@ export async function POST(req: NextRequest) {
       cardsImported: (log?.cardsImported ?? 0) + imported,
       cardsUpdated: (log?.cardsUpdated ?? 0) + updated,
       cardsSkipped: (log?.cardsSkipped ?? 0) + skipped,
-      errors: JSON.stringify([...prevErrors, ...errors]),
+      errors: JSON.stringify([...prevErrors, ...allErrors]),
       ...(finish ? { finishedAt: new Date() } : {}),
     },
   });
 
-  return NextResponse.json({ ok: true, logId, imported, updated, skipped, errors });
+  return NextResponse.json({ ok: true, logId, imported, updated, skipped, errors: allErrors, conflicts });
 }
