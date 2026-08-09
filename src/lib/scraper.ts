@@ -173,6 +173,14 @@ export async function scrapeCardDetail(cardNumber: string): Promise<ScrapedCard>
   // Le texte d'effet officiel est le paragraphe qui suit le bloc de stats et
   // précède la ligne "Illustrated by". On prend le texte le plus long parmi
   // les paragraphes candidats pour limiter les faux positifs.
+  //
+  // Le marqueur ([On Play], [Activate: Main]...) est cherché n'importe où
+  // dans le paragraphe, pas seulement au tout début : beaucoup de Leaders
+  // ont une clause passive avant leur capacité active, ex. Mihawk OP14-020
+  // "If your opponent's Leader has the <Slash> attribute, this Leader
+  // gains +1000 power. [Activate: Main] [Once Per Turn] ..." — un ancrage
+  // strict en début de chaîne ratait systématiquement ce genre de texte
+  // (100% des Leaders verts étaient concernés avant ce correctif).
   let officialText: string | null = null;
   let triggerText: string | null = null;
   $("p").each((_, el) => {
@@ -181,7 +189,7 @@ export async function scrapeCardDetail(cardNumber: string): Promise<ScrapedCard>
     if (/^\[Trigger\]/i.test(t)) {
       triggerText = t.replace(/^\[Trigger\]\s*/i, "");
     } else if (
-      /^\[(On Play|When Attacking|Activate|Your Turn|On K\.O\.|DON!!)/i.test(t) &&
+      /\[(On Play|When Attacking|Activate|Your Turn|On K\.O\.|DON!!|On Opponent's Attack|End of Your Turn)/i.test(t) &&
       (!officialText || t.length > officialText.length)
     ) {
       officialText = t;
