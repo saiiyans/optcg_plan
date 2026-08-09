@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
 
+// Page entièrement pilotée par des données live (filtres, recherche,
+// import en direct) — ne doit jamais être pré-générée statiquement au
+// build, ce qui causait un crash au build ("Cannot read properties of
+// undefined (reading 'toUpperCase')") quand Next.js tentait de
+// pré-rendre la page sans contexte de requête réel.
+export const dynamic = "force-dynamic";
+
 function searchUrlForColor(color: string) {
   return `https://onepiece.limitlesstcg.com/cards/?q=${encodeURIComponent(
     `category:leader,character,event,stage color:${color} lang:en display:grid sort:id`

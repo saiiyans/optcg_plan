@@ -31,7 +31,8 @@ export function totalDeckCount(): number {
   return MIHAWK_REFERENCE_DECK.cards.reduce((sum, c) => sum + c.quantity, 0);
 }
 
-export function findDeckQuantity(cardNumber: string): number {
+export function findDeckQuantity(cardNumber: string | undefined | null): number {
+  if (!cardNumber) return 0;
   return (
     MIHAWK_REFERENCE_DECK.cards.find(
       (c) => c.cardNumber.toUpperCase() === cardNumber.toUpperCase()
