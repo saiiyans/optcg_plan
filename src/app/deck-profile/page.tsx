@@ -10,6 +10,7 @@ import {
   BUILD_ANALYSIS,
   COACH_RECOMMENDATIONS,
   HAWKEYE_RULES,
+  COACH_ALERTS,
 } from "@/lib/deckProfile";
 import { LeaderImage } from "@/components/LeaderImage";
 import { CardThumb } from "@/components/CardThumb";
@@ -231,6 +232,23 @@ export default function DeckProfilePage() {
               <div className="text-[10px] font-mono text-gold">{String(r.n).padStart(2, "0")}</div>
               <div className="text-sm font-mono text-white">{r.title}</div>
               <div className="text-xs text-steel/70 mt-1">{r.description}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ALERTES COACH — conseils stratégiques courts, spécifiques à la
+          version ST32 actuelle */}
+      <div className="card-tile p-5">
+        <div className="flex items-center justify-between border-b border-line pb-2 mb-3">
+          <h2 className="font-mono text-xs uppercase tracking-widest text-gold">🚨 Alertes Coach</h2>
+          <span className="badge badge-gold text-[9px]">Conseil stratégique</span>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {COACH_ALERTS.map((alert) => (
+            <div key={alert} className="bg-panel2 rounded-lg px-3 py-2 text-xs text-steel/90 flex items-start gap-2">
+              <span className="text-gold shrink-0">⚠</span>
+              {alert}
             </div>
           ))}
         </div>

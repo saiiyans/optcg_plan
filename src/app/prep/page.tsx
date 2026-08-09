@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { WEEKS, OPPONENT_LEADERS, MY_DECKS, TOURNAMENT_DATE } from "@/lib/planningData";
 import { MATCHUP_GUIDES, OPTCG_RESOURCES } from "@/lib/matchupGuide";
 import { LeaderImage } from "@/components/LeaderImage";
+import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
 import { QUICK_MISTAKES } from "@/lib/coachDiagnostic";
 
 // Page d'historique de matchs personnelle sur Card D. Kaizoku (même
@@ -10,6 +11,33 @@ import { QUICK_MISTAKES } from "@/lib/coachDiagnostic";
 // bouton "Rafraîchir depuis mes parties" de l'onglet Matchups).
 const KAIZOKU_HISTORY_URL =
   "https://www.cardkaizoku.com/matchhistory/search?deviceId=e29ac874724b98687ab5663ff84515eaa9bba570&playerId=fDimCsmSzViWrxSA3Sx9ECNzoZ1I&page=1";
+
+// Boutons pré-remplis pour l'analyse détaillée (Lot 2, Priorité 5B) —
+// classés par moment de la partie, pour une saisie rapide en un clic.
+const OPENING_HAND_OPTIONS = [
+  "Excellente", "Bonne", "Moyenne", "Mauvaise",
+  "Trop de cartes sans Counter", "Aucun coût 5+", "ST32-003 sans cible",
+  "Trop de boss", "Trop d'Events", "Aucune carte de setup",
+];
+const EARLY_GAME_MISTAKES = [
+  "Mauvais mulligan", "Mauvaise courbe", "Mauvaise gestion du DON!!",
+  "Setup coût 1 absent", "Première menace posée trop tard",
+  "Trop de vies prises", "Trop de ressources utilisées en défense",
+];
+const MID_GAME_MISTAKES = [
+  "J'ai attaqué la vie trop tôt", "Je n'ai pas contrôlé le board",
+  "Mauvaise cible reposée", "Mauvaise cible gelée",
+  "Effet Mihawk activé trop tôt", "Effet Mihawk oublié",
+  "ST32-003 mal utilisé", "Mauvaise cible jouée par ST32-003",
+  "DON!! récupérés mais inutilisés", "Smoker mal protégé",
+  "Surdéveloppement du board", "Mauvais ordre des effets",
+];
+const LATE_GAME_MISTAKES = [
+  "Létal manqué", "Mauvais ordre d'attaque", "Aucun calcul avant d'attaquer",
+  "Pas assez de Counter", "Boss joué trop tard", "Law & Bepo mal préparé",
+  "Rush adverse non anticipé", "Mauvaise défense de la vie",
+  "Partie trop longue", "Décision sous pression", "Temps dépassé",
+];
 
 type Tab = "planning" | "journal" | "stats" | "objectifs" | "matchups";
 
@@ -102,8 +130,19 @@ function JournalTab() {
     mostUsefulCard: "",
     uselessCard: "",
     keyTurn: "",
+    confidence: "",
+    donRecoveredUnused: "",
+    cardsInHandEnd: "",
+    opponentLifeRemaining: "",
+    gameDurationMinutes: "",
+    mihawkActivations: "",
+    mihawkEffectForgotten: "",
+    mihawkEffectTooEarly: "",
+    firstCost5Turn: "",
+    decisiveMoment: "",
   });
   const [showQuickDetails, setShowQuickDetails] = useState(false);
+  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -123,20 +162,37 @@ function JournalTab() {
       alert("Renseigne au moins la date et le leader adverse.");
       return;
     }
+    const toNum = (v: string) => (v === "" ? null : Number(v));
+    const toBool = (v: string) => (v === "" ? null : v === "true");
     const payload = {
       ...form,
-      mulligan: form.mulligan === "" ? null : form.mulligan === "true",
+      mulligan: toBool(form.mulligan),
+      confidence: toNum(form.confidence),
+      donRecoveredUnused: toNum(form.donRecoveredUnused),
+      cardsInHandEnd: toNum(form.cardsInHandEnd),
+      opponentLifeRemaining: toNum(form.opponentLifeRemaining),
+      gameDurationMinutes: toNum(form.gameDurationMinutes),
+      mihawkActivations: toNum(form.mihawkActivations),
+      mihawkEffectForgotten: toBool(form.mihawkEffectForgotten),
+      mihawkEffectTooEarly: toBool(form.mihawkEffectTooEarly),
+      firstCost5Turn: toNum(form.firstCost5Turn),
     };
     await fetch("/api/matches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     setForm((f) => ({
       ...f,
       opponentLeader: "", cardsToWatch: "", notes: "",
       turnOrder: "", mulligan: "", openingHandQuality: "", mainMistake: "", mostUsefulCard: "", uselessCard: "", keyTurn: "",
+      confidence: "", donRecoveredUnused: "", cardsInHandEnd: "", opponentLifeRemaining: "", gameDurationMinutes: "",
+      mihawkActivations: "", mihawkEffectForgotten: "", mihawkEffectTooEarly: "", firstCost5Turn: "", decisiveMoment: "",
     }));
+    setShowDetailedAnalysis(false);
     load();
   }
 
   async function deleteMatch(id: string) {
+    const m = matches.find((x) => x.id === id);
+    const label = m ? `du ${m.date} contre ${m.opponentLeader} (${m.result})` : "";
+    if (!confirm(`Supprimer définitivement cette partie ${label} ? Cette action est irréversible.`)) return;
     await fetch(`/api/matches/${id}`, { method: "DELETE" });
     load();
   }
@@ -244,7 +300,15 @@ function JournalTab() {
           </div>
           <div>
             <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Résultat</label>
-            <select className="input w-full" value={form.result} onChange={(e) => setForm((f) => ({ ...f, result: e.target.value }))}>
+            <select
+              className="input w-full"
+              value={form.result}
+              onChange={(e) => {
+                const value = e.target.value;
+                setForm((f) => ({ ...f, result: value }));
+                if (value === "Défaite") setShowDetailedAnalysis(true);
+              }}
+            >
               <option>Victoire</option>
               <option>Défaite</option>
             </select>
@@ -320,6 +384,114 @@ function JournalTab() {
           </div>
         )}
 
+        <button
+          onClick={() => setShowDetailedAnalysis((s) => !s)}
+          className="text-xs font-mono text-gold mt-2 flex items-center gap-1"
+        >
+          {showDetailedAnalysis ? "▲ Masquer l'analyse détaillée" : "▼ Analyse détaillée (facultatif — s'ouvre seule sur défaite)"}
+        </button>
+
+        {showDetailedAnalysis && (
+          <div className="space-y-4 mt-3 pt-3 border-t border-line">
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Main initiale</label>
+              <div className="flex flex-wrap gap-1.5">
+                {OPENING_HAND_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, openingHandQuality: opt }))}
+                    className={`chip ${form.openingHandQuality === opt ? "chip-active" : ""}`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Début de partie</label>
+              <div className="flex flex-wrap gap-1.5">
+                {EARLY_GAME_MISTAKES.map((opt) => (
+                  <button key={opt} type="button" onClick={() => setForm((f) => ({ ...f, mainMistake: opt }))} className={`chip ${form.mainMistake === opt ? "chip-active" : ""}`}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Milieu de partie</label>
+              <div className="flex flex-wrap gap-1.5">
+                {MID_GAME_MISTAKES.map((opt) => (
+                  <button key={opt} type="button" onClick={() => setForm((f) => ({ ...f, mainMistake: opt }))} className={`chip ${form.mainMistake === opt ? "chip-active" : ""}`}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Fin de partie</label>
+              <div className="flex flex-wrap gap-1.5">
+                {LATE_GAME_MISTAKES.map((opt) => (
+                  <button key={opt} type="button" onClick={() => setForm((f) => ({ ...f, mainMistake: opt }))} className={`chip ${form.mainMistake === opt ? "chip-active" : ""}`}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              {form.mainMistake && <div className="text-[10px] text-steel/50 mt-1">Erreur principale sélectionnée : {form.mainMistake}</div>}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Tour 1er coût 5+</label>
+                <input type="number" min={0} className="input w-full" value={form.firstCost5Turn} onChange={(e) => setForm((f) => ({ ...f, firstCost5Turn: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Activations Mihawk</label>
+                <input type="number" min={0} className="input w-full" value={form.mihawkActivations} onChange={(e) => setForm((f) => ({ ...f, mihawkActivations: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">DON!! récup. inutilisés</label>
+                <input type="number" min={0} className="input w-full" value={form.donRecoveredUnused} onChange={(e) => setForm((f) => ({ ...f, donRecoveredUnused: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Cartes en main (fin)</label>
+                <input type="number" min={0} className="input w-full" value={form.cardsInHandEnd} onChange={(e) => setForm((f) => ({ ...f, cardsInHandEnd: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Vies adverses restantes</label>
+                <input type="number" min={0} className="input w-full" value={form.opponentLifeRemaining} onChange={(e) => setForm((f) => ({ ...f, opponentLifeRemaining: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Durée (minutes)</label>
+                <input type="number" min={0} className="input w-full" value={form.gameDurationMinutes} onChange={(e) => setForm((f) => ({ ...f, gameDurationMinutes: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Confiance (1-5)</label>
+                <input type="number" min={1} max={5} className="input w-full" value={form.confidence} onChange={(e) => setForm((f) => ({ ...f, confidence: e.target.value }))} />
+              </div>
+            </div>
+
+            <div className="flex gap-4 flex-wrap">
+              <label className="flex items-center gap-2 text-xs text-steel/80">
+                <input type="checkbox" checked={form.mihawkEffectForgotten === "true"} onChange={(e) => setForm((f) => ({ ...f, mihawkEffectForgotten: e.target.checked ? "true" : "false" }))} />
+                Effet Mihawk oublié
+              </label>
+              <label className="flex items-center gap-2 text-xs text-steel/80">
+                <input type="checkbox" checked={form.mihawkEffectTooEarly === "true"} onChange={(e) => setForm((f) => ({ ...f, mihawkEffectTooEarly: e.target.checked ? "true" : "false" }))} />
+                Effet Mihawk activé trop tôt
+              </label>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Menace adverse déterminante / moment clé</label>
+              <input className="input w-full" placeholder="ex. Board Xebec trop développé au tour 5" value={form.decisiveMoment} onChange={(e) => setForm((f) => ({ ...f, decisiveMoment: e.target.value }))} />
+            </div>
+          </div>
+        )}
+
         <button onClick={addMatch} className="btn btn-primary mt-3">Ajouter la partie</button>
       </div>
 
@@ -351,8 +523,16 @@ function JournalTab() {
                 <tr key={m.id} className="border-b border-line/50">
                   <td className="py-1.5 font-mono text-xs">{m.date}</td>
                   <td className="text-xs">{m.mode}</td>
-                  <td><span className={`badge ${m.myDeck.includes("Mihawk") ? "badge-green" : "badge-gold"}`}>{m.myDeck.includes("Mihawk") ? "Mihawk" : "Shanks"}</span></td>
-                  <td className="text-xs">{m.opponentLeader}{m.cardsToWatch && <div className="text-steel/60">⚠ {m.cardsToWatch}</div>}</td>
+                  <td>
+                    <span className={`badge ${m.myDeck.includes("Mihawk") ? "badge-green" : "badge-gold"} inline-flex items-center gap-1`}>
+                      <LeaderImage leaderKey={m.myDeck.includes("Mihawk") ? "mihawk" : "shanks"} size={14} />
+                      {m.myDeck.includes("Mihawk") ? "Mihawk" : "Shanks"}
+                    </span>
+                  </td>
+                  <td className="text-xs">
+                    <OpponentLeaderBadge label={m.opponentLeader} size={20} />
+                    {m.cardsToWatch && <div className="text-steel/60">⚠ {m.cardsToWatch}</div>}
+                  </td>
                   <td><span className={`badge ${m.result === "Victoire" ? "badge-green" : "badge-red"}`}>{m.result === "Victoire" ? "V" : "D"}</span></td>
                   <td><button onClick={() => deleteMatch(m.id)} className="text-steel/60 hover:text-red-400">✕</button></td>
                 </tr>
@@ -368,7 +548,6 @@ function JournalTab() {
 
 function StatsTab() {
   const [matches, setMatches] = useState<any[]>([]);
-
   useEffect(() => {
     fetch("/api/matches").then((r) => r.json()).then((d) => setMatches(d.matches ?? []));
   }, []);
@@ -399,6 +578,8 @@ function StatsTab() {
 
   return (
     <div className="space-y-6">
+      <CoachBilanSection />
+
       <div className="card-tile rounded-sm p-5">
         <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Vue d'ensemble</h3>
         <div className="flex gap-4 flex-wrap">
@@ -428,7 +609,9 @@ function StatsTab() {
             <tbody>
               {oppRows.map((r) => (
                 <tr key={r.opp} className="border-b border-line/50">
-                  <td className={`py-1.5 ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>{r.opp}</td>
+                  <td className={`py-1.5 ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>
+                    <OpponentLeaderBadge label={r.opp} size={20} />
+                  </td>
                   <td className="text-center">{r.t}</td><td className="text-center">{r.w}</td><td className="text-center">{r.l}</td>
                   <td className={`text-center font-mono ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>{r.wr}%</td>
                 </tr>
@@ -438,7 +621,198 @@ function StatsTab() {
           </div>
         )}
       </div>
+
+      <PersonalStatsSection />
     </div>
+  );
+}
+
+function DataInsufficient({ reason }: { reason?: string }) {
+  return <div className="text-xs font-mono text-steel/60">Données insuffisantes — {reason}</div>;
+}
+
+function CoachBilanSection() {
+  const [bilan, setBilan] = useState<any>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    fetch("/api/coach/bilan")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.ok) throw new Error();
+        setBilan(d.bilan);
+        setState("ready");
+      })
+      .catch(() => setState("error"));
+  }, []);
+
+  if (state === "loading") return <div className="card-tile rounded-sm p-5 border-emerald/40"><div className="skeleton h-16" /></div>;
+  if (state === "error" || !bilan) return null;
+
+  if (!bilan.hasData) {
+    return (
+      <div className="card-tile rounded-sm p-5 border-emerald/40">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-2 border-b border-line pb-2">🧑‍🏫 Bilan Coach</h3>
+        <DataInsufficient reason={bilan.reason} />
+      </div>
+    );
+  }
+
+  const badgeFor = (level: string) =>
+    level === "Tendance suffisamment observée" ? "badge-green" : level === "Tendance provisoire" ? "badge-gold" : "badge";
+
+  return (
+    <div className="card-tile rounded-sm p-5 border-emerald/40">
+      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">🧑‍🏫 Bilan Coach — {bilan.sampleSize} parties</h3>
+      <div className="space-y-3 text-sm">
+        {bilan.progress && (
+          <div>
+            <span className={`badge ${badgeFor(bilan.progress.level)} mr-2`}>{bilan.progress.level}</span>
+            Progrès observé : <span className="text-white font-mono">{bilan.progress.recentWinrate}%</span> sur les 10 dernières parties, contre {bilan.progress.previousWinrate}% avant — {bilan.progress.delta >= 0 ? "↑" : "↓"} {Math.abs(bilan.progress.delta)} points.
+          </div>
+        )}
+        {bilan.mostFrequentMistake && (
+          <div>
+            <span className={`badge ${badgeFor(bilan.mostFrequentMistake.level)} mr-2`}>{bilan.mostFrequentMistake.level}</span>
+            Erreur la plus fréquente : <span className="text-white">{bilan.mostFrequentMistake.mistake}</span> ({bilan.mostFrequentMistake.count} fois)
+          </div>
+        )}
+        {bilan.hardestMatchup && (
+          <div>
+            <span className={`badge ${badgeFor(bilan.hardestMatchup.level)} mr-2`}>{bilan.hardestMatchup.level}</span>
+            Matchup le plus difficile : <OpponentLeaderBadge label={bilan.hardestMatchup.opponent} size={18} /> ({bilan.hardestMatchup.winrate}% sur {bilan.hardestMatchup.sampleSize})
+          </div>
+        )}
+        {bilan.firstVsSecond && (
+          <div>
+            <span className={`badge ${badgeFor(bilan.firstVsSecond.level)} mr-2`}>{bilan.firstVsSecond.level}</span>
+            Premier {bilan.firstVsSecond.firstWinrate}% vs Second {bilan.firstVsSecond.secondWinrate}%
+          </div>
+        )}
+        {bilan.avgDuration && <div>Durée moyenne : <span className="text-white font-mono">{bilan.avgDuration} min</span></div>}
+        {bilan.usefulCard && (
+          <div>
+            <span className={`badge ${badgeFor(bilan.usefulCard.level)} mr-2`}>{bilan.usefulCard.level}</span>
+            Carte souvent utile : <span className="text-white">{bilan.usefulCard.card}</span> ({bilan.usefulCard.count} fois)
+          </div>
+        )}
+        {bilan.deadCard && (
+          <div>
+            <span className={`badge ${badgeFor(bilan.deadCard.level)} mr-2`}>{bilan.deadCard.level}</span>
+            Carte souvent morte : <span className="text-white">{bilan.deadCard.card}</span> ({bilan.deadCard.count} fois)
+          </div>
+        )}
+        {bilan.nextTrainingGoal && (
+          <div className="pt-2 border-t border-line mt-2 text-emerald-bright">🎯 {bilan.nextTrainingGoal}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PersonalStatsSection() {
+  const [stats, setStats] = useState<any>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    fetch("/api/stats/personal")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.ok) throw new Error();
+        setStats(d.stats);
+        setState("ready");
+      })
+      .catch(() => setState("error"));
+  }, []);
+
+  if (state === "loading") return <div className="card-tile rounded-sm p-5"><div className="skeleton h-20" /></div>;
+  if (state === "error" || !stats) return <div className="card-tile rounded-sm p-5 text-xs text-danger">Impossible de charger les statistiques personnelles.</div>;
+
+  return (
+    <>
+      <div className="card-tile rounded-sm p-5">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Premier / Second</h3>
+        {!stats.firstSecond.hasData ? (
+          <DataInsufficient reason={stats.firstSecond.reason} />
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-panel2 rounded p-3 text-center">
+              <div className="text-xl font-mono text-emerald-bright">{stats.firstSecond.first.winrate}%</div>
+              <div className="text-[10px] uppercase text-steel/60">Premier ({stats.firstSecond.first.total})</div>
+              {stats.firstSecond.first.avgDuration && <div className="text-[10px] text-steel/50 mt-1">~{stats.firstSecond.first.avgDuration} min en moyenne</div>}
+            </div>
+            <div className="bg-panel2 rounded p-3 text-center">
+              <div className="text-xl font-mono text-gold">{stats.firstSecond.second.winrate}%</div>
+              <div className="text-[10px] uppercase text-steel/60">Second ({stats.firstSecond.second.total})</div>
+              {stats.firstSecond.second.avgDuration && <div className="text-[10px] text-steel/50 mt-1">~{stats.firstSecond.second.avgDuration} min en moyenne</div>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card-tile rounded-sm p-5">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Mulligan</h3>
+        {!stats.mulligan.hasData ? (
+          <DataInsufficient reason={stats.mulligan.reason} />
+        ) : (
+          <div className="space-y-2 text-sm">
+            <div>Taux de mulligan : <span className="text-white font-mono">{stats.mulligan.mulliganRate}%</span></div>
+            {stats.mulligan.winrateWithMulligan !== undefined && <div>Winrate avec mulligan : <span className="text-white font-mono">{stats.mulligan.winrateWithMulligan}%</span></div>}
+            {stats.mulligan.winrateWithoutMulligan !== undefined && <div>Winrate sans mulligan : <span className="text-white font-mono">{stats.mulligan.winrateWithoutMulligan}%</span></div>}
+            {stats.mulligan.byHandQuality && Object.keys(stats.mulligan.byHandQuality).length > 0 && (
+              <div className="pt-2 border-t border-line mt-2">
+                <div className="text-[10px] uppercase text-steel/60 mb-1">Par qualité de main</div>
+                {Object.entries(stats.mulligan.byHandQuality).map(([q, d]: [string, any]) => (
+                  <div key={q} className="text-xs text-steel/80">{q} — {d.winrate}% ({d.total} partie{d.total > 1 ? "s" : ""})</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="card-tile rounded-sm p-5">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Mihawk — effet Leader</h3>
+        {!stats.mihawk.hasData ? (
+          <DataInsufficient reason={stats.mihawk.reason} />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div className="bg-panel2 rounded p-3 text-center">
+              <div className="text-lg font-mono text-emerald-bright">{stats.mihawk.avgActivations ?? "—"}</div>
+              <div className="text-[10px] uppercase text-steel/60">Activations / partie</div>
+            </div>
+            <div className="bg-panel2 rounded p-3 text-center">
+              <div className="text-lg font-mono text-gold">{stats.mihawk.avgFirstCost5Turn ?? "—"}</div>
+              <div className="text-[10px] uppercase text-steel/60">Tour 1er coût 5+</div>
+            </div>
+            <div className="bg-panel2 rounded p-3 text-center">
+              <div className="text-lg font-mono text-red-400">{stats.mihawk.effectForgottenRate ?? "—"}%</div>
+              <div className="text-[10px] uppercase text-steel/60">Effet oublié</div>
+            </div>
+            <div className="bg-panel2 rounded p-3 text-center">
+              <div className="text-lg font-mono text-red-400">{stats.mihawk.effectTooEarlyRate ?? "—"}%</div>
+              <div className="text-[10px] uppercase text-steel/60">Activé trop tôt</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card-tile rounded-sm p-5">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Style de jeu — erreurs fréquentes</h3>
+        {!stats.style.hasData ? (
+          <DataInsufficient reason={stats.style.reason} />
+        ) : (
+          <div className="space-y-1">
+            {stats.style.topMistakes.map((m: any) => (
+              <div key={m.mistake} className="flex justify-between text-sm">
+                <span className="text-steel/80">{m.mistake}</span>
+                <span className="text-white font-mono">{m.count}×</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -607,7 +981,8 @@ function MatchupsTab() {
 
       {MATCHUP_GUIDES.map((guide) => (
         <div key={guide.leaderKey} className="card-tile p-5">
-          <span className={`badge ${guide.leaderKey === "mihawk" ? "badge-green" : "badge-gold"} mb-3 inline-block`}>
+          <span className={`badge ${guide.leaderKey === "mihawk" ? "badge-green" : "badge-gold"} mb-3 inline-flex items-center gap-1.5`}>
+            <LeaderImage leaderKey={guide.leaderKey} size={16} />
             {guide.leaderKey === "mihawk" ? "Mihawk OP14-020" : "Shanks OP17"}
           </span>
           <p className="text-sm text-white mb-3">{guide.gameplanSummary}</p>
@@ -638,7 +1013,7 @@ function MatchupsTab() {
                 return (
                   <div key={i} className="bg-panel2 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
-                      <span className="text-white text-sm">{m.opponent}</span>
+                      <span className="text-white text-sm"><OpponentLeaderBadge label={m.opponent} size={22} /></span>
                       <span className={`badge ${badgeClass}`}>{m.difficulty}</span>
                     </div>
                     <p className="text-xs text-steel/70 mb-2">{m.why}</p>

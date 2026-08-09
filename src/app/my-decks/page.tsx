@@ -24,7 +24,9 @@ export default function MyDecksPage() {
   }, [load]);
 
   async function deletePersonalDeck(id: string) {
-    if (!confirm("Supprimer ce deck ?")) return;
+    const d = personalDecks.find((x: any) => x.id === id);
+    const name = d?.name ?? "ce deck";
+    if (!confirm(`Supprimer définitivement "${name}" ? Les parties déjà enregistrées dans le Journal ne seront pas supprimées, mais ce deck personnel disparaîtra. Cette action est irréversible.`)) return;
     await fetch(`/api/personal-decks/${id}`, { method: "DELETE" });
     load();
   }

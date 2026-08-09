@@ -79,3 +79,20 @@ export const HAWKEYE_RULES = [
   { n: 6, title: "AVOID BRICK OVERLOAD.", description: "Ne garde pas trop de cartes sans Counter en main simultanément." },
   { n: 7, title: "PLAN TWO TURNS AHEAD.", description: "Anticipe le tour adverse suivant avant de décider de ta séquence." },
 ];
+
+// Alertes Coach (Lot 3, Priorité 9) — rappels courts et actionnables,
+// spécifiques à la version ST32 actuelle du deck Mihawk. Conseils
+// stratégiques, jamais des règles officielles.
+export const COACH_ALERTS = [
+  "Joue tes personnages avant d'activer Mihawk.",
+  "Aucun personnage coût 5+ : tu ne récupéreras pas 3 DON!!.",
+  "ST32-003 n'a aucune cible valide en main.",
+  "Tu peux reposer ST32-003 pour filtrer ta main.",
+  "Tu risques une main trop lourde.",
+  "Garde suffisamment de défense.",
+  "Tu attaques trop rapidement la vie.",
+  "Contrôle d'abord le board.",
+  "Prépare deux personnages adverses reposés avant Law & Bepo.",
+  "Law & Bepo n'est pas un Blocker.",
+  "Calcule le létal avant la première attaque.",
+];
