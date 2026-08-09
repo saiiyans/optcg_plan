@@ -36,7 +36,15 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       <div className="space-y-3">
         <div className="relative w-full aspect-[5/7] card-tile overflow-hidden">
-          {displayImageUrl && <Image src={displayImageUrl} alt={card.name} fill className="object-cover" />}
+          {displayImageUrl && (
+            <Image
+              src={displayImageUrl}
+              alt={card.name}
+              fill
+              className="object-cover"
+              unoptimized={displayImageUrl.includes("spellmana.com")}
+            />
+          )}
         </div>
         {card.prints.length > 0 && (
           <div>
@@ -66,6 +74,32 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
             {card.isLeak && <span className="badge badge-gold">🔥 LEAK — non officiellement sorti</span>}
             {deckQty > 0 && <span className="badge badge-gold">x{deckQty} — Dans mon deck Mihawk</span>}
           </div>
+        </div>
+
+        {/* Notes par leader — juste sous le titre, toujours étiquetées pour
+            qu'on sache sans ambiguïté à quel deck la note se rapporte. */}
+        <div className="grid sm:grid-cols-2 gap-3">
+          {leaderPanels.map(({ leader, rating }) => (
+            <div key={leader.key} className="card-tile p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`badge ${leader.badgeClass}`}>Note pour {leader.label}</span>
+                {rating && (() => {
+                  const tier = toMihawkTier(rating.stars);
+                  return (
+                    <span className={`text-xs font-mono font-bold ${tier.color}`}>
+                      {tier.tier} <span className="text-steel/60">({tier.score10}/10)</span>
+                    </span>
+                  );
+                })()}
+              </div>
+              <EditableStarRating
+                cardNumber={card.cardNumber}
+                leaderContext={leader.leaderContext}
+                initialStars={rating?.stars ?? 0}
+                initialIsManualOverride={rating?.isManualOverride ?? false}
+              />
+            </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-4 gap-3 text-center">
@@ -169,7 +203,9 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
           ) : null;
         })()}
 
-        {/* Compatibilité par leader, côte à côte */}
+        {/* Détails par leader (justification, confiance, historique tournoi) —
+            la note en étoiles elle-même est en haut de page, pas ici, pour
+            éviter deux widgets éditables dupliqués sur la même carte. */}
         <div className="grid md:grid-cols-2 gap-4">
           {leaderPanels.map(({ leader, rating, stats }) => (
             <div key={leader.key} className="card-tile p-4 space-y-3">
@@ -187,12 +223,6 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
 
               {rating ? (
                 <>
-                  <EditableStarRating
-                    cardNumber={card.cardNumber}
-                    leaderContext={leader.leaderContext}
-                    initialStars={rating.stars}
-                    initialIsManualOverride={rating.isManualOverride}
-                  />
                   <p className="text-sm text-steel/90">{rating.justification}</p>
                   <div className="flex gap-3 text-xs font-mono text-steel/60 flex-wrap">
                     <span>Confiance : {rating.confidence}</span>
@@ -200,15 +230,7 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
                   </div>
                 </>
               ) : (
-                <>
-                  <p className="text-xs font-mono text-steel/60">Pas encore de note automatique — lance l'import dans la Bibliothèque, ou fixe une note toi-même :</p>
-                  <EditableStarRating
-                    cardNumber={card.cardNumber}
-                    leaderContext={leader.leaderContext}
-                    initialStars={0}
-                    initialIsManualOverride={false}
-                  />
-                </>
+                <p className="text-xs font-mono text-steel/60">Pas encore de note automatique — la note se fixe en haut de la fiche.</p>
               )}
 
               <div className="border-t border-line pt-3">
