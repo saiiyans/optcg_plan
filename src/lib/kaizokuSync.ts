@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { parseKaizokuText } from "./kaizokuParser";
+import { resolveOpponentLeaderId } from "./leaderNormalization";
 
 export interface KaizokuSyncSummary {
   parsed: number;
@@ -36,17 +37,26 @@ export async function syncKaizokuMatches(
   const toInsert = matches.filter((m) => !existingIds.has(m.kaizokuId));
 
   if (toInsert.length > 0) {
-    await db.match.createMany({
-      data: toInsert.map((m) => ({
-        date: m.date,
-        mode,
-        myDeck: m.myDeck,
-        opponentLeader: m.opponentLeader,
-        result: m.result,
-        notes: `Importé depuis Card D. Kaizoku — ${m.time}`,
-        kaizokuId: m.kaizokuId,
-      })),
-    });
+    for (const m of toInsert) {
+      let opponentLeaderId: string | null = null;
+      try {
+        opponentLeaderId = await resolveOpponentLeaderId(m.opponentLeader);
+      } catch (e) {
+        console.error("resolveOpponentLeaderId failed (sync Kaizoku):", e);
+      }
+      await db.match.create({
+        data: {
+          date: m.date,
+          mode,
+          myDeck: m.myDeck,
+          opponentLeader: m.opponentLeader,
+          opponentLeaderId,
+          result: m.result,
+          notes: `Importé depuis Card D. Kaizoku — ${m.time}`,
+          kaizokuId: m.kaizokuId,
+        },
+      });
+    }
   }
 
   return {

@@ -127,8 +127,8 @@ model PersonalRating {
   cardId           String
   card             Card     @relation(fields: [cardId], references: [id])
   leaderContext    String   @default("Mihawk OP14-020") // pour permettre d'autres leaders plus tard (ex: Shanks OP17)
-  stars            Int      // 0 à 5, calculé automatiquement puis modifiable à la main
-  autoStars        Int      // valeur calculée par le moteur de notation, jamais écrasée par l'édition manuelle
+  stars            Float    // 0 à 5, par pas de 0.5 — calculé automatiquement puis modifiable à la main
+  autoStars        Float    // valeur calculée par le moteur de notation, jamais écrasée par l'édition manuelle
   justification    String   // explication de la note, éditable
   confidence       String   // "élevé" | "moyen" | "données insuffisantes"
   recommendedCount Int?     // quantité recommandée (0 à 4)
@@ -264,10 +264,49 @@ model Match {
   uselessCard    String?
   keyTurn        String?  // ex. "Tour 4"
 
+  // --- Normalisation du leader adverse (Lot 2) — opponentLeader (texte
+  // brut saisi) n'est JAMAIS modifié ni supprimé, sert toujours d'affichage
+  // de secours. opponentLeaderId est renseigné automatiquement quand une
+  // correspondance fiable est trouvée/créée, pour regrouper les stats sans
+  // perdre le texte original saisi. ---
+  opponentLeaderId String?
+  opponentLeaderRef OpponentLeader? @relation(fields: [opponentLeaderId], references: [id])
+
+  // --- Analyse détaillée (Lot 2) — tous optionnels, jamais rétroactifs sur
+  // les parties déjà enregistrées. ---
+  confidence            Int?     // 1 à 5, confiance dans ses décisions
+  donRecoveredUnused    Int?     // DON!! récupérés (effet Leader) mais non utilisés
+  cardsInHandEnd        Int?
+  opponentLifeRemaining Int?
+  gameDurationMinutes   Int?
+  mihawkActivations     Int?     // nombre d'activations de l'effet Leader Mihawk
+  mihawkEffectForgotten Boolean?
+  mihawkEffectTooEarly  Boolean?
+  firstCost5Turn        Int?     // tour du premier personnage coût 5+
+  decisiveMoment        String?  // menace adverse déterminante / moment clé, texte libre
+
   insights CoachInsight[]
 
   @@index([myDeck])
   @@index([opponentLeader])
+  @@index([opponentLeaderId])
+}
+
+// --- Normalisation des leaders adverses (Lot 2) — regroupe les variantes
+// d'un même leader ("Luffy Noir OP17", "Luffy Noir (OP17)", "Monkey D.
+// Luffy Noir") sous un même identifiant, sans jamais supprimer ni modifier
+// le texte brut saisi dans Match.opponentLeader. Fusion manuelle possible
+// via l'API, jamais automatique au-delà d'une normalisation légère
+// (casse/ponctuation) pour éviter de fusionner deux leaders réellement
+// différents par erreur.
+model OpponentLeader {
+  id          String   @id @default(cuid())
+  displayName String   // nom canonique affiché
+  rawNames    String   // JSON string[] — toutes les variantes brutes déjà vues
+  color       String?
+  setCode     String?
+  createdAt   DateTime @default(now())
+  matches     Match[]
 }
 
 // --- Coaching (Phase 1) — table séparée, référence Match par id, ne touche
