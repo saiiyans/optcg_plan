@@ -48,6 +48,8 @@ export default function HomePage() {
 
       <CoachPersonnelWidget />
 
+      <StreakAndAchievementsWidget />
+
       <GameCounterWidget />
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -164,6 +166,88 @@ function CoachPersonnelWidget() {
       <div className="flex gap-2 mt-4">
         <Link href="/prep" className="btn btn-primary text-xs py-2 px-3">Enregistrer une partie</Link>
       </div>
+    </div>
+  );
+}
+
+function StreakAndAchievementsWidget() {
+  const [state, setState] = useState<LoadState>("loading");
+  const [streak, setStreak] = useState<any>(null);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [showAll, setShowAll] = useState(false);
+
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const d = await fetchWithTimeout("/api/achievements");
+      setStreak(d.streak);
+      setAchievements(d.achievements ?? []);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (state === "loading") {
+    return (
+      <div className="card-tile p-5">
+        <div className="skeleton h-16" />
+      </div>
+    );
+  }
+  if (state === "error") {
+    return (
+      <div className="card-tile p-5">
+        <RetryBlock message="Impossible de charger ta série et tes badges." onRetry={load} />
+      </div>
+    );
+  }
+
+  const unlocked = achievements.filter((a) => a.unlocked);
+  const visibleAchievements = showAll ? achievements : achievements.slice(0, 4);
+
+  return (
+    <div className="card-tile p-5">
+      <div className="flex items-center justify-between border-b border-line pb-2 mb-3">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold">Série & Badges</h3>
+        <span className="text-[10px] text-textMuted">{unlocked.length}/{achievements.length} débloqués</span>
+      </div>
+
+      <div className="flex items-center gap-3 mb-4">
+        <div className="text-2xl font-mono font-bold text-emerald-bright">
+          🔥 {streak.currentStreak}
+        </div>
+        <div className="text-xs text-steel/70">
+          jour{streak.currentStreak > 1 ? "s" : ""} d'affilée
+          {streak.atRisk && <span className="text-gold"> — joue aujourd'hui pour la garder</span>}
+          {streak.longestStreak > streak.currentStreak && <span className="text-steel/50"> · record : {streak.longestStreak}</span>}
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-2">
+        {visibleAchievements.map((a) => (
+          <div
+            key={a.id}
+            className={`rounded-lg p-2.5 border text-xs ${a.unlocked ? "bg-emerald-dim border-emerald text-emerald-bright" : "bg-panel2 border-line text-steel/60"}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-mono">{a.unlocked ? "✓" : "○"} {a.label}</span>
+              {a.progress && !a.unlocked && <span className="text-[10px] text-textMuted">{a.progress}</span>}
+            </div>
+            <div className="text-[10px] mt-0.5 opacity-80">{a.description}</div>
+          </div>
+        ))}
+      </div>
+
+      {achievements.length > 4 && (
+        <button onClick={() => setShowAll((s) => !s)} className="text-xs font-mono text-emerald-bright hover:underline mt-3">
+          {showAll ? "Voir moins" : `Voir tous les badges (${achievements.length})`}
+        </button>
+      )}
     </div>
   );
 }
