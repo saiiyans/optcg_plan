@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { resolveOpponentLeaderId } from "@/lib/leaderNormalization";
+import { maybeCreateAutoObjective } from "@/lib/autoObjectives";
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -69,6 +70,17 @@ export async function POST(req: NextRequest) {
       inspiredByDeckId: inspiredByDeckId || null,
     },
   });
+
+  // Pipeline de connexion (Priorité 8) — vérifie si un schéma de défaites
+  // se dégage contre ce leader, et propose un objectif si oui. Best-effort :
+  // un échec ici ne doit jamais faire échouer l'enregistrement de la partie.
+  if (result === "Défaite") {
+    try {
+      await maybeCreateAutoObjective(myDeck, opponentLeader);
+    } catch (e) {
+      console.error("maybeCreateAutoObjective failed:", e);
+    }
+  }
 
   return NextResponse.json({ ok: true, match });
 }

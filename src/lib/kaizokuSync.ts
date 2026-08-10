@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { parseKaizokuText } from "./kaizokuParser";
 import { resolveOpponentLeaderId } from "./leaderNormalization";
+import { maybeCreateAutoObjective } from "./autoObjectives";
 
 export interface KaizokuSyncSummary {
   parsed: number;
@@ -56,6 +57,14 @@ export async function syncKaizokuMatches(
           kaizokuId: m.kaizokuId,
         },
       });
+
+      if (m.result === "Défaite") {
+        try {
+          await maybeCreateAutoObjective(m.myDeck, m.opponentLeader);
+        } catch (e) {
+          console.error("maybeCreateAutoObjective failed (sync Kaizoku):", e);
+        }
+      }
     }
   }
 
