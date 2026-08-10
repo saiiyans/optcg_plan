@@ -235,6 +235,7 @@ model TournamentDeck {
   savedToMyDecks   Boolean  @default(false) // ajouté par l'utilisateur à sa rubrique "Mes Decks"
 
   cards TournamentDeckCard[]
+  inspiredMatches Match[]
 
   @@index([deckProfile])
   @@index([status])
@@ -302,6 +303,12 @@ model Match {
   mihawkEffectTooEarly  Boolean?
   firstCost5Turn        Int?     // tour du premier personnage coût 5+
   decisiveMoment        String?  // menace adverse déterminante / moment clé, texte libre
+
+  // Deck gagnant sauvegardé dont cette partie s'inspire/teste des idées —
+  // facultatif, jamais requis. Permet de voir si un deck gagnant qui a
+  // influencé tes choix fonctionne bien pour toi une fois testé.
+  inspiredByDeckId String?
+  inspiredByDeck   TournamentDeck? @relation(fields: [inspiredByDeckId], references: [id])
 
   insights CoachInsight[]
 

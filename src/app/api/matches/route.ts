@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     turnOrder, mulligan, openingHandQuality, mainMistake, mostUsefulCard, uselessCard, keyTurn,
     confidence, donRecoveredUnused, cardsInHandEnd, opponentLifeRemaining, gameDurationMinutes,
     mihawkActivations, mihawkEffectForgotten, mihawkEffectTooEarly, firstCost5Turn, decisiveMoment,
+    inspiredByDeckId,
   } = body;
 
   if (!date || !mode || !myDeck || !opponentLeader || !result) {
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
       mihawkEffectTooEarly: typeof mihawkEffectTooEarly === "boolean" ? mihawkEffectTooEarly : null,
       firstCost5Turn: typeof firstCost5Turn === "number" ? firstCost5Turn : null,
       decisiveMoment: decisiveMoment || null,
+      inspiredByDeckId: inspiredByDeckId || null,
     },
   });
 

@@ -5,6 +5,14 @@ import { MATCHUP_GUIDES, OPTCG_RESOURCES } from "@/lib/matchupGuide";
 import { LeaderImage } from "@/components/LeaderImage";
 import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
 import { QUICK_MISTAKES } from "@/lib/coachDiagnostic";
+import {
+  MIHAWK_MULLIGAN,
+  MIHAWK_TURN_GUIDE,
+  MIHAWK_PRINCIPLES,
+  MIHAWK_CORE_CARDS,
+  MIHAWK_MATCHUP_NOTES,
+} from "@/lib/mihawkGamePlan";
+import { CardThumb } from "@/components/CardThumb";
 
 // Page d'historique de matchs personnelle sur Card D. Kaizoku (même
 // deviceId/playerId utilisés par la synchronisation automatique et le
@@ -39,7 +47,7 @@ const LATE_GAME_MISTAKES = [
   "Partie trop longue", "Décision sous pression", "Temps dépassé",
 ];
 
-type Tab = "planning" | "journal" | "stats" | "objectifs" | "matchups";
+type Tab = "planning" | "journal" | "stats" | "objectifs" | "matchups" | "revisions";
 
 export default function PrepPage() {
   const [tab, setTab] = useState<Tab>("planning");
@@ -70,7 +78,7 @@ export default function PrepPage() {
       </div>
 
       <nav className="flex gap-1 border-b border-line overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        {(["planning", "journal", "stats", "matchups", "objectifs"] as Tab[]).map((t) => (
+        {(["planning", "journal", "stats", "matchups", "revisions", "objectifs"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -78,7 +86,7 @@ export default function PrepPage() {
               tab === t ? "text-gold border-gold" : "text-steel/60 border-transparent hover:text-white"
             }`}
           >
-            {{ planning: "Planning", journal: "Journal", stats: "Statistiques", matchups: "Matchups", objectifs: "Objectifs" }[t]}
+            {{ planning: "Planning", journal: "Journal", stats: "Statistiques", matchups: "Matchups", revisions: "Révisions", objectifs: "Objectifs" }[t]}
           </button>
         ))}
       </nav>
@@ -87,6 +95,7 @@ export default function PrepPage() {
       {tab === "journal" && <JournalTab />}
       {tab === "stats" && <StatsTab />}
       {tab === "matchups" && <MatchupsTab />}
+      {tab === "revisions" && <RevisionsTab />}
       {tab === "objectifs" && <ObjectifsTab />}
     </div>
   );
@@ -140,9 +149,18 @@ function JournalTab() {
     mihawkEffectTooEarly: "",
     firstCost5Turn: "",
     decisiveMoment: "",
+    inspiredByDeckId: "",
   });
   const [showQuickDetails, setShowQuickDetails] = useState(false);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
+  const [savedDecksForInspiration, setSavedDecksForInspiration] = useState<{ id: string; deckName: string; player: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/tournament-decks?saved=true")
+      .then((r) => r.json())
+      .then((d) => setSavedDecksForInspiration(d.decks ?? []))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -184,6 +202,7 @@ function JournalTab() {
       turnOrder: "", mulligan: "", openingHandQuality: "", mainMistake: "", mostUsefulCard: "", uselessCard: "", keyTurn: "",
       confidence: "", donRecoveredUnused: "", cardsInHandEnd: "", opponentLifeRemaining: "", gameDurationMinutes: "",
       mihawkActivations: "", mihawkEffectForgotten: "", mihawkEffectTooEarly: "", firstCost5Turn: "", decisiveMoment: "",
+      inspiredByDeckId: "",
     }));
     setShowDetailedAnalysis(false);
     load();
@@ -489,6 +508,18 @@ function JournalTab() {
               <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Menace adverse déterminante / moment clé</label>
               <input className="input w-full" placeholder="ex. Board Xebec trop développé au tour 5" value={form.decisiveMoment} onChange={(e) => setForm((f) => ({ ...f, decisiveMoment: e.target.value }))} />
             </div>
+
+            {savedDecksForInspiration.length > 0 && (
+              <div>
+                <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Inspiré par un deck gagnant sauvegardé (facultatif)</label>
+                <select className="input w-full" value={form.inspiredByDeckId} onChange={(e) => setForm((f) => ({ ...f, inspiredByDeckId: e.target.value }))}>
+                  <option value="">— Aucun —</option>
+                  {savedDecksForInspiration.map((d) => (
+                    <option key={d.id} value={d.id}>{d.deckName} — {d.player}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
 
@@ -1053,6 +1084,120 @@ function MatchupsTab() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function RevisionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="card-tile rounded-sm p-5">
+      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function RevisionsTab() {
+  return (
+    <div className="space-y-6">
+      <p className="text-xs text-steel/60">
+        Fiches rapides à relire avant une session — contenu déjà écrit ailleurs dans l'app, juste rassemblé ici pour une révision express.
+      </p>
+
+      <RevisionCard title="Effet du Leader Mihawk">
+        <p className="text-sm text-white leading-relaxed">
+          Si le Leader adverse a l'attribut Slash, Mihawk gagne +1000 de puissance.
+          [Activate: Main] [Once Per Turn] Tu peux reposer 1 de tes cartes : si tu as un personnage coût 5 ou plus, réactive jusqu'à 3 de tes DON!!. Tu ne peux alors plus jouer de personnage ce tour.
+        </p>
+        <p className="text-xs text-red-400 mt-2">⚠ Ne joue aucun personnage — il ne fait que réactiver du DON!!.</p>
+      </RevisionCard>
+
+      <RevisionCard title="Ordre correct des actions">
+        <ol className="text-sm text-steel/90 space-y-1 list-decimal list-inside">
+          <li>Joue tes personnages nécessaires d'abord</li>
+          <li>Active l'effet Leader Mihawk ensuite (plus de personnage jouable après)</li>
+          <li>Calcule le létal avant ta première attaque</li>
+          <li>Attaque dans l'ordre qui force les pires Counters adverses</li>
+        </ol>
+      </RevisionCard>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <RevisionCard title="Mulligan">
+          <div className="text-xs text-steel/80 mb-2"><span className="text-emerald-bright">Premier :</span> {MIHAWK_MULLIGAN.goingFirst}</div>
+          <div className="text-xs text-steel/80"><span className="text-emerald-bright">Second :</span> {MIHAWK_MULLIGAN.goingSecond}</div>
+        </RevisionCard>
+
+        <RevisionCard title="Calcul du létal">
+          <ul className="text-xs text-steel/80 space-y-1 list-disc list-inside">
+            <li>Additionne la puissance de tous tes attaquants disponibles</li>
+            <li>Compare aux vies adverses restantes, pas à la puissance du Leader seul</li>
+            <li>Compte le Counter adverse probable AVANT de déclarer l'attaque</li>
+            <li>Vérifie toujours le létal avant de jouer une carte qui pourrait le rater</li>
+          </ul>
+        </RevisionCard>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <RevisionCard title="Courbe — premier">
+          <div className="space-y-1">
+            {MIHAWK_TURN_GUIDE.goingFirst.map((t) => (
+              <div key={t.turn} className="text-xs text-steel/70">
+                <span className="text-white font-mono">T{t.turn} ({t.don} DON) :</span> {t.play}
+              </div>
+            ))}
+          </div>
+        </RevisionCard>
+        <RevisionCard title="Courbe — second">
+          <div className="space-y-1">
+            {MIHAWK_TURN_GUIDE.goingSecond.map((t) => (
+              <div key={t.turn} className="text-xs text-steel/70">
+                <span className="text-white font-mono">T{t.turn} ({t.don} DON) :</span> {t.play}
+              </div>
+            ))}
+          </div>
+        </RevisionCard>
+      </div>
+
+      <RevisionCard title="Cartes prioritaires du deck">
+        <div className="space-y-2">
+          {MIHAWK_CORE_CARDS.map((c) => (
+            <div key={c.cardNumber} className="bg-panel2 rounded-lg p-3 flex gap-3 items-start">
+              <CardThumb cardNumber={c.cardNumber} size={44} showLabel={false} />
+              <div className="min-w-0">
+                <div className="text-xs font-mono text-white">{c.role}</div>
+                <div className="text-xs text-steel/70 mt-0.5">{c.note}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </RevisionCard>
+
+      <RevisionCard title="Synergies">
+        <ul className="text-xs text-steel/80 space-y-1 list-disc list-inside">
+          {MIHAWK_PRINCIPLES.map((p) => <li key={p}>{p}</li>)}
+        </ul>
+      </RevisionCard>
+
+      <RevisionCard title="Menaces de chaque matchup">
+        <div className="space-y-2">
+          {MIHAWK_MATCHUP_NOTES.map((m) => (
+            <div key={m.opponent} className="bg-panel2 rounded-lg p-3">
+              <div className="text-xs font-mono text-white flex items-center gap-2">
+                {m.opponent} <span className="badge badge-gold text-[9px]">{m.confidence}</span>
+              </div>
+              <div className="text-xs text-steel/70 mt-1">{m.note}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 pt-3 border-t border-line space-y-2">
+          {MATCHUP_GUIDES.flatMap((g) => g.worstMatchups).slice(0, 4).map((m) => (
+            <div key={m.opponent} className="text-xs">
+              <span className="text-white font-mono">{m.opponent}</span> — <span className={m.difficulty === "Défavorable" ? "text-red-400" : m.difficulty === "Favorable" ? "text-emerald-bright" : "text-gold"}>{m.difficulty}</span>
+              <div className="text-steel/60 mt-0.5">{m.why}</div>
+            </div>
+          ))}
+        </div>
+      </RevisionCard>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+"use client";
+import { useState, useEffect } from "react";
 import { MIHAWK_REFERENCE_DECK } from "@/lib/deckReference";
 import {
   MIHAWK_DECK_NAME,
@@ -24,11 +26,176 @@ import {
   MIHAWK_SOURCES,
 } from "@/lib/mihawkGamePlan";
 
+type Selection = { type: "mihawk" } | { type: "personal" | "winning"; id: string };
+
 export default function DeckProfilePage() {
-  const totalCards = MIHAWK_REFERENCE_DECK.cards.reduce((s, c) => s + c.quantity, 0);
+  const [selection, setSelection] = useState<Selection>({ type: "mihawk" });
+  const [personalDecks, setPersonalDecks] = useState<{ id: string; name: string; leaderCardNumber: string }[]>([]);
+  const [savedDecks, setSavedDecks] = useState<{ id: string; name: string; leaderCardNumber: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/deck-profile/list")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok) {
+          setPersonalDecks(d.personalDecks ?? []);
+          setSavedDecks(d.savedTournamentDecks ?? []);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="space-y-6">
+      {/* SÉLECTEUR — la référence Mihawk reste le choix par défaut, contenu
+          inchangé. Les autres decks affichent une vue générique honnête
+          (composition réelle), sans narratif stratégique inventé. */}
+      {(personalDecks.length > 0 || savedDecks.length > 0) && (
+        <div className="card-tile p-4">
+          <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Deck affiché</label>
+          <select
+            className="input w-full"
+            value={selection.type === "mihawk" ? "mihawk" : `${selection.type}:${selection.id}`}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "mihawk") setSelection({ type: "mihawk" });
+              else {
+                const [type, id] = v.split(":");
+                setSelection({ type: type as "personal" | "winning", id });
+              }
+            }}
+          >
+            <option value="mihawk">🦅 Mihawk OP14-020 (référence — plan de jeu complet)</option>
+            {personalDecks.length > 0 && (
+              <optgroup label="Mes decks personnels">
+                {personalDecks.map((d) => (
+                  <option key={d.id} value={`personal:${d.id}`}>{d.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {savedDecks.length > 0 && (
+              <optgroup label="Decks gagnants sauvegardés">
+                {savedDecks.map((d) => (
+                  <option key={d.id} value={`winning:${d.id}`}>{d.name}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </div>
+      )}
+
+      {selection.type === "mihawk" ? (
+        <MihawkReferenceProfile />
+      ) : (
+        <GenericDeckProfile type={selection.type} id={selection.id} />
+      )}
+    </div>
+  );
+}
+
+function GenericDeckProfile({ type, id }: { type: "personal" | "winning"; id: string }) {
+  const [data, setData] = useState<any>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    setState("loading");
+    fetch(`/api/deck-profile/composition?type=${type}&id=${id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.ok) throw new Error(d.error);
+        setData(d);
+        setState("ready");
+      })
+      .catch(() => setState("error"));
+  }, [type, id]);
+
+  if (state === "loading") return <div className="card-tile p-5"><div className="skeleton h-32" /></div>;
+  if (state === "error" || !data) return <div className="card-tile p-5 text-xs text-danger">Impossible de charger ce deck.</div>;
+
+  const { name, leaderCardNumber, composition } = data;
+  const costOrder = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10+", "?"];
+
+  return (
+    <div className="space-y-6">
+      <div className="card-tile p-5">
+        <div className="flex items-center gap-3 mb-1">
+          <CardThumb cardNumber={leaderCardNumber} size={40} showLabel={false} />
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-widest text-gold">
+              {type === "winning" ? "Deck gagnant sauvegardé" : "Deck personnel"}
+            </div>
+            <h1 className="text-[26px] sm:text-3xl font-display font-bold text-white">{name}</h1>
+          </div>
+        </div>
+        <div className="text-xs font-mono text-steel/60 mb-3">{composition.totalCards} cartes hors Leader</div>
+        <div className="flex flex-wrap gap-2">
+          {composition.cards.map((c: any) => (
+            <CardThumb key={c.cardNumber} cardNumber={c.cardNumber} quantity={c.quantity} size={64} />
+          ))}
+        </div>
+      </div>
+
+      <div className="card-tile p-5">
+        <h2 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Composition (données réelles)</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className="bg-panel2 rounded-lg p-3 text-center">
+            <div className="text-lg font-mono text-white">{composition.characterCount}</div>
+            <div className="text-[10px] uppercase text-steel/60">Characters</div>
+          </div>
+          <div className="bg-panel2 rounded-lg p-3 text-center">
+            <div className="text-lg font-mono text-white">{composition.eventCount}</div>
+            <div className="text-[10px] uppercase text-steel/60">Events</div>
+          </div>
+          <div className="bg-panel2 rounded-lg p-3 text-center">
+            <div className="text-lg font-mono text-white">{composition.stageCount}</div>
+            <div className="text-[10px] uppercase text-steel/60">Stages</div>
+          </div>
+          <div className="bg-panel2 rounded-lg p-3 text-center">
+            <div className="text-lg font-mono text-gold">{composition.cost5PlusCharacterCount}</div>
+            <div className="text-[10px] uppercase text-steel/60">Coût 5+</div>
+          </div>
+          <div className="bg-panel2 rounded-lg p-3 text-center">
+            <div className="text-lg font-mono text-emerald-bright">{composition.counter1000Count}</div>
+            <div className="text-[10px] uppercase text-steel/60">Counter +1000</div>
+          </div>
+          <div className="bg-panel2 rounded-lg p-3 text-center">
+            <div className="text-lg font-mono text-emerald-bright">{composition.counter2000Count}</div>
+            <div className="text-[10px] uppercase text-steel/60">Counter +2000</div>
+          </div>
+          <div className="bg-panel2 rounded-lg p-3 text-center">
+            <div className="text-lg font-mono text-red-400">{composition.noCounterCount}</div>
+            <div className="text-[10px] uppercase text-steel/60">Sans Counter</div>
+          </div>
+        </div>
+
+        <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-2">Courbe de coût</div>
+        <div className="flex items-end gap-2 h-24">
+          {costOrder.filter((k) => composition.costCurve[k]).map((k) => {
+            const max = Math.max(...Object.values(composition.costCurve as Record<string, number>));
+            const h = Math.max(8, (composition.costCurve[k] / max) * 100);
+            return (
+              <div key={k} className="flex-1 flex flex-col items-center justify-end h-full">
+                <div className="text-[10px] text-steel/70 mb-1">{composition.costCurve[k]}</div>
+                <div className="w-full bg-emerald-dim rounded-t" style={{ height: `${h}%` }} />
+                <div className="text-[10px] text-steel/50 mt-1">{k}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-[10px] text-steel/50 mt-4">
+          Vue purement statistique — pas de plan de jeu ni de recommandations pour ce deck (contenu écrit à la main, disponible pour l'instant uniquement sur la référence Mihawk).
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MihawkReferenceProfile() {
+  const totalCards = MIHAWK_REFERENCE_DECK.cards.reduce((s, c) => s + c.quantity, 0);
+
+  return (
+    <>
       {/* MY MIHAWK */}
       <div className="card-tile p-5">
         <div className="flex items-center gap-3 mb-1">
@@ -253,6 +420,6 @@ export default function DeckProfilePage() {
           ))}
         </div>
       </div>
-    </div>
+    </>
   );
 }
