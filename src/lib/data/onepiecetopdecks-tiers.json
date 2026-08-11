@@ -1,35 +1,581 @@
 {
-  "sourceNote": "onepiecetopdecks.com n'a pas de page tier list dédiée — c'est une base de decklists de tournois. Ce classement est calculé à partir de la fréquence de soumission des decklists (format anglais OP16, page Decklist), pas un tier list officiel du site.",
+  "sourceNote": "onepiecetopdecks.com n'a pas de page tier list dédiée — c'est une base de decklists de tournois. Ce classement est calculé à partir du nombre réel de decklists soumises par leader (format japonais OP16, page Decklist), fourni par toi via leur graphique 'Count of Deck Profile'.",
   "capturedAt": "2026-08-11",
-  "format": "OP16 The Time Of Battle (English)",
+  "format": "OP16 The Time Of Battle (Japan)",
   "entries": [
-    { "displayName": "Monkey D. Luffy (Green/Blue)", "cardNumber": "OP16-022", "color": "Green/Blue", "tier": "S" },
-    { "displayName": "Enel (Purple)", "cardNumber": "OP15-058", "color": "Purple", "tier": "S" },
-    { "displayName": "Nami (Yellow/Blue)", "cardNumber": "OP11-041", "color": "Yellow/Blue", "tier": "S" },
-    { "displayName": "Marshall D. Teach (Yellow/Black)", "cardNumber": "OP16-080", "color": "Yellow/Black", "tier": "A" },
-    { "displayName": "Monkey D. Luffy (Red/Green)", "cardNumber": "OP13-001", "color": "Red/Green", "tier": "A" },
-    { "displayName": "Dracule Mihawk (Green)", "cardNumber": "OP14-020", "color": "Green", "tier": "B" },
-    { "displayName": "Donquijote Rosinante (Purple/Yellow)", "cardNumber": "OP12-061", "color": "Purple/Yellow", "tier": "B" },
-    { "displayName": "Charlotte Katakuri (Purple)", "cardNumber": "OP11-062", "color": "Purple", "tier": "C" },
-    { "displayName": "Sengoku (Purple)", "cardNumber": "OP16-060", "color": "Purple", "tier": "C" },
-    { "displayName": "Jewelry Bonney (Yellow/Red)", "cardNumber": "EB04-001", "color": "Yellow/Red", "tier": "C" },
-    { "displayName": "Eustass Kid (Yellow)", "cardNumber": "OP10-099", "color": "Yellow", "tier": "D" },
-    { "displayName": "Brook (Black/Green)", "cardNumber": "OP15-022", "color": "Black/Green", "tier": "D" },
-    { "displayName": "Yamato (Black)", "cardNumber": "OP16-079", "color": "Black", "tier": "D" },
-    { "displayName": "Buggy (Blue)", "cardNumber": "OP16-041", "color": "Blue", "tier": "D" },
-    { "displayName": "Kalgara (Yellow)", "cardNumber": "OP08-098", "color": "Yellow", "tier": "D" },
-    { "displayName": "Boa Hancock (Yellow/Blue)", "cardNumber": "OP14-041", "color": "Yellow/Blue", "tier": "D" },
-    { "displayName": "Marshall D. Teach (Black)", "cardNumber": "OP09-081", "color": "Black", "tier": "D" },
-    { "displayName": "Koby (Black/Red)", "cardNumber": "OP11-001", "color": "Black/Red", "tier": "D" },
-    { "displayName": "Crocodile (Black)", "cardNumber": "OP14-079", "color": "Black", "tier": "D" },
-    { "displayName": "Monkey D. Luffy (Yellow, Egghead)", "cardNumber": "ST29-001", "color": "Yellow", "tier": "D" },
-    { "displayName": "Krieg (Red/Green)", "cardNumber": "OP15-001", "color": "Red/Green", "tier": "D" },
-    { "displayName": "Sabo (Red/Black)", "cardNumber": "OP13-004", "color": "Red/Black", "tier": "D" },
-    { "displayName": "Roronoa Zoro / Sanji (Green/Blue)", "cardNumber": "ST12-001", "color": "Green/Blue", "tier": "D" },
-    { "displayName": "Monkey D. Luffy (Purple, EB02)", "cardNumber": "EB02-010", "color": "Purple/Green", "tier": "D" },
-    { "displayName": "Foxy (Purple)", "cardNumber": "OP07-059", "color": "Purple", "tier": "D" },
-    { "displayName": "Jinbe (Blue)", "cardNumber": "OP14-040", "color": "Blue", "tier": "D" },
-    { "displayName": "Monkey D. Luffy (Purple, EB01)", "cardNumber": "ST21-001", "color": "Red", "tier": "D" },
-    { "displayName": "Monkey D. Luffy (Purple)", "cardNumber": "OP11-040", "color": "Purple/Blue", "tier": "D" }
+    {
+      "displayName": "Monkey D. Luffy (Vert/Bleu)",
+      "cardNumber": "OP16-022",
+      "color": "Green/Blue",
+      "tier": "S",
+      "deckCount": 54
+    },
+    {
+      "displayName": "Enel (Violet)",
+      "cardNumber": "OP15-058",
+      "color": "Purple",
+      "tier": "S",
+      "deckCount": 49
+    },
+    {
+      "displayName": "Marshall D. Teach (Jaune/Noir)",
+      "cardNumber": "OP16-080",
+      "color": "Yellow/Black",
+      "tier": "S",
+      "deckCount": 46
+    },
+    {
+      "displayName": "Nami (Jaune/Bleu)",
+      "cardNumber": "OP11-041",
+      "color": "Yellow/Blue",
+      "tier": "A",
+      "deckCount": 31
+    },
+    {
+      "displayName": "Donquijote Rosinante (Violet/Jaune)",
+      "cardNumber": "OP12-061",
+      "color": "Purple/Yellow",
+      "tier": "A",
+      "deckCount": 31
+    },
+    {
+      "displayName": "Monkey D. Luffy (Rouge/Vert)",
+      "cardNumber": "OP13-001",
+      "color": "Red/Green",
+      "tier": "A",
+      "deckCount": 25
+    },
+    {
+      "displayName": "Yamato (Noir)",
+      "cardNumber": "OP16-079",
+      "color": "Black",
+      "tier": "A",
+      "deckCount": 25
+    },
+    {
+      "displayName": "Lucy (Violet, à vérifier)",
+      "cardNumber": null,
+      "color": "Purple",
+      "tier": "A",
+      "deckCount": 21
+    },
+    {
+      "displayName": "Dracule Mihawk (Vert)",
+      "cardNumber": "OP14-020",
+      "color": "Green",
+      "tier": "B",
+      "deckCount": 18
+    },
+    {
+      "displayName": "Charlotte Katakuri (Violet)",
+      "cardNumber": "OP11-062",
+      "color": "Purple",
+      "tier": "B",
+      "deckCount": 14
+    },
+    {
+      "displayName": "Boa Hancock (Jaune/Bleu)",
+      "cardNumber": "OP14-041",
+      "color": "Yellow/Blue",
+      "tier": "B",
+      "deckCount": 13
+    },
+    {
+      "displayName": "Luffy (Violet, à vérifier)",
+      "cardNumber": "OP11-040",
+      "color": "Purple/Blue",
+      "tier": "B",
+      "deckCount": 13
+    },
+    {
+      "displayName": "Ace (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "B",
+      "deckCount": 13
+    },
+    {
+      "displayName": "Shanks (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "B",
+      "deckCount": 12
+    },
+    {
+      "displayName": "Ace (Rouge/Bleu, à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "B",
+      "deckCount": 11
+    },
+    {
+      "displayName": "Kuzan (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "C",
+      "deckCount": 8
+    },
+    {
+      "displayName": "Sengoku (Violet)",
+      "cardNumber": "OP16-060",
+      "color": "Purple",
+      "tier": "C",
+      "deckCount": 8
+    },
+    {
+      "displayName": "Crocodile (Noir)",
+      "cardNumber": "OP14-079",
+      "color": "Black",
+      "tier": "C",
+      "deckCount": 7
+    },
+    {
+      "displayName": "Sabo (Rouge/Noir, à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "C",
+      "deckCount": 5
+    },
+    {
+      "displayName": "Eustass Kid (Jaune)",
+      "cardNumber": "OP10-099",
+      "color": "Yellow",
+      "tier": "C",
+      "deckCount": 5
+    },
+    {
+      "displayName": "Kalgara (Jaune)",
+      "cardNumber": "OP08-098",
+      "color": "Yellow",
+      "tier": "C",
+      "deckCount": 4
+    },
+    {
+      "displayName": "Buggy (Bleu, à vérifier)",
+      "cardNumber": null,
+      "color": "Blue",
+      "tier": "C",
+      "deckCount": 4
+    },
+    {
+      "displayName": "Sabo (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 3
+    },
+    {
+      "displayName": "Zoro (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 3
+    },
+    {
+      "displayName": "Foxy (Violet)",
+      "cardNumber": "OP07-059",
+      "color": "Purple",
+      "tier": "D",
+      "deckCount": 2
+    },
+    {
+      "displayName": "Nico Robin (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Luffy & Ace (Starter, à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Luffy (Starter, à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Jinbe (Bleu)",
+      "cardNumber": "OP14-040",
+      "color": "Blue",
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Rebecca (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Imu (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Brook (Noir/Vert)",
+      "cardNumber": "OP15-022",
+      "color": "Black/Green",
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Koala (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Trafalgar Law (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Charlotte Katakuri (variante, à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Luffy (Egghead, Jaune)",
+      "cardNumber": "ST29-001",
+      "color": "Yellow",
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Enel (variante, à vérifier)",
+      "cardNumber": "OP05-098",
+      "color": "Yellow",
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Jewelry Bonney (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Luffy (EB02, Violet/Vert)",
+      "cardNumber": "EB02-010",
+      "color": "Purple/Green",
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Nefertari Vivi (à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Luffy (variante, à vérifier)",
+      "cardNumber": null,
+      "color": null,
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Zoro & Sanji (Vert/Bleu)",
+      "cardNumber": "ST12-001",
+      "color": "Green/Blue",
+      "tier": "D",
+      "deckCount": 1
+    },
+    {
+      "displayName": "Baggy (à vérifier)",
+      "cardNumber": null,
+      "color": "Bleu",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Belo Betty (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Calgara (à vérifier)",
+      "cardNumber": null,
+      "color": "Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Carrot (à vérifier)",
+      "cardNumber": null,
+      "color": "Vert",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Charlotte Pudding (à vérifier)",
+      "cardNumber": null,
+      "color": "Violet/Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "César Clown (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Bleu",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Don Quijote Doflamingo (à vérifier)",
+      "cardNumber": null,
+      "color": "Bleu",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Don Quijote Doflamingo (à vérifier)",
+      "cardNumber": null,
+      "color": "Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Don Quijote Rosinante (à vérifier)",
+      "cardNumber": null,
+      "color": "Vert/Bleu",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Don Quijote Rosinante (à vérifier)",
+      "cardNumber": null,
+      "color": "Violet/Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Edward Newgate (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Ener (à vérifier)",
+      "cardNumber": null,
+      "color": "Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Ener (à vérifier)",
+      "cardNumber": null,
+      "color": "Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Eustass Kidd (à vérifier)",
+      "cardNumber": null,
+      "color": "Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Gecko Moria (à vérifier)",
+      "cardNumber": null,
+      "color": "Noir",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Gecko Moria (à vérifier)",
+      "cardNumber": null,
+      "color": "Noir/Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Gol D. Roger (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Hannyabal (à vérifier)",
+      "cardNumber": null,
+      "color": "Bleu/Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Hody Jones (à vérifier)",
+      "cardNumber": null,
+      "color": "Vert",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "King (à vérifier)",
+      "cardNumber": null,
+      "color": "Violet/Noir",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Kobby (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Noir",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Krieg (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Vert",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Kyros (à vérifier)",
+      "cardNumber": null,
+      "color": "Noir/Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Lim (à vérifier)",
+      "cardNumber": null,
+      "color": "Vert/Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Marco (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Bleu",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Monkey D. Dragon (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Oden Kozuki (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Vert",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Perona (à vérifier)",
+      "cardNumber": null,
+      "color": "Vert/Noir",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Reiju Vinsmoke (à vérifier)",
+      "cardNumber": null,
+      "color": "Bleu/Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Rob Lucci (à vérifier)",
+      "cardNumber": null,
+      "color": "Noir",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Shirahoshi (à vérifier)",
+      "cardNumber": null,
+      "color": "Vert/Jaune",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Silvers Rayleigh (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Smoker (à vérifier)",
+      "cardNumber": null,
+      "color": "Noir",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Smoker (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Vert",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Sugar (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Tony-Tony Chopper (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Vert",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Usopp (à vérifier)",
+      "cardNumber": null,
+      "color": "Bleu/Noir",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Uta (à vérifier)",
+      "cardNumber": null,
+      "color": "Rouge/Violet",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Uta (à vérifier)",
+      "cardNumber": null,
+      "color": "Vert",
+      "tier": "D",
+      "deckCount": 0
+    },
+    {
+      "displayName": "Végapunk (à vérifier)",
+      "cardNumber": null,
+      "color": "Jaune",
+      "tier": "D",
+      "deckCount": 0
+    }
   ]
 }

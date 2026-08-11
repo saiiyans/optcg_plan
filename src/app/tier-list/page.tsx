@@ -1,15 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { CardThumb } from "@/components/CardThumb";
 import { OPPONENT_LEADERS } from "@/lib/planningData";
 
 const TIERS = ["S", "A", "B", "C", "D"] as const;
-const TIER_COLORS: Record<string, string> = {
-  S: "border-gold bg-gold/10 text-gold",
-  A: "border-emerald bg-emerald-dim text-emerald-bright",
-  B: "border-line bg-panel2 text-white",
-  C: "border-line bg-panel2 text-steel/80",
-  D: "border-line bg-panel2 text-steel/60",
+
+// Couleurs de bande façon TierMaker — sobres mais lisibles, cohérentes
+// avec le reste de l'app (pas de couleurs criardes).
+const TIER_BAND_STYLE: Record<string, string> = {
+  S: "bg-[#ff7f7f]",
+  A: "bg-[#ffbf7f]",
+  B: "bg-[#ffdf7f]",
+  C: "bg-[#bfff7f]",
+  D: "bg-[#7fbfff]",
 };
 
 export default function TierListPage() {
@@ -19,6 +22,7 @@ export default function TierListPage() {
   const [autoResult, setAutoResult] = useState<any>(null);
   const [addCardNumber, setAddCardNumber] = useState("");
   const [addName, setAddName] = useState("");
+  const dragKey = useRef<string | null>(null);
 
   const load = () => {
     setState("loading");
@@ -34,30 +38,52 @@ export default function TierListPage() {
 
   useEffect(load, []);
 
-  async function moveTier(cardNumber: string, displayName: string, color: string | null, tier: string) {
+  function entryKey(e: any) {
+    return e.cardNumber || e.id || e.displayName;
+  }
+
+  async function moveTier(entry: any, tier: string) {
+    if (entry.tier === tier) return;
+    // Mise à jour optimiste — l'app répond tout de suite au glisser-déposer,
+    // sans attendre la confirmation serveur.
+    setEntries((prev) => prev.map((x) => (entryKey(x) === entryKey(entry) ? { ...x, tier, tierSource: "manual" } : x)));
     await fetch("/api/tier-list", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardNumber, tier, displayName, color }),
+      body: JSON.stringify({ cardNumber: entry.cardNumber || entry.displayName, tier, displayName: entry.displayName, color: entry.color }),
     });
-    load();
   }
 
-  async function removeEntry(cardNumber: string) {
-    if (!confirm("Retirer ce leader de la tier list ?")) return;
-    await fetch(`/api/tier-list?cardNumber=${encodeURIComponent(cardNumber)}`, { method: "DELETE" });
+  function onDragStart(entry: any) {
+    dragKey.current = entryKey(entry);
+  }
+  function onDropOnTier(tier: string) {
+    const entry = entries.find((e) => entryKey(e) === dragKey.current);
+    if (entry) moveTier(entry, tier);
+    dragKey.current = null;
+  }
+
+  async function removeEntry(entry: any) {
+    if (!confirm(`Retirer "${entry.displayName}" de la tier list ?`)) return;
+    await fetch(`/api/tier-list?cardNumber=${encodeURIComponent(entry.cardNumber || entry.displayName)}`, { method: "DELETE" });
     load();
   }
 
   async function addLeader() {
-    if (!addCardNumber.trim() || !addName.trim()) return;
-    await moveTier(addCardNumber.trim().toUpperCase(), addName.trim(), null, "C");
+    if (!addName.trim()) return;
+    const cardNumber = addCardNumber.trim() ? addCardNumber.trim().toUpperCase() : `CUSTOM-${addName.trim().toUpperCase().replace(/\s+/g, "-")}`;
+    await fetch("/api/tier-list", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardNumber, tier: "C", displayName: addName.trim() }),
+    });
     setAddCardNumber("");
     setAddName("");
+    load();
   }
 
   async function autoClassify() {
-    if (!confirm("Classer automatiquement selon les données onepiecetopdecks.com ? Les leaders déjà corrigés à la main ne seront jamais touchés.")) return;
+    if (!confirm("Classer automatiquement selon les données onepiecetopdecks.com (comptage réel de decklists) ? Les leaders déjà déplacés à la main ne seront jamais touchés.")) return;
     setBusy(true);
     const res = await fetch("/api/tier-list/auto-classify", { method: "POST" });
     const data = await res.json();
@@ -79,11 +105,11 @@ export default function TierListPage() {
           </button>
         </div>
         <p className="text-xs text-steel/60">
-          onepiecetopdecks.com n'a pas de page "tier list" officielle — c'est une base de decklists de tournois. Le classement automatique est calculé à partir de la <strong>fréquence de soumission des decklists</strong> (plus un leader revient souvent dans les résultats de tournois, plus haut il est classé), pas un jugement du site. Déplace librement n'importe quel leader à la main — une correction manuelle n'est jamais écrasée par un nouveau classement automatique.
+          Basé sur le nombre réel de decklists soumises par leader sur onepiecetopdecks.com (format japonais OP16) — le site n'a pas de tier list officielle, ce classement vient du comptage brut des decklists. Certains leaders récents n'ont pas encore de numéro de carte confirmé dans l'app : ils apparaissent en texte seul, marqués "à vérifier", plutôt qu'avec une image devinée.
         </p>
         {autoResult && (
           <div className="text-xs font-mono text-emerald-bright mt-2">
-            {autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà corrigé(s) à la main donc ignoré(s) — instantané du {autoResult.capturedAt} ({autoResult.format}).
+            {autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà déplacé(s) à la main donc ignoré(s).
           </div>
         )}
       </div>
@@ -95,46 +121,61 @@ export default function TierListPage() {
           <datalist id="leader-suggestions">
             {OPPONENT_LEADERS.map((l) => <option key={l} value={l} />)}
           </datalist>
-          <input className="input w-40" placeholder="Numéro (ex. OP16-080)" value={addCardNumber} onChange={(e) => setAddCardNumber(e.target.value)} />
+          <input className="input w-48" placeholder="Numéro (ex. OP16-080) — facultatif" value={addCardNumber} onChange={(e) => setAddCardNumber(e.target.value)} />
           <button onClick={addLeader} className="btn">+ Ajouter (tier C par défaut)</button>
         </div>
       </div>
 
-      {state === "loading" && <div className="card-tile p-5"><div className="skeleton h-40" /></div>}
+      {state === "loading" && <div className="card-tile p-5"><div className="skeleton h-64" /></div>}
       {state === "error" && <div className="card-tile p-5 text-xs text-danger">Impossible de charger la tier list.</div>}
 
-      {state === "ready" && TIERS.map((tier) => (
-        <div key={tier} className={`card-tile p-5 border-2 ${TIER_COLORS[tier]}`}>
-          <h2 className="font-mono text-lg font-bold mb-3">Tier {tier}</h2>
-          {byTier[tier].length === 0 ? (
-            <div className="text-xs text-steel/50">Aucun leader dans ce tier.</div>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              {byTier[tier].map((e) => (
-                <div key={e.cardNumber} className="bg-panel2 rounded-lg p-2.5 flex flex-col items-center gap-1.5" style={{ minWidth: 90 }}>
-                  <CardThumb cardNumber={e.cardNumber} size={56} showLabel={false} />
-                  <div className="text-[10px] text-center text-white leading-tight">{e.displayName}</div>
-                  {e.tierSource === "manual" && <span className="text-[8px] text-gold">✎ manuel</span>}
-                  <div className="flex gap-1 flex-wrap justify-center">
-                    {TIERS.filter((t) => t !== tier).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => moveTier(e.cardNumber, e.displayName, e.color, t)}
-                        className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-ink border border-line hover:border-emerald text-steel/70 hover:text-emerald-bright"
-                      >
-                        →{t}
-                      </button>
-                    ))}
-                    <button onClick={() => removeEntry(e.cardNumber)} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-ink border border-line hover:border-red-500 text-steel/70 hover:text-red-400">
-                      ✕
-                    </button>
+      {state === "ready" && (
+        <div className="card-tile p-0 overflow-hidden">
+          {TIERS.map((tier) => (
+            <div
+              key={tier}
+              className="flex border-b border-line last:border-b-0"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => onDropOnTier(tier)}
+            >
+              <div className={`w-16 sm:w-20 shrink-0 flex items-center justify-center font-display font-bold text-2xl sm:text-3xl text-black ${TIER_BAND_STYLE[tier]}`}>
+                {tier}
+              </div>
+              <div className="flex-1 flex flex-wrap gap-1.5 p-2 bg-panel2 min-h-[90px]">
+                {byTier[tier].length === 0 && (
+                  <div className="text-[10px] text-steel/40 flex items-center px-2">Glisse un leader ici</div>
+                )}
+                {byTier[tier].map((e) => (
+                  <div
+                    key={entryKey(e)}
+                    draggable
+                    onDragStart={() => onDragStart(e)}
+                    onDoubleClick={() => removeEntry(e)}
+                    title={`${e.displayName}${e.deckCount ? ` — ${e.deckCount} decklists observées` : ""} — double-clic pour retirer`}
+                    className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink"
+                    style={{ width: 64, height: 90 }}
+                  >
+                    {e.cardNumber && !e.cardNumber.startsWith("CUSTOM-") ? (
+                      <CardThumb cardNumber={e.cardNumber} size={64} showLabel={false} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-center px-1">
+                        <span className="text-[8px] font-mono text-steel/60 leading-tight">{e.displayName}</span>
+                      </div>
+                    )}
+                    {e.tierSource === "manual" && (
+                      <span className="absolute top-0 right-0 text-[7px] bg-gold text-black px-1 rounded-bl">✎</span>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      ))}
+      )}
+
+      <p className="text-[10px] text-steel/40">
+        Glisse une carte d'une bande à l'autre pour la reclasser à la main. Double-clique une carte pour la retirer complètement de la tier list.
+      </p>
     </div>
   );
 }
