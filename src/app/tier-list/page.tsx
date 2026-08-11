@@ -1,7 +1,59 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { CardThumb } from "@/components/CardThumb";
+import Image from "next/image";
 import { OPPONENT_LEADERS } from "@/lib/planningData";
+
+// Petit cache mémoire pour ne pas refaire la requête si le même numéro de
+// carte apparaît plusieurs fois pendant la session — même logique que
+// CardThumb, mais volontairement autonome ici : la tier list a besoin d'un
+// rendu compact sans lien cliquable ni libellé, pour ne pas gêner le
+// glisser-déposer.
+const tierImageCache = new Map<string, string | null>();
+async function resolveTierImage(cardNumber: string): Promise<string | null> {
+  if (tierImageCache.has(cardNumber)) return tierImageCache.get(cardNumber) ?? null;
+  try {
+    const res = await fetch(`/api/cards?q=${encodeURIComponent(cardNumber)}&limit=5&color=all`);
+    const data = await res.json();
+    const match = (data.cards ?? []).find((c: any) => c.cardNumber === cardNumber);
+    const url = match?.imageUrl || null;
+    tierImageCache.set(cardNumber, url);
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function TierCardImage({ cardNumber, label }: { cardNumber: string; label: string }) {
+  const [url, setUrl] = useState<string | null>(tierImageCache.get(cardNumber) ?? null);
+  useEffect(() => {
+    let cancelled = false;
+    if (tierImageCache.has(cardNumber)) return;
+    resolveTierImage(cardNumber).then((u) => {
+      if (!cancelled) setUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cardNumber]);
+
+  if (!url) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-center px-1">
+        <span className="text-[8px] font-mono text-steel/60 leading-tight">{label}</span>
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={url}
+      alt={label}
+      fill
+      sizes="64px"
+      className="object-cover"
+      unoptimized={url.includes("spellmana.com")}
+    />
+  );
+}
 
 const TIERS = ["S", "A", "B", "C", "D"] as const;
 
@@ -109,7 +161,7 @@ export default function TierListPage() {
         </p>
         {autoResult && (
           <div className="text-xs font-mono text-emerald-bright mt-2">
-            {autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà déplacé(s) à la main donc ignoré(s).
+            {autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà déplacé(s) à la main donc ignoré(s), {autoResult.removed ?? 0} entrée(s) obsolète(s) nettoyée(s).
           </div>
         )}
       </div>
@@ -156,7 +208,7 @@ export default function TierListPage() {
                     style={{ width: 64, height: 90 }}
                   >
                     {e.cardNumber && !e.cardNumber.startsWith("CUSTOM-") ? (
-                      <CardThumb cardNumber={e.cardNumber} size={64} showLabel={false} />
+                      <TierCardImage cardNumber={e.cardNumber} label={e.displayName} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-center px-1">
                         <span className="text-[8px] font-mono text-steel/60 leading-tight">{e.displayName}</span>

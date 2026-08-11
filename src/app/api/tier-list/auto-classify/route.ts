@@ -20,6 +20,22 @@ export const dynamic = "force-dynamic";
 export async function POST() {
   let applied = 0;
   let skippedManual = 0;
+  let removed = 0;
+
+  const currentKeys = new Set(
+    (snapshot.entries as any[]).map((e) => e.cardNumber || `CUSTOM-${e.displayName.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}`)
+  );
+
+  // Nettoie les entrées "auto" d'un instantané précédent qui n'existent
+  // plus dans l'instantané actuel — jamais une entrée "manual", qui reste
+  // intacte quoi qu'il arrive.
+  const allEntries = await db.leaderTierEntry.findMany();
+  for (const entry of allEntries) {
+    if (entry.tierSource === "auto" && !currentKeys.has(entry.cardNumber)) {
+      await db.leaderTierEntry.delete({ where: { id: entry.id } });
+      removed++;
+    }
+  }
 
   for (const e of snapshot.entries as any[]) {
     const key: string = e.cardNumber || `CUSTOM-${e.displayName.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}`;
@@ -40,6 +56,7 @@ export async function POST() {
     ok: true,
     applied,
     skippedManual,
+    removed,
     sourceNote: snapshot.sourceNote,
     capturedAt: snapshot.capturedAt,
     format: snapshot.format,
