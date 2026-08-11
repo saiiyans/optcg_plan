@@ -11,8 +11,8 @@ const ITEMS = [
   { href: "/deck-profile", label: "Deck Profile", icon: "🦅" },
   { href: "/combo-lab", label: "Combo Lab", icon: "🧪" },
   { href: "/matchup-center", label: "Matchup Center", icon: "⚔️" },
+  { href: "/tier-list", label: "Tier List", icon: "📶" },
   { href: "/prep", label: "Prépa", icon: "📋" },
-  { href: "/compare", label: "Comparer", icon: "⚖️" },
   { href: "/dashboard", label: "Stats", icon: "📊" },
 ];
 

@@ -373,3 +373,23 @@ model WeeklyInfo {
   content    String   @default("")
   updatedAt  DateTime @updatedAt
 }
+
+// --- Tier List des leaders de la méta (nouvelle rubrique) ---
+// Chaque leader adverse (identifié par son numéro de carte) a un tier
+// (S/A/B/C/D) — modifiable à la main, ou rempli en masse par le bouton
+// "Classer automatiquement" qui applique un instantané basé sur les
+// decklists soumises sur onepiecetopdecks.com. tierSource distingue les
+// deux origines pour ne jamais confondre un classement manuel avec un
+// classement automatique dans l'affichage.
+model LeaderTierEntry {
+  id          String   @id @default(cuid())
+  cardNumber  String   @unique // ex: OP15-058
+  displayName String   // ex: "Enel"
+  color       String?
+  tier        String   // "S" | "A" | "B" | "C" | "D"
+  tierSource  String   @default("manual") // "manual" | "auto"
+  note        String?
+  updatedAt   DateTime @updatedAt
+
+  @@index([tier])
+}
