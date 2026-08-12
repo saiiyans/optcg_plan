@@ -389,6 +389,7 @@ model LeaderTierEntry {
   tier        String   // "S" | "A" | "B" | "C" | "D"
   tierSource  String   @default("manual") // "manual" | "auto"
   note        String?
+  order       Int      @default(0) // position exacte dans le tier, glisser-déposer
   updatedAt   DateTime @updatedAt
 
   @@index([tier])

@@ -96,16 +96,68 @@ export default function TierListPage() {
     return e.cardNumber || e.id || e.displayName;
   }
 
+  async function persistOrder(tier: string, orderedEntries: any[]) {
+    await fetch("/api/tier-list/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tier, cardNumbers: orderedEntries.map((e) => e.cardNumber) }),
+    });
+  }
+
   async function moveTier(entry: any, tier: string) {
+    // Déplace en fin de tier (dépôt sur la bande elle-même, pas sur une
+    // carte précise) — utilisé aussi comme filet de sécurité.
     if (entry.tier === tier) return;
-    // Mise à jour optimiste — l'app répond tout de suite au glisser-déposer,
-    // sans attendre la confirmation serveur.
+    const targetList = byTier[tier].filter((x) => entryKey(x) !== entryKey(entry));
+    const newTargetList = [...targetList, entry];
     setEntries((prev) => prev.map((x) => (entryKey(x) === entryKey(entry) ? { ...x, tier, tierSource: "manual" } : x)));
     await fetch("/api/tier-list", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardNumber: entry.cardNumber || entry.displayName, tier, displayName: entry.displayName, color: entry.color }),
     });
+    await persistOrder(tier, newTargetList);
+  }
+
+  // Repositionne précisément une carte à l'endroit où elle est déposée —
+  // avant ou après la carte survolée, dans le même tier ou un autre.
+  async function moveToPosition(entry: any, targetTier: string, targetEntry: any, before: boolean) {
+    if (entryKey(entry) === entryKey(targetEntry)) return;
+
+    const sourceTier = entry.tier;
+    const changingTier = sourceTier !== targetTier;
+
+    let newTargetList = byTier[targetTier].filter((x) => entryKey(x) !== entryKey(entry));
+    const idx = newTargetList.findIndex((x) => entryKey(x) === entryKey(targetEntry));
+    const insertAt = before ? idx : idx + 1;
+    newTargetList = [...newTargetList.slice(0, insertAt), entry, ...newTargetList.slice(insertAt)];
+
+    // Mise à jour optimiste immédiate — reflète tout de suite le nouvel
+    // ordre calculé, sans attendre le rechargement après sauvegarde.
+    const orderMap = new Map<string, number>();
+    newTargetList.forEach((x, i) => orderMap.set(entryKey(x), i));
+    setEntries((prev) =>
+      prev.map((x) => {
+        if (entryKey(x) === entryKey(entry)) {
+          return { ...x, tier: targetTier, tierSource: "manual", order: orderMap.get(entryKey(entry)) ?? 0 };
+        }
+        if (orderMap.has(entryKey(x))) {
+          return { ...x, order: orderMap.get(entryKey(x)) };
+        }
+        return x;
+      })
+    );
+
+    if (changingTier) {
+      await fetch("/api/tier-list", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardNumber: entry.cardNumber || entry.displayName, tier: targetTier, displayName: entry.displayName, color: entry.color }),
+      });
+      const newSourceList = byTier[sourceTier].filter((x) => entryKey(x) !== entryKey(entry));
+      await persistOrder(sourceTier, newSourceList);
+    }
+    await persistOrder(targetTier, newTargetList);
   }
 
   function onDragStart(entry: any) {
@@ -114,6 +166,15 @@ export default function TierListPage() {
   function onDropOnTier(tier: string) {
     const entry = entries.find((e) => entryKey(e) === dragKey.current);
     if (entry) moveTier(entry, tier);
+    dragKey.current = null;
+  }
+  function onDropOnCard(e: React.DragEvent, targetTier: string, targetEntry: any) {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const before = e.clientX < rect.left + rect.width / 2;
+    const entry = entries.find((x) => entryKey(x) === dragKey.current);
+    if (entry) moveToPosition(entry, targetTier, targetEntry, before);
     dragKey.current = null;
   }
 
@@ -148,6 +209,7 @@ export default function TierListPage() {
 
   const byTier: Record<string, any[]> = { S: [], A: [], B: [], C: [], D: [] };
   for (const e of entries) (byTier[e.tier] ?? byTier.D).push(e);
+  for (const t of TIERS) byTier[t].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   return (
     <div className="space-y-6">
@@ -204,11 +266,13 @@ export default function TierListPage() {
                     key={entryKey(e)}
                     draggable
                     onDragStart={() => onDragStart(e)}
+                    onDragOver={(ev) => ev.preventDefault()}
+                    onDrop={(ev) => onDropOnCard(ev, tier, e)}
                     onClick={() => {
                       if (e.cardNumber && !e.cardNumber.startsWith("CUSTOM-")) router.push(`/cards/${e.cardNumber}`);
                     }}
                     onDoubleClick={() => removeEntry(e)}
-                    title={`${e.displayName}${e.deckCount ? ` — ${e.deckCount} decklists observées` : ""} — clic pour la fiche, double-clic pour retirer`}
+                    title={`${e.displayName}${e.deckCount ? ` — ${e.deckCount} decklists observées` : ""} — glisse sur une autre carte pour te positionner avant/après, clic pour la fiche, double-clic pour retirer`}
                     className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink"
                     style={{ width: 64, height: 90 }}
                   >
