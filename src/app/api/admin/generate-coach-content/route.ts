@@ -95,6 +95,34 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        // Note Mihawk (étoiles) — uniquement pour les cartes vertes, jamais
+        // écrasée si une note manuelle existe déjà (isManualOverride=true).
+        // C'est ce champ que lit la Tier List des cartes.
+        if (isGreen && parsed.mihawkStars != null) {
+          const rawStars = typeof parsed.mihawkStars === "number" ? parsed.mihawkStars : parseFloat(String(parsed.mihawkStars));
+          if (!Number.isNaN(rawStars)) {
+          const stars = Math.min(5, Math.max(0, Math.round(rawStars * 2) / 2)); // arrondi au demi-point
+          const existingRating = await db.personalRating.findUnique({
+            where: { cardId_leaderContext: { cardId: card.id, leaderContext: "Mihawk OP14-020" } },
+          });
+          if (!existingRating?.isManualOverride) {
+            await db.personalRating.upsert({
+              where: { cardId_leaderContext: { cardId: card.id, leaderContext: "Mihawk OP14-020" } },
+              update: { stars, autoStars: stars, justification: parsed.mihawkAnalysisFr ?? undefined, confidence: "généré (IA)" },
+              create: {
+                cardId: card.id,
+                leaderContext: "Mihawk OP14-020",
+                stars,
+                autoStars: stars,
+                justification: parsed.mihawkAnalysisFr ?? null,
+                confidence: "généré (IA)",
+                isManualOverride: false,
+              },
+            });
+          }
+          }
+        }
+
         results.push({ cardNumber: card.cardNumber, ok: true });
 
         // Petite pause de politesse entre deux appels — reste sous la limite
@@ -136,7 +164,8 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre), avec exactement ce
       ? `,
   "mihawkAnalysisFr": "1-2 phrases sur le rôle de cette carte dans un deck Mihawk OP14-020 (deck vert, tempo/contrôle, DON!! management) — si la carte n'a pas de lien direct avec Mihawk, dis-le simplement plutôt que d'inventer une synergie",
   "mihawkPros": ["1 à 3 avantages courts"],
-  "mihawkCons": ["0 à 2 inconvénients courts, tableau vide si aucun"]`
+  "mihawkCons": ["0 à 2 inconvénients courts, tableau vide si aucun"],
+  "mihawkStars": "note de 0 à 5 (par pas de 0.5) de l'utilité de cette carte dans un deck Mihawk compétitif — 5=staple quasi indispensable, 4=très solide, 3=jouable/situationnel, 2=faible mais pas inutile, 1=très marginal, 0=aucune utilité dans ce deck. Sois honnête et varié, ne mets pas systématiquement une note moyenne."`
       : `,
   "opponentMatchupNote": "1-2 phrases en français sur ce à quoi un joueur Mihawk doit faire attention si l'adversaire joue cette carte — si la carte n'a pas d'impact notable sur ce matchup, dis-le simplement plutôt que d'inventer un danger"`
   }
