@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { OPPONENT_LEADERS } from "@/lib/planningData";
 
 // Petit cache mémoire pour ne pas refaire la requête si le même numéro de
@@ -68,6 +69,7 @@ const TIER_BAND_STYLE: Record<string, string> = {
 };
 
 export default function TierListPage() {
+  const router = useRouter();
   const [entries, setEntries] = useState<any[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [busy, setBusy] = useState(false);
@@ -202,8 +204,11 @@ export default function TierListPage() {
                     key={entryKey(e)}
                     draggable
                     onDragStart={() => onDragStart(e)}
+                    onClick={() => {
+                      if (e.cardNumber && !e.cardNumber.startsWith("CUSTOM-")) router.push(`/cards/${e.cardNumber}`);
+                    }}
                     onDoubleClick={() => removeEntry(e)}
-                    title={`${e.displayName}${e.deckCount ? ` — ${e.deckCount} decklists observées` : ""} — double-clic pour retirer`}
+                    title={`${e.displayName}${e.deckCount ? ` — ${e.deckCount} decklists observées` : ""} — clic pour la fiche, double-clic pour retirer`}
                     className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink"
                     style={{ width: 64, height: 90 }}
                   >

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 const TIERS = ["S", "A", "B", "C", "D", "?"] as const;
 const TIER_BAND_STYLE: Record<string, string> = {
@@ -29,28 +30,47 @@ function tierToStars(tier: string): number {
 }
 
 export default function CardTierListPage() {
+  const router = useRouter();
   const [cards, setCards] = useState<any[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [loadProgress, setLoadProgress] = useState({ done: 0, total: 0 });
+  const [savedFlash, setSavedFlash] = useState<string | null>(null);
   const dragKey = useState<{ current: string | null }>({ current: null })[0];
 
-  const load = () => {
+  // L'API /api/cards plafonne à 200 résultats par appel (protection contre
+  // les requêtes non bornées ailleurs dans l'app) — indispensable ici de
+  // paginer nous-mêmes pour vraiment récupérer les 465+ cartes vertes,
+  // sinon les cartes qui arrivent après (OP17 notamment) n'étaient jamais
+  // chargées du tout.
+  const load = async () => {
     setState("loading");
-    fetch("/api/cards?color=Green&limit=500&leader=mihawk")
-      .then((r) => r.json())
-      .then((d) => {
+    try {
+      let offset = 0;
+      let all: any[] = [];
+      let total = Infinity;
+      while (offset < total) {
+        const res = await fetch(`/api/cards?color=Green&limit=200&offset=${offset}&leader=mihawk`);
+        const d = await res.json();
         if (!d.ok) throw new Error();
-        setCards(
-          d.cards.map((c: any) => ({
-            ...c,
-            tier: starsToTier(c.rating?.stars),
-          }))
-        );
-        setState("ready");
-      })
-      .catch(() => setState("error"));
+        total = d.total;
+        all = all.concat(d.cards);
+        offset += d.cards.length;
+        setLoadProgress({ done: all.length, total });
+        if (d.cards.length === 0) break; // sécurité anti-boucle infinie
+      }
+      // Les Leaders (dont Mihawk lui-même) ont déjà leur propre Tier List
+      // dédiée — on les exclut ici pour ne garder que Character/Event/Stage.
+      const nonLeaders = all.filter((c) => c.category !== "Leader");
+      setCards(nonLeaders.map((c: any) => ({ ...c, tier: starsToTier(c.rating?.stars) })));
+      setState("ready");
+    } catch {
+      setState("error");
+    }
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function moveTier(card: any, tier: string) {
     if (card.tier === tier) return;
@@ -86,7 +106,14 @@ export default function CardTierListPage() {
         </p>
       </div>
 
-      {state === "loading" && <div className="card-tile p-5"><div className="skeleton h-64" /></div>}
+      {state === "loading" && (
+        <div className="card-tile p-5">
+          <div className="text-xs font-mono text-steel/60 mb-2">
+            Chargement... {loadProgress.done}/{loadProgress.total || "?"} cartes
+          </div>
+          <div className="skeleton h-64" />
+        </div>
+      )}
       {state === "error" && <div className="card-tile p-5 text-xs text-danger">Impossible de charger les cartes.</div>}
 
       {state === "ready" && (
@@ -108,7 +135,8 @@ export default function CardTierListPage() {
                     key={c.cardNumber}
                     draggable
                     onDragStart={() => onDragStart(c)}
-                    title={c.name}
+                    onClick={() => router.push(`/cards/${c.cardNumber}`)}
+                    title={`${c.name} — clique pour voir la fiche, glisse pour changer de tier`}
                     className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink shrink-0"
                     style={{ width: 44, height: 62 }}
                   >
