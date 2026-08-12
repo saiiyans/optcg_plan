@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const BATCH_SIZE = 5; // petits lots, comme l'import — reste largement sous les limites de temps
-const GEMINI_MODEL = "gemini-2.5-flash-lite"; // quota gratuit le plus généreux (~1000-1500 req/jour, sans carte bancaire)
+const GEMINI_MODEL = "gemini-2.5-flash"; // gemini-2.5-flash-lite n'est plus proposé aux nouveaux comptes (erreur 404) — gemini-2.5-flash reste sur le palier gratuit
 
 /**
  * POST /api/admin/generate-coach-content
@@ -125,10 +125,10 @@ export async function POST(req: NextRequest) {
 
         results.push({ cardNumber: card.cardNumber, ok: true });
 
-        // Petite pause de politesse entre deux appels — reste sous la limite
-        // de requêtes/minute du palier gratuit sans avoir besoin de logique
-        // de retry compliquée.
-        await new Promise((r) => setTimeout(r, 500));
+        // Pause entre deux appels — gemini-2.5-flash a un quota gratuit
+        // plus restreint (~15 requêtes/minute) que l'ancien flash-lite,
+        // 4.5s garde une marge de sécurité sans logique de retry compliquée.
+        await new Promise((r) => setTimeout(r, 4500));
       } catch (e: any) {
         results.push({ cardNumber: card.cardNumber, ok: false, error: e?.message ?? String(e) });
       }
