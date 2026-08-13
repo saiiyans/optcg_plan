@@ -13,6 +13,7 @@ const ITEMS = [
   { href: "/matchup-center", label: "Matchup Center", icon: "⚔️" },
   { href: "/tier-list", label: "Tier List", icon: "📶" },
   { href: "/card-tier-list", label: "Tier List Cartes", icon: "🃏" },
+  { href: "/phase-tier-list", label: "Phase (DON!!)", icon: "⏱️" },
   { href: "/prep", label: "Prépa", icon: "📋" },
   { href: "/dashboard", label: "Stats", icon: "📊" },
 ];
