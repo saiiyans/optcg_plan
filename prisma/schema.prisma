@@ -394,3 +394,19 @@ model LeaderTierEntry {
 
   @@index([tier])
 }
+
+// --- Key Cards (nouvelle rubrique) — quelles cartes vertes sont clés à
+// jouer contre chaque leader de la méta. Relation plusieurs-à-plusieurs :
+// une carte peut être clé contre plusieurs leaders, un leader peut avoir
+// plusieurs cartes clés. Jamais de doublon exact grâce à @@unique.
+model KeyCardEntry {
+  id               String   @id @default(cuid())
+  cardNumber       String   // la carte verte désignée comme clé
+  leaderCardNumber String   // le leader adverse concerné
+  note             String?
+  createdAt        DateTime @default(now())
+
+  @@unique([cardNumber, leaderCardNumber])
+  @@index([leaderCardNumber])
+  @@index([cardNumber])
+}
