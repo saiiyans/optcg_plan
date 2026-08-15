@@ -71,12 +71,25 @@ export default function CardsPage() {
     setLoading(true);
     setCardsError(null);
     try {
-      const res = await fetch(`/api/cards?${buildParams(0).toString()}`);
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data?.error ?? `Erreur ${res.status}`);
-      setCards(data.cards ?? []);
-      setTotalFiltered(data.total ?? 0);
-      setHasMore(!!data.hasMore);
+      let offset = 0;
+      let all: any[] = [];
+      let total = 0;
+      let more = true;
+      while (more) {
+        const res = await fetch(`/api/cards?${buildParams(offset).toString()}`);
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data?.error ?? `Erreur ${res.status}`);
+        all = all.concat(data.cards ?? []);
+        total = data.total ?? 0;
+        more = !!data.hasMore;
+        offset += (data.cards ?? []).length;
+        // Affichage progressif — l'utilisateur voit les cartes apparaître
+        // au fur et à mesure plutôt que d'attendre le chargement complet.
+        setCards([...all]);
+        setTotalFiltered(total);
+        if ((data.cards ?? []).length === 0) break; // sécurité anti-boucle infinie
+      }
+      setHasMore(false);
     } catch (e: any) {
       // Avant ce correctif : une réponse 500 à corps vide faisait planter
       // res.json() (SyntaxError "Unexpected end of JSON input"), l'erreur
