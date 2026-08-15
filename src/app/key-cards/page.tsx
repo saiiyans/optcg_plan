@@ -186,7 +186,7 @@ export default function KeyCardsPage() {
           {/* PALETTE — toutes les cartes vertes, jamais retirées après dépôt */}
           <div className="card-tile p-3">
             <div className="text-[11px] font-mono uppercase text-gold mb-2">Palette — toutes les cartes vertes ({greenCards.length})</div>
-            <div className="flex flex-wrap gap-1 max-h-[300px] overflow-y-auto">
+            <div className="flex flex-wrap gap-2">
               {greenCards.map((c) => (
                 <div
                   key={c.cardNumber}

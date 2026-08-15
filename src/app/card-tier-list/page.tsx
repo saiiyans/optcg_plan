@@ -128,7 +128,7 @@ export default function CardTierListPage() {
               <div className={`w-16 sm:w-20 shrink-0 flex items-center justify-center font-display font-bold text-xl sm:text-2xl text-black ${TIER_BAND_STYLE[tier]}`}>
                 {TIER_LABEL[tier]}
               </div>
-              <div className="flex-1 flex flex-wrap gap-1 p-2 bg-panel2 min-h-[80px] max-h-[400px] overflow-y-auto">
+              <div className="flex-1 flex flex-wrap gap-2 p-2 bg-panel2 min-h-[80px]">
                 {byTier[tier].length === 0 && <div className="text-[10px] text-steel/40 flex items-center px-2">Aucune carte</div>}
                 {byTier[tier].map((c) => (
                   <div
