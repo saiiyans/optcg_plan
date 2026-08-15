@@ -274,7 +274,7 @@ export default function TierListPage() {
                     onDoubleClick={() => removeEntry(e)}
                     title={`${e.displayName}${e.deckCount ? ` — ${e.deckCount} decklists observées` : ""} — glisse sur une autre carte pour te positionner avant/après, clic pour la fiche, double-clic pour retirer`}
                     className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink"
-                    style={{ width: 64, height: 90 }}
+                    style={{ width: 72, height: 101, touchAction: "none" }}
                   >
                     {e.cardNumber && !e.cardNumber.startsWith("CUSTOM-") ? (
                       <TierCardImage cardNumber={e.cardNumber} label={e.displayName} />

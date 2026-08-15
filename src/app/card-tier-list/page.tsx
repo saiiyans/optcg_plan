@@ -138,7 +138,7 @@ export default function CardTierListPage() {
                     onClick={() => router.push(`/cards/${c.cardNumber}`)}
                     title={`${c.name} — clique pour voir la fiche, glisse pour changer de tier`}
                     className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink shrink-0"
-                    style={{ width: 44, height: 62 }}
+                    style={{ width: 52, height: 73, touchAction: "none" }}
                   >
                     {c.imageUrl ? (
                       <Image src={c.imageUrl} alt={c.name} fill sizes="44px" className="object-cover" unoptimized={c.imageUrl.includes("spellmana.com")} />

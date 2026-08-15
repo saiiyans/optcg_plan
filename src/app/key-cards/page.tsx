@@ -166,7 +166,7 @@ export default function KeyCardsPage() {
                           onClick={() => router.push(`/cards/${e.cardNumber}`)}
                           title={`${card?.name ?? e.cardNumber} — glisse vers un autre leader pour déplacer, double-clic pour retirer`}
                           className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-emerald shrink-0"
-                          style={{ width: 44, height: 62 }}
+                          style={{ width: 52, height: 73, touchAction: "none" }}
                         >
                           {card?.imageUrl ? (
                             <Image src={card.imageUrl} alt={card.name} fill sizes="44px" className="object-cover" unoptimized={card.imageUrl.includes("spellmana.com")} />
@@ -177,6 +177,7 @@ export default function KeyCardsPage() {
                       );
                     })}
                   </div>
+                  <NoteCell cardNumber={leader.cardNumber} initialNote={leader.note} />
                 </div>
               );
             })}
@@ -193,7 +194,7 @@ export default function KeyCardsPage() {
                   onDragStart={() => (dragRef.current = { cardNumber: c.cardNumber, fromLeader: null })}
                   title={`${c.name} — glisse vers un leader`}
                   className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald shrink-0"
-                  style={{ width: 44, height: 62 }}
+                  style={{ width: 52, height: 73, touchAction: "none" }}
                 >
                   {c.imageUrl ? (
                     <Image src={c.imageUrl} alt={c.name} fill sizes="44px" className="object-cover" unoptimized={c.imageUrl.includes("spellmana.com")} />
@@ -205,6 +206,64 @@ export default function KeyCardsPage() {
             </div>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function NoteCell({ cardNumber, initialNote }: { cardNumber: string; initialNote: string | null }) {
+  const [value, setValue] = useState(initialNote ?? "");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(initialNote ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    const res = await fetch("/api/tier-list/note", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardNumber, note: draft }),
+    });
+    if (res.ok) {
+      setValue(draft);
+      setEditing(false);
+    }
+    setBusy(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="w-64 sm:w-80 shrink-0 border-l border-line p-2 bg-panel2">
+        <textarea
+          className="input w-full text-xs"
+          rows={4}
+          autoFocus
+          value={draft}
+          placeholder="Plan de matchup : early/mid/late game, priorités..."
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <div className="flex gap-1 mt-1">
+          <button onClick={save} disabled={busy} className="btn btn-primary text-[10px] py-1 px-2">
+            {busy ? "..." : "Enregistrer"}
+          </button>
+          <button onClick={() => { setDraft(value); setEditing(false); }} disabled={busy} className="btn text-[10px] py-1 px-2">
+            Annuler
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => setEditing(true)}
+      className="w-64 sm:w-80 shrink-0 border-l border-line p-2 bg-panel2 cursor-pointer hover:bg-panel overflow-y-auto max-h-[140px]"
+      title="Cliquer pour modifier"
+    >
+      {value ? (
+        <p className="text-[10px] text-steel/90 whitespace-pre-wrap leading-relaxed">{value}</p>
+      ) : (
+        <p className="text-[10px] text-steel/40 italic">Cliquer pour ajouter un descriptif...</p>
       )}
     </div>
   );
