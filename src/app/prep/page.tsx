@@ -31,6 +31,7 @@ const EARLY_GAME_MISTAKES = [
   "Mauvais mulligan", "Mauvaise courbe", "Mauvaise gestion du DON!!",
   "Setup coût 1 absent", "Première menace posée trop tard",
   "Trop de vies prises", "Trop de ressources utilisées en défense",
+  "Mulligan trop gourmand (main gardée sans plan)",
 ];
 const MID_GAME_MISTAKES = [
   "J'ai attaqué la vie trop tôt", "Je n'ai pas contrôlé le board",
@@ -39,12 +40,26 @@ const MID_GAME_MISTAKES = [
   "ST32-003 mal utilisé", "Mauvaise cible jouée par ST32-003",
   "DON!! récupérés mais inutilisés", "Smoker mal protégé",
   "Surdéveloppement du board", "Mauvais ordre des effets",
+  "Mauvaise défense de mon board",
+  "Vidé ma main de Counters trop tôt",
+  "Trop développé sans garder de DON!! pour attaquer",
+  "Attaqué dans un Blocker",
+  "Oublié que le DON!! attaché revient au tour suivant",
+  "Ignoré le DON!! restant de l'adversaire avant d'attaquer",
+  "Sur-développé un board qui s'est fait retirer",
 ];
 const LATE_GAME_MISTAKES = [
   "Létal manqué", "Mauvais ordre d'attaque", "Aucun calcul avant d'attaquer",
   "Pas assez de Counter", "Boss joué trop tard", "Law & Bepo mal préparé",
   "Rush adverse non anticipé", "Mauvaise défense de la vie",
   "Partie trop longue", "Décision sous pression", "Temps dépassé",
+  "Je réfléchis trop longtemps (gestion du temps)",
+  "Mauvais choix prise de vie vs blocage",
+  "Pas vérifié le Trigger des vies adverses avant d'attaquer",
+];
+const KNOWLEDGE_MISTAKES = [
+  "Non maîtrise des règles de mon deck",
+  "Non connaissance de l'effet du leader adverse",
 ];
 
 type Tab = "planning" | "journal" | "stats" | "objectifs" | "matchups" | "revisions";
@@ -124,6 +139,7 @@ function JournalTab() {
   const [matches, setMatches] = useState<any[]>([]);
   const [filterDeck, setFilterDeck] = useState("");
   const [filterMode, setFilterMode] = useState("");
+  const [filterSource, setFilterSource] = useState<"" | "imported" | "manual">("");
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     mode: "Simulateur",
@@ -151,6 +167,7 @@ function JournalTab() {
     decisiveMoment: "",
     inspiredByDeckId: "",
   });
+  const [selectedMistakes, setSelectedMistakes] = useState<string[]>([]);
   const [showQuickDetails, setShowQuickDetails] = useState(false);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
   const [savedDecksForInspiration, setSavedDecksForInspiration] = useState<{ id: string; deckName: string; player: string }[]>([]);
@@ -175,6 +192,10 @@ function JournalTab() {
     load();
   }, [load]);
 
+  function toggleMistake(opt: string) {
+    setSelectedMistakes((prev) => (prev.includes(opt) ? prev.filter((m) => m !== opt) : [...prev, opt]));
+  }
+
   async function addMatch() {
     if (!form.date || !form.opponentLeader) {
       alert("Renseigne au moins la date et le leader adverse.");
@@ -182,8 +203,14 @@ function JournalTab() {
     }
     const toNum = (v: string) => (v === "" ? null : Number(v));
     const toBool = (v: string) => (v === "" ? null : v === "true");
+    // Fusionne la sélection rapide (menu déroulant) et les cases cochées en
+    // détail — jamais de doublon, mainMistake garde la 1ère pour la
+    // compatibilité avec les anciennes statistiques.
+    const allMistakes = Array.from(new Set([...selectedMistakes, ...(form.mainMistake ? [form.mainMistake] : [])]));
     const payload = {
       ...form,
+      mainMistake: allMistakes[0] ?? null,
+      mistakesJson: allMistakes.length ? JSON.stringify(allMistakes) : null,
       mulligan: toBool(form.mulligan),
       confidence: toNum(form.confidence),
       donRecoveredUnused: toNum(form.donRecoveredUnused),
@@ -204,6 +231,7 @@ function JournalTab() {
       mihawkActivations: "", mihawkEffectForgotten: "", mihawkEffectTooEarly: "", firstCost5Turn: "", decisiveMoment: "",
       inspiredByDeckId: "",
     }));
+    setSelectedMistakes([]);
     setShowDetailedAnalysis(false);
     load();
   }
@@ -429,37 +457,52 @@ function JournalTab() {
             </div>
 
             <div>
-              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Début de partie</label>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Début de partie <span className="text-steel/40 normal-case">(plusieurs choix possibles)</span></label>
               <div className="flex flex-wrap gap-1.5">
                 {EARLY_GAME_MISTAKES.map((opt) => (
-                  <button key={opt} type="button" onClick={() => setForm((f) => ({ ...f, mainMistake: opt }))} className={`chip ${form.mainMistake === opt ? "chip-active" : ""}`}>
-                    {opt}
+                  <button key={opt} type="button" onClick={() => toggleMistake(opt)} className={`chip ${selectedMistakes.includes(opt) ? "chip-active" : ""}`}>
+                    {selectedMistakes.includes(opt) ? "☑ " : "☐ "}{opt}
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Milieu de partie</label>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Milieu de partie <span className="text-steel/40 normal-case">(plusieurs choix possibles)</span></label>
               <div className="flex flex-wrap gap-1.5">
                 {MID_GAME_MISTAKES.map((opt) => (
-                  <button key={opt} type="button" onClick={() => setForm((f) => ({ ...f, mainMistake: opt }))} className={`chip ${form.mainMistake === opt ? "chip-active" : ""}`}>
-                    {opt}
+                  <button key={opt} type="button" onClick={() => toggleMistake(opt)} className={`chip ${selectedMistakes.includes(opt) ? "chip-active" : ""}`}>
+                    {selectedMistakes.includes(opt) ? "☑ " : "☐ "}{opt}
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Fin de partie</label>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Fin de partie <span className="text-steel/40 normal-case">(plusieurs choix possibles)</span></label>
               <div className="flex flex-wrap gap-1.5">
                 {LATE_GAME_MISTAKES.map((opt) => (
-                  <button key={opt} type="button" onClick={() => setForm((f) => ({ ...f, mainMistake: opt }))} className={`chip ${form.mainMistake === opt ? "chip-active" : ""}`}>
-                    {opt}
+                  <button key={opt} type="button" onClick={() => toggleMistake(opt)} className={`chip ${selectedMistakes.includes(opt) ? "chip-active" : ""}`}>
+                    {selectedMistakes.includes(opt) ? "☑ " : "☐ "}{opt}
                   </button>
                 ))}
               </div>
-              {form.mainMistake && <div className="text-[10px] text-steel/50 mt-1">Erreur principale sélectionnée : {form.mainMistake}</div>}
+            </div>
+
+            <div>
+              <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1.5">Connaissance / Maîtrise <span className="text-steel/40 normal-case">(plusieurs choix possibles)</span></label>
+              <div className="flex flex-wrap gap-1.5">
+                {KNOWLEDGE_MISTAKES.map((opt) => (
+                  <button key={opt} type="button" onClick={() => toggleMistake(opt)} className={`chip ${selectedMistakes.includes(opt) ? "chip-active" : ""}`}>
+                    {selectedMistakes.includes(opt) ? "☑ " : "☐ "}{opt}
+                  </button>
+                ))}
+              </div>
+              {selectedMistakes.length > 0 && (
+                <div className="text-[10px] text-steel/50 mt-2">
+                  {selectedMistakes.length} erreur(s) sélectionnée(s) : {selectedMistakes.join(", ")}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -538,19 +581,30 @@ function JournalTab() {
             <option>Simulateur</option>
             <option>Boutique</option>
           </select>
+          <select className="input" value={filterSource} onChange={(e) => setFilterSource(e.target.value as any)}>
+            <option value="">Importées + écrites à la main</option>
+            <option value="imported">Importées (Kaizoku) uniquement</option>
+            <option value="manual">Écrites à la main uniquement</option>
+          </select>
         </div>
-        {matches.length === 0 ? (
+        {(() => {
+          const visibleMatches = matches.filter((m) => {
+            if (filterSource === "imported") return !!m.kaizokuId;
+            if (filterSource === "manual") return !m.kaizokuId;
+            return true;
+          });
+          return visibleMatches.length === 0 ? (
           <div className="text-steel/60 text-sm font-mono">Aucune partie enregistrée pour ce filtre.</div>
         ) : (
           <div className="table-scroll">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[10px] font-mono uppercase text-steel/60 border-b border-line">
-                <th className="text-left py-1">Date</th><th className="text-left">Mode</th><th className="text-left">Deck</th><th className="text-left">Adversaire</th><th className="text-left">Résultat</th><th></th>
+                <th className="text-left py-1">Date</th><th className="text-left">Mode</th><th className="text-left">Deck</th><th className="text-left">Adversaire</th><th className="text-left">Résultat</th><th className="text-left">Source</th><th></th>
               </tr>
             </thead>
             <tbody>
-              {matches.map((m) => (
+              {visibleMatches.map((m) => (
                 <tr key={m.id} className="border-b border-line/50">
                   <td className="py-1.5 font-mono text-xs">{m.date}</td>
                   <td className="text-xs">{m.mode}</td>
@@ -565,13 +619,21 @@ function JournalTab() {
                     {m.cardsToWatch && <div className="text-steel/60">⚠ {m.cardsToWatch}</div>}
                   </td>
                   <td><span className={`badge ${m.result === "Victoire" ? "badge-green" : "badge-red"}`}>{m.result === "Victoire" ? "V" : "D"}</span></td>
+                  <td className="text-[10px]">
+                    {m.kaizokuId ? (
+                      <span className="badge badge-gold">📥 Import</span>
+                    ) : (
+                      <span className="badge">✎ Manuel</span>
+                    )}
+                  </td>
                   <td><button onClick={() => deleteMatch(m.id)} className="text-steel/60 hover:text-red-400">✕</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
           </div>
-        )}
+        );
+        })()}
       </div>
     </div>
   );

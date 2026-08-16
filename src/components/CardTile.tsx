@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Image from "next/image";
 import { StarRating } from "./StarRating";
 
@@ -19,6 +20,7 @@ export interface CardTileData {
 
 export function CardTile({ card, onSelect }: { card: CardTileData; onSelect: (n: string) => void }) {
   const legal = !card.legalityStatus || !card.legalityStatus.toLowerCase().includes("illegal");
+  const [imgFailed, setImgFailed] = useState(false);
   return (
     <button
       onClick={() => onSelect(card.cardNumber)}
@@ -26,7 +28,7 @@ export function CardTile({ card, onSelect }: { card: CardTileData; onSelect: (n:
     >
       {/* Image seule, jamais recouverte d'informations */}
       <div className="relative w-full aspect-[5/7] bg-panel2 rounded-lg overflow-hidden">
-        {card.imageUrl && (
+        {card.imageUrl && !imgFailed ? (
           <Image
             src={card.imageUrl}
             alt={card.name}
@@ -40,8 +42,17 @@ export function CardTile({ card, onSelect }: { card: CardTileData; onSelect: (n:
             // domaine précis plutôt que de laisser l'image casser.
             unoptimized={card.imageUrl.includes("spellmana.com")}
             className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+            // Si l'image échoue à charger (coupure réseau ponctuelle,
+            // fréquente sur tablette), afficher un repli visuel plutôt
+            // qu'un espace vide silencieux qu'on pourrait croire cassé.
+            onError={() => setImgFailed(true)}
           />
-        )}
+        ) : card.imageUrl && imgFailed ? (
+          <div className="w-full h-full flex flex-col items-center justify-center text-center px-2 gap-1">
+            <span className="text-[10px] font-mono text-steel/50">{card.cardNumber}</span>
+            <span className="text-[9px] text-steel/40">Image indisponible</span>
+          </div>
+        ) : null}
       </div>
 
       {/* Identité */}

@@ -278,7 +278,8 @@ model Match {
   turnOrder      String?  // "Premier" | "Second"
   mulligan       Boolean?
   openingHandQuality String? // "Bonne" | "Correcte" | "Mauvaise"
-  mainMistake    String?  // une des erreurs rapides prédéfinies, voir coachDiagnostic.ts
+  mainMistake    String?  // une des erreurs rapides prédéfinies, voir coachDiagnostic.ts — conservée pour compatibilité, contient la 1ère case cochée
+  mistakesJson   String?  // JSON string[] — toutes les erreurs cochées (sélection multiple), mainMistake n'en garde qu'une seule pour les anciennes stats
   mostUsefulCard String?  // numéro de carte, en texte libre — ne référence jamais Card en relation stricte
   uselessCard    String?
   keyTurn        String?  // ex. "Tour 4"

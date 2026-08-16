@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const {
     date, mode, myDeck, opponentLeader, result, cardsToWatch, notes,
-    turnOrder, mulligan, openingHandQuality, mainMistake, mostUsefulCard, uselessCard, keyTurn,
+    turnOrder, mulligan, openingHandQuality, mainMistake, mistakesJson, mostUsefulCard, uselessCard, keyTurn,
     confidence, donRecoveredUnused, cardsInHandEnd, opponentLifeRemaining, gameDurationMinutes,
     mihawkActivations, mihawkEffectForgotten, mihawkEffectTooEarly, firstCost5Turn, decisiveMoment,
     inspiredByDeckId,
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       mulligan: typeof mulligan === "boolean" ? mulligan : null,
       openingHandQuality: openingHandQuality || null,
       mainMistake: mainMistake || null,
+      mistakesJson: mistakesJson || null,
       mostUsefulCard: mostUsefulCard || null,
       uselessCard: uselessCard || null,
       keyTurn: keyTurn || null,

@@ -75,6 +75,7 @@ export default function CardsPage() {
       let all: any[] = [];
       let total = 0;
       let more = true;
+      let pagesFetched = 0;
       while (more) {
         const res = await fetch(`/api/cards?${buildParams(offset).toString()}`);
         const data = await res.json();
@@ -83,10 +84,16 @@ export default function CardsPage() {
         total = data.total ?? 0;
         more = !!data.hasMore;
         offset += (data.cards ?? []).length;
-        // Affichage progressif — l'utilisateur voit les cartes apparaître
-        // au fur et à mesure plutôt que d'attendre le chargement complet.
-        setCards([...all]);
-        setTotalFiltered(total);
+        pagesFetched++;
+        // Affichage progressif, mais pas à chaque page — sur Safari iPad,
+        // des mises à jour trop rapprochées provoquaient des ré-affichages
+        // en rafale qui perturbaient le chargement des images (lazy
+        // loading). Une mise à jour toutes les 3 pages reste fluide sans
+        // saccader le rendu.
+        if (pagesFetched % 3 === 0 || !more) {
+          setCards([...all]);
+          setTotalFiltered(total);
+        }
         if ((data.cards ?? []).length === 0) break; // sécurité anti-boucle infinie
       }
       setHasMore(false);
