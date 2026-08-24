@@ -10,6 +10,7 @@ const cache = new Map<string, string | null>();
 export function LeaderImage({ leaderKey, size = 28 }: { leaderKey: string; size?: number }) {
   const [imageUrl, setImageUrl] = useState<string | null>(cache.get(leaderKey) ?? null);
   const [loaded, setLoaded] = useState(cache.has(leaderKey));
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (cache.has(leaderKey)) return;
@@ -27,14 +28,14 @@ export function LeaderImage({ leaderKey, size = 28 }: { leaderKey: string; size?
       });
   }, [leaderKey]);
 
-  if (!imageUrl) return null; // pas d'espace réservé tant qu'on n'a pas confirmé l'image — le texte à côté suffit en attendant
+  if (!imageUrl || failed) return null; // pas d'espace réservé tant qu'on n'a pas confirmé l'image — le texte à côté suffit en attendant
 
   return (
     <span
       className="relative inline-block rounded-full overflow-hidden shrink-0 border border-line align-middle"
       style={{ width: size, height: size }}
     >
-      <Image src={imageUrl} alt="" fill className="object-cover" sizes={`${size}px`} />
+      <Image src={imageUrl} alt="" fill className="object-cover" sizes={`${size}px`} onError={() => setFailed(true)} />
     </span>
   );
 }

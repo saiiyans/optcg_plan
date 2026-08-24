@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { findDeckQuantity } from "@/lib/deckReference";
@@ -9,6 +8,7 @@ import { computeLeaderTournamentStats } from "@/lib/leaderTournamentStats";
 import { LEADERS } from "@/lib/leaders";
 import { notFound } from "next/navigation";
 import { CardThumb } from "@/components/CardThumb";
+import { CardImage } from "@/components/CardImage";
 
 export default async function CardDetail({ params }: { params: { cardNumber: string } }) {
   const cardNumber = params.cardNumber.toUpperCase();
@@ -36,15 +36,12 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       <div className="space-y-3">
         <div className="relative w-full aspect-[5/7] card-tile overflow-hidden">
-          {displayImageUrl && (
-            <Image
-              src={displayImageUrl}
-              alt={card.name}
-              fill
-              className="object-cover"
-              unoptimized={displayImageUrl.includes("spellmana.com")}
-            />
-          )}
+          <CardImage
+            src={displayImageUrl}
+            alt={card.name}
+            fallbackLabel={card.cardNumber}
+            sizes="280px"
+          />
         </div>
         {card.prints.length > 0 && (
           <div>
@@ -52,7 +49,7 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
             <div className="grid grid-cols-3 gap-1.5">
               {card.prints.map((p) => (
                 <div key={p.id} className="relative aspect-[5/7] overflow-hidden card-tile">
-                  <Image src={p.imageUrl} alt={p.printLabel} fill className="object-cover" />
+                  <CardImage src={p.imageUrl} alt={p.printLabel} fallbackLabel={p.printLabel} sizes="90px" />
                 </div>
               ))}
             </div>

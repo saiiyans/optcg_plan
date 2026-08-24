@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { compareWithMyDeck } from "@/lib/deckCompare";
 import { notFound } from "next/navigation";
 import { SaveDeckButton } from "@/components/SaveDeckButton";
 import { DuplicateDeckButton } from "@/components/DuplicateDeckButton";
+import { CardImage } from "@/components/CardImage";
 
 export default async function DeckDetail({ params }: { params: { id: string } }) {
   const deck = await db.tournamentDeck.findUnique({ where: { id: params.id }, include: { cards: true } });
@@ -27,7 +27,7 @@ export default async function DeckDetail({ params }: { params: { id: string } })
   // affiche juste le décompte réel, sans winrate garanti fiable si
   // l'échantillon est trop petit.
   const associatedMatches = await db.match.findMany({
-    where: { inspiredByDeckId: deck.id },
+    where: { inspiredByDeckId: deck.id, deletedAt: null },
     orderBy: { date: "desc" },
   });
 
@@ -83,13 +83,13 @@ export default async function DeckDetail({ params }: { params: { id: string } })
                 className="card-tile p-1.5 block hover:border-emerald transition-colors"
               >
                 <div className="relative w-full aspect-[5/7] bg-panel2 rounded-sm overflow-hidden">
-                  {lib?.imageUrl ? (
-                    <Image src={lib.imageUrl} alt={lib.name} fill sizes="140px" className="object-cover" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-center px-1">
-                      <span className="text-[10px] font-mono text-steel/50">{c.cardNumber}</span>
-                    </div>
-                  )}
+                  <CardImage
+                    src={lib?.imageUrl}
+                    alt={lib?.name ?? c.cardNumber}
+                    fallbackLabel={c.cardNumber}
+                    sizes="140px"
+                    loading="lazy"
+                  />
                   <span className="absolute top-1 right-1 bg-emerald-dim text-emerald-bright text-[10px] font-mono px-1.5 py-0.5 rounded">
                     x{c.quantity}
                   </span>

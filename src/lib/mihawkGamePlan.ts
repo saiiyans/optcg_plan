@@ -39,6 +39,67 @@ export const MIHAWK_SOURCES = [
     url: "https://x.com/Raphterra/status/2016896234846617953",
     date: "2026-01-29",
   },
+  {
+    name: "OPTCG.gg — Top Decks (résultats récents)",
+    url: "https://www.optcg.gg/deck-lists/top-decks",
+    date: "2026-08-19",
+  },
+  {
+    name: "Spellmana — OP17 Meta Tier List (preview pré-sortie)",
+    url: "https://spellmana.com/one-piece-card-game-op17-meta-tier-list-optcg-best-decks/",
+    date: "2026-08 (avant sortie OP17)",
+  },
+  {
+    name: "OPMerchandise (X) — décklist ST32 (Dracule Mihawk ST32-003)",
+    url: "https://x.com/OPMerchandise/status/2073446851483951406",
+    date: "2026-07",
+  },
+];
+
+/**
+ * Actualités Mihawk — recherchées le 22/08/2026. Chaque entrée cite sa
+ * source et son niveau de confiance ; rien ici n'est présenté comme un
+ * fait établi si ce n'est qu'une preview pré-sortie ou un avis isolé.
+ * OP17 sort le 28/08/2026 — à cette date de recherche, aucun résultat de
+ * tournoi post-OP17 n'existe encore pour Mihawk.
+ */
+export interface MihawkNewsItem {
+  date: string;
+  title: string;
+  note: string;
+  confidence: "Résultat de tournoi" | "Confirmé (révélation officielle)" | "Spéculation pré-sortie";
+  source: string;
+}
+
+export const MIHAWK_NEWS: MihawkNewsItem[] = [
+  {
+    date: "2026-08-19",
+    title: "ChinoizeCup #99 — deux Mihawk Vert classés",
+    note: "7e place (\"Dracule Mihawk - FenoHS\") et 9e place (\"Dracule Mihawk - Brian\") — un cup local, pas un événement majeur, mais le résultat le plus récent trouvé.",
+    confidence: "Résultat de tournoi",
+    source: "OPTCG.gg",
+  },
+  {
+    date: "mi-2026, en continu",
+    title: "Résultats agrégés en Regionals / Treasure Cup",
+    note: "9e à la Treasure Cup Utrecht, 23e aux Regionals Wolverhampton et Bielefeld, 6e au Regional Toronto, 4e au Regional Warsaw. Un deck stable et compétitif, milieu-haut de tableau, jamais dominant mais jamais hors-course.",
+    confidence: "Résultat de tournoi",
+    source: "Limitless TCG",
+  },
+  {
+    date: "juillet 2026",
+    title: "Nouvelle carte de soutien : Dracule Mihawk ST32-003",
+    note: "Le starter deck Green Zoro (ST32) inclut 2 exemplaires de Mihawk comme personnage de soutien, jouable aussi dans un deck Mihawk leader — pas de recommandation de run count officielle trouvée, à tester toi-même avant de l'ajouter en nombre.",
+    confidence: "Confirmé (révélation officielle)",
+    source: "OPMerchandise (X)",
+  },
+  {
+    date: "août 2026, avant sortie OP17",
+    title: "Positionnement A-tier pour OP17 — pas encore vérifié",
+    note: "Une preview classe Green Mihawk en A-tier pour OP17, en s'appuyant sur le bonus +1000 déjà connu face aux leaders Tranchant (favorable contre Zoro Vert notamment). OP17 sort le 28/08/2026 : aucun résultat de tournoi ne confirme encore cette évaluation à ce jour — à traiter comme une hypothèse, pas un fait.",
+    confidence: "Spéculation pré-sortie",
+    source: "Spellmana (preview OP17)",
+  },
 ];
 
 export const MIHAWK_GAME_PLAN = {

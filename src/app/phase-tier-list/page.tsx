@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { CardImage } from "@/components/CardImage";
 
 // DON!! réellement disponible à chaque tour, selon les vraies règles du
 // jeu (le joueur qui commence est limité à 1 DON!! au tour 1, plafond à
@@ -116,13 +116,13 @@ export default function PhaseTierListPage() {
                     className="relative cursor-pointer rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-panel2 shrink-0"
                     style={{ width: 44, height: 62 }}
                   >
-                    {c.imageUrl ? (
-                      <Image src={c.imageUrl} alt={c.name} fill sizes="44px" className="object-cover" unoptimized={c.imageUrl.includes("spellmana.com")} />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-center px-0.5">
-                        <span className="text-[6px] font-mono text-steel/60 leading-tight">{c.cardNumber}</span>
-                      </div>
-                    )}
+                    <CardImage
+                      src={c.imageUrl}
+                      alt={c.name}
+                      fallbackLabel={c.cardNumber}
+                      sizes="44px"
+                      fallbackTextClassName="text-[6px] font-mono text-steel/60 leading-tight line-clamp-3"
+                    />
                     <span className="absolute bottom-0 right-0 text-[7px] bg-ink/90 text-gold px-0.5 rounded-tl">{c.cost}</span>
                   </div>
                 ))}
@@ -137,7 +137,7 @@ export default function PhaseTierListPage() {
               <div className="flex-1 flex flex-wrap gap-1 p-2 bg-ink">
                 {tooExpensive.map((c: any) => (
                   <div key={c.cardNumber} onClick={() => router.push(`/cards/${c.cardNumber}`)} title={`${c.name} — Coût ${c.cost}`} className="relative cursor-pointer rounded overflow-hidden border border-line bg-panel2 shrink-0" style={{ width: 44, height: 62 }}>
-                    {c.imageUrl && <Image src={c.imageUrl} alt={c.name} fill sizes="44px" className="object-cover" unoptimized={c.imageUrl.includes("spellmana.com")} />}
+                    <CardImage src={c.imageUrl} alt={c.name} fallbackLabel={c.cardNumber} sizes="44px" fallbackTextClassName="text-[6px] font-mono text-steel/60 leading-tight line-clamp-3" />
                   </div>
                 ))}
               </div>

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { computePersonalStats } from "@/lib/personalStats";
+import { computePersonalStats, type PhaseFilter } from "@/lib/personalStats";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
     const myDeck = req.nextUrl.searchParams.get("myDeck") ?? undefined;
-    const stats = await computePersonalStats(myDeck);
+    const phaseParam = req.nextUrl.searchParams.get("phase");
+    const phase: PhaseFilter = phaseParam === "test" || phaseParam === "all" ? phaseParam : "official_training";
+    const stats = await computePersonalStats(myDeck, phase);
     return NextResponse.json({ ok: true, stats });
   } catch (e: any) {
     console.error("GET /api/stats/personal failed:", e);

@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { OPPONENT_LEADERS } from "@/lib/planningData";
+import { useOpponentLeaders } from "@/lib/useOpponentLeaders";
 import styles from "./LeaderSelect.module.css";
 
 /**
- * Champ "Leader adverse" avec autocomplétion sur les 89 leaders OPTCG,
+ * Champ "Leader adverse" avec autocomplétion sur les leaders OPTCG,
  * navigable au clavier (flèches + Entrée), fermeture au clic extérieur.
  *
- * Réutilise OPPONENT_LEADERS (src/lib/planningData.ts) comme source unique
- * de la liste des leaders plutôt qu'un fichier JSON séparé — pour ne
- * jamais avoir deux listes qui divergent l'une de l'autre.
+ * Réutilise useOpponentLeaders() (src/lib/useOpponentLeaders.ts) comme
+ * source unique de la liste des leaders plutôt qu'un fichier JSON séparé —
+ * pour ne jamais avoir deux listes qui divergent l'une de l'autre. Ce hook
+ * combine la liste statique OPPONENT_LEADERS (repli instantané) avec la
+ * liste réelle tirée de la bibliothèque de cartes importée (dynamique, se
+ * met à jour toute seule à chaque nouveau set).
  *
  * Alternative au <datalist> natif déjà utilisé dans l'onglet Prépa
  * (rendu par le navigateur, pas stylable) : ce composant garde le thème
@@ -29,13 +32,14 @@ interface LeaderSelectProps {
 }
 
 export function LeaderSelect({ value = "", onChange, placeholder }: LeaderSelectProps) {
+  const opponentLeaders = useOpponentLeaders();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const filtered = value.trim()
-    ? OPPONENT_LEADERS.filter((l) => l.toLowerCase().includes(value.trim().toLowerCase())).slice(0, 30)
-    : OPPONENT_LEADERS.slice(0, 30);
+    ? opponentLeaders.filter((l) => l.toLowerCase().includes(value.trim().toLowerCase())).slice(0, 30)
+    : opponentLeaders.slice(0, 30);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

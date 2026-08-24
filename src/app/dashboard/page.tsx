@@ -2,6 +2,7 @@ import { computeLibraryStats, computeMyDeckStats } from "@/lib/libraryStats";
 import { db } from "@/lib/db";
 import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
+import { CoachBilanSection, MatchesOverview, PersonalStatsSection } from "@/components/PerformanceStats";
 
 export default async function Dashboard() {
   const [libStats, deckStats, lastLog] = await Promise.all([
@@ -27,20 +28,31 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Tile label="Cartes vertes importées (références uniques)" value={libStats.totalGreenCards} />
-        <Tile label="Références sans image" value={libStats.cardsWithoutImage} />
-        <Tile
-          label="Références de ma decklist Mihawk reconnues"
-          value={`${deckStats.recognizedReferences} / ${deckStats.uniqueReferences}`}
-        />
-        <Tile label="Total exemplaires dans mon deck Mihawk" value={`${deckStats.totalExemplaires} / 50`} />
-        <Tile
-          label="Dernière synchronisation"
-          value={lastLog ? new Date(lastLog.startedAt).toLocaleString("fr-FR") : "Jamais"}
-          wide
-        />
-        <Tile label="Erreurs du dernier import" value={lastLog ? JSON.parse(lastLog.errors || "[]").length : 0} wide />
+      {/* PERFORMANCE — en tête : c'est ce qu'on veut voir en premier en
+          arrivant sur "Stats" (winrate, forme récente, matchups, erreurs
+          fréquentes). La santé de la bibliothèque de cartes (import,
+          couverture) reste utile mais secondaire, plus bas. */}
+      <CoachBilanSection />
+      <MatchesOverview />
+      <PersonalStatsSection />
+
+      <div className="pt-2 border-t border-line">
+        <h2 className="font-mono text-xs uppercase tracking-widest text-steel/50 mb-3">Bibliothèque de cartes</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Tile label="Cartes vertes importées (références uniques)" value={libStats.totalGreenCards} />
+          <Tile label="Références sans image" value={libStats.cardsWithoutImage} />
+          <Tile
+            label="Références de ma decklist Mihawk reconnues"
+            value={`${deckStats.recognizedReferences} / ${deckStats.uniqueReferences}`}
+          />
+          <Tile label="Total exemplaires dans mon deck Mihawk" value={`${deckStats.totalExemplaires} / 50`} />
+          <Tile
+            label="Dernière synchronisation"
+            value={lastLog ? new Date(lastLog.startedAt).toLocaleString("fr-FR") : "Jamais"}
+            wide
+          />
+          <Tile label="Erreurs du dernier import" value={lastLog ? countImportErrors(lastLog.errors) : 0} wide />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -64,6 +76,17 @@ export default async function Dashboard() {
       </div>
     </div>
   );
+}
+
+/** JSON.parse protégé — un blob `errors` malformé ne doit jamais faire
+ * planter tout le rendu du dashboard, juste afficher "0". */
+function countImportErrors(errors: string | null): number {
+  try {
+    const parsed = JSON.parse(errors || "[]");
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function Tile({ label, value, accent, wide }: { label: string; value: string | number; accent?: boolean; wide?: boolean }) {

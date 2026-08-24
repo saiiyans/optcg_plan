@@ -49,7 +49,7 @@ const MIN_SAMPLE_FOR_MATCHUP_MISSION = 3;
  */
 export async function computeDailyMission(myDeck?: string): Promise<DailyMission> {
   const matches = await db.match.findMany({
-    where: myDeck ? { myDeck } : undefined,
+    where: { deletedAt: null, ...(myDeck ? { myDeck } : {}) },
     orderBy: { date: "desc" },
     take: 200, // fenêtre récente, suffisante pour un diagnostic pertinent
   });
@@ -120,7 +120,7 @@ const MIN_SAMPLE_FOR_MISTAKE = 3;
 /** Erreur la plus fréquente parmi les parties récentes ayant une erreur renseignée. */
 export async function computeTopWeakness(myDeck?: string): Promise<WeaknessSummary> {
   const matches = await db.match.findMany({
-    where: { ...(myDeck ? { myDeck } : {}), mainMistake: { not: null } },
+    where: { deletedAt: null, ...(myDeck ? { myDeck } : {}), mainMistake: { not: null } },
     orderBy: { date: "desc" },
     take: 200,
   });
@@ -174,7 +174,7 @@ const STRENGTH_WINRATE_THRESHOLD = 60; // %
  */
 export async function computeStrengths(myDeck?: string): Promise<StrengthsSummary> {
   const matches = await db.match.findMany({
-    where: myDeck ? { myDeck } : undefined,
+    where: { deletedAt: null, ...(myDeck ? { myDeck } : {}) },
     orderBy: { date: "desc" },
     take: 200,
   });
@@ -232,7 +232,7 @@ const PROGRESS_WINDOW = 10;
  */
 export async function computeRecentProgress(myDeck?: string): Promise<ProgressSummary> {
   const matches = await db.match.findMany({
-    where: myDeck ? { myDeck } : undefined,
+    where: { deletedAt: null, ...(myDeck ? { myDeck } : {}) },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take: PROGRESS_WINDOW * 2,
   });

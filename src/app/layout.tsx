@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { NavLinks } from "@/components/NavLinks";
 import { LeaderImage } from "@/components/LeaderImage";
+import { HeaderTrainingCounter } from "@/components/HeaderTrainingCounter";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-space-grotesk", display: "swap" });
@@ -43,11 +44,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <NavLinks variant="top" />
               </nav>
 
-              {/* Droite : badge leader */}
-              <span className="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full border border-emerald text-emerald-bright bg-emerald-dim/40">
-                <LeaderImage leaderKey="mihawk" size={18} />
-                OP14-020
-              </span>
+              {/* Droite : compteur d'entraînement (visible desktop + mobile, section 3) + badge leader */}
+              <div className="shrink-0 flex items-center gap-2.5">
+                <HeaderTrainingCounter />
+                <span className="hidden sm:inline-flex shrink-0 items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full border border-emerald text-emerald-bright bg-emerald-dim/40">
+                  <LeaderImage leaderKey="mihawk" size={18} />
+                  OP14-020
+                </span>
+              </div>
             </div>
           </header>
 

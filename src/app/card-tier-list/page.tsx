@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { CardImage } from "@/components/CardImage";
 
 const TIERS = ["S", "A", "B", "C", "D", "?"] as const;
 const TIER_BAND_STYLE: Record<string, string> = {
@@ -140,13 +140,13 @@ export default function CardTierListPage() {
                     className="relative cursor-grab active:cursor-grabbing rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink shrink-0"
                     style={{ width: 52, height: 73, touchAction: "none" }}
                   >
-                    {c.imageUrl ? (
-                      <Image src={c.imageUrl} alt={c.name} fill sizes="44px" className="object-cover" unoptimized={c.imageUrl.includes("spellmana.com")} />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-center px-0.5">
-                        <span className="text-[6px] font-mono text-steel/60 leading-tight">{c.cardNumber}</span>
-                      </div>
-                    )}
+                    <CardImage
+                      src={c.imageUrl}
+                      alt={c.name}
+                      fallbackLabel={c.cardNumber}
+                      sizes="44px"
+                      fallbackTextClassName="text-[6px] font-mono text-steel/60 leading-tight line-clamp-3"
+                    />
                   </div>
                 ))}
               </div>

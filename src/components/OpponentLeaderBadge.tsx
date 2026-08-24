@@ -62,6 +62,7 @@ async function resolveLeaderImage(raw: string): Promise<string | null> {
 
 export function OpponentLeaderBadge({ label, size = 22, className = "" }: { label: string; size?: number; className?: string }) {
   const [imageUrl, setImageUrl] = useState<string | null>(cache.get(label) ?? null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,12 +77,12 @@ export function OpponentLeaderBadge({ label, size = 22, className = "" }: { labe
 
   return (
     <span className={`inline-flex items-center gap-1.5 align-middle ${className}`}>
-      {imageUrl && (
+      {imageUrl && !failed && (
         <span
           className="relative inline-block rounded-full overflow-hidden shrink-0 border border-line"
           style={{ width: size, height: size }}
         >
-          <Image src={imageUrl} alt="" fill className="object-cover" sizes={`${size}px`} />
+          <Image src={imageUrl} alt="" fill className="object-cover" sizes={`${size}px`} onError={() => setFailed(true)} />
         </span>
       )}
       <span>{label}</span>

@@ -9,10 +9,15 @@ import { db } from "./db";
  */
 
 const MIN_LOSSES_FOR_AUTO_OBJECTIVE = 2; // sur les 3 dernières parties contre ce leader
+// Section 17 — au plus 3 objectifs matchups générés automatiquement actifs
+// à la fois : au-delà, un nouveau schéma détecté n'ajoute rien tant que le
+// joueur n'a pas coché (traité) un des 3 existants. Les objectifs ajoutés
+// à la main par le joueur ne sont jamais comptés ni limités par ce plafond.
+const MAX_ACTIVE_AUTO_MATCHUP_OBJECTIVES = 3;
 
 export async function maybeCreateAutoObjective(myDeck: string, opponentLeader: string): Promise<void> {
   const recentVsOpponent = await db.match.findMany({
-    where: { myDeck, opponentLeader },
+    where: { myDeck, opponentLeader, deletedAt: null },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take: 3,
   });
@@ -39,6 +44,13 @@ export async function maybeCreateAutoObjective(myDeck: string, opponentLeader: s
     where: { category: "matchups", done: false, text: { contains: opponentLeader } },
   });
   if (existing) return;
+
+  // Plafond à 3 objectifs matchups auto-générés actifs (section 17) — ne
+  // noie pas le joueur sous des priorités simultanées.
+  const activeAutoCount = await db.objectiveItem.count({
+    where: { category: "matchups", done: false, text: { startsWith: "[Auto —" } },
+  });
+  if (activeAutoCount >= MAX_ACTIVE_AUTO_MATCHUP_OBJECTIVES) return;
 
   const maxOrder = await db.objectiveItem.aggregate({ where: { category: "matchups" }, _max: { order: true } });
   await db.objectiveItem.create({

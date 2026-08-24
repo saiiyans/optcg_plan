@@ -71,6 +71,12 @@ body {
 .badge-gold {
   @apply bg-transparent border-gold text-gold;
 }
+.badge-orange {
+  @apply bg-orange-950/60 border-orange-700 text-orange-400;
+}
+.badge-gray {
+  @apply bg-panel2 border-line text-steel/70;
+}
 
 /* Nouveaux badges — cohérents avec la légende du cahier des charges */
 .badge-winning-core {

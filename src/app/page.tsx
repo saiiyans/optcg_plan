@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { WEEKS, TOURNAMENT_DATE } from "@/lib/planningData";
 import { computeGameCounterStats } from "@/lib/gameCounter";
+import { MIHAWK_NEWS } from "@/lib/mihawkGamePlan";
 
 /** Fetch avec délai maximum — évite qu'un widget reste bloqué en
  * "Chargement..." pour toujours si le réseau ne répond jamais. */
@@ -47,6 +48,8 @@ export default function HomePage() {
       </div>
 
       <CoachPersonnelWidget />
+
+      <MihawkNewsWidget />
 
       <StreakAndAchievementsWidget />
 
@@ -165,6 +168,48 @@ function CoachPersonnelWidget() {
 
       <div className="flex gap-2 mt-4">
         <Link href="/prep" className="btn btn-primary text-xs py-2 px-3">Enregistrer une partie</Link>
+      </div>
+    </div>
+  );
+}
+
+/** Compact — les 2 actus Mihawk les plus récentes, visibles dès l'accueil
+ * même si on ne va jamais consulter la fiche complète sur Deck Profile.
+ * Données statiques (voir MIHAWK_NEWS), pas de fetch nécessaire. */
+function MihawkNewsWidget() {
+  const latest = MIHAWK_NEWS.slice(0, 2);
+  if (latest.length === 0) return null;
+
+  return (
+    <div className="card-tile p-5 border-emerald/40">
+      <div className="flex items-center justify-between border-b border-line pb-2 mb-3">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold">📰 Actus Mihawk</h3>
+        <Link href="/deck-profile" className="text-[10px] font-mono text-emerald-bright hover:underline">
+          Tout voir →
+        </Link>
+      </div>
+      <div className="space-y-3">
+        {latest.map((n) => (
+          <div key={n.title} className="bg-panel2 rounded-lg p-3">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span
+                className={`badge text-[9px] ${
+                  n.confidence === "Résultat de tournoi"
+                    ? "badge-green"
+                    : n.confidence === "Confirmé (révélation officielle)"
+                      ? "badge-green"
+                      : "badge-gold"
+                }`}
+              >
+                {n.confidence}
+              </span>
+              <span className="text-[10px] font-mono text-steel/50">{n.date}</span>
+            </div>
+            <div className="text-xs font-mono text-white">{n.title}</div>
+            <div className="text-xs text-steel/70 mt-1">{n.note}</div>
+            <div className="text-[10px] text-steel/40 mt-1">Source : {n.source}</div>
+          </div>
+        ))}
       </div>
     </div>
   );

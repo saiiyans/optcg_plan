@@ -55,6 +55,13 @@ export async function syncKaizokuMatches(
           result: m.result,
           notes: `Importé depuis Card D. Kaizoku — ${m.time}`,
           kaizokuId: m.kaizokuId,
+          // Toute partie nouvellement synchronisée (dédupliquée par
+          // kaizokuId, donc jamais revue sur une partie déjà connue) est
+          // une partie jouée après la mise en place de l'entraînement
+          // officiel : elle compte dans le suivi quotidien, au même titre
+          // qu'une saisie manuelle. Seules les 162 parties déjà en base
+          // avant cette migration restent en "test" (défaut Prisma).
+          trainingPhase: "official_training",
         },
       });
 

@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { OPPONENT_LEADERS } from "@/lib/planningData";
+import { CardImage } from "@/components/CardImage";
 
 // Petit cache mémoire pour ne pas refaire la requête si le même numéro de
 // carte apparaît plusieurs fois pendant la session — même logique que
@@ -37,21 +37,13 @@ function TierCardImage({ cardNumber, label }: { cardNumber: string; label: strin
     };
   }, [cardNumber]);
 
-  if (!url) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-center px-1">
-        <span className="text-[8px] font-mono text-steel/60 leading-tight">{label}</span>
-      </div>
-    );
-  }
   return (
-    <Image
+    <CardImage
       src={url}
       alt={label}
-      fill
+      fallbackLabel={label}
       sizes="64px"
-      className="object-cover"
-      unoptimized={url.includes("spellmana.com")}
+      fallbackTextClassName="text-[8px] font-mono text-steel/60 leading-tight line-clamp-3"
     />
   );
 }

@@ -3,26 +3,33 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Stats en tête de liste — c'est la rubrique la plus consultée, elle ne
+// doit plus être noyée en fin de menu. Combo Lab et Key Cards ont été
+// retirés (rubriques jugées inutiles) ; leurs pages/routes ont aussi été
+// supprimées, pas juste masquées ici.
 const ITEMS = [
+  { href: "/dashboard", label: "Stats", icon: "📊" },
   { href: "/", label: "Accueil", icon: "🏠" },
+  { href: "/journal", label: "Journal", icon: "📓" },
   { href: "/cards", label: "Cartes", icon: "🃏" },
   { href: "/decks", label: "Winner Decks", icon: "🏆" },
   { href: "/my-decks", label: "Mes Decks", icon: "⭐" },
   { href: "/deck-profile", label: "Deck Profile", icon: "🦅" },
-  { href: "/combo-lab", label: "Combo Lab", icon: "🧪" },
   { href: "/matchup-center", label: "Matchup Center", icon: "⚔️" },
+  { href: "/matchups", label: "Matchups", icon: "🎯" },
+  { href: "/revisions", label: "Révisions", icon: "📖" },
   { href: "/tier-list", label: "Tier List", icon: "📶" },
   { href: "/card-tier-list", label: "Tier List Cartes", icon: "🃏" },
   { href: "/phase-tier-list", label: "Phase (DON!!)", icon: "⏱️" },
-  { href: "/key-cards", label: "Key Cards", icon: "🔑" },
   { href: "/prep", label: "Prépa", icon: "📋" },
-  { href: "/dashboard", label: "Stats", icon: "📊" },
+  { href: "/leaders", label: "Leaders adverses", icon: "🧭" },
 ];
 
 // La nav du bas (mobile) garde 4 accès directs + un bouton "Plus" qui ouvre
-// le reste — impossible d'afficher les 10 pages en zones tactiles correctes
-// sur un petit écran, mais toutes doivent rester atteignables.
-const MOBILE_PRIMARY_HREFS = ["/", "/cards", "/prep", "/deck-profile"];
+// le reste — impossible d'afficher toutes les pages en zones tactiles
+// correctes sur un petit écran, mais toutes doivent rester atteignables.
+// Stats ajouté aux accès directs (cohérent avec sa nouvelle place en tête).
+const MOBILE_PRIMARY_HREFS = ["/dashboard", "/", "/journal", "/prep"];
 const MOBILE_PRIMARY = ITEMS.filter((i) => MOBILE_PRIMARY_HREFS.includes(i.href));
 const MOBILE_MORE = ITEMS.filter((i) => !MOBILE_PRIMARY_HREFS.includes(i.href));
 

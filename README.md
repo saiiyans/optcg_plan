@@ -228,3 +228,141 @@ Nécessite `DATABASE_URL` dans `.env` (le même que pour `npm run db:push`).
 npm run db:studio     # explorateur de base de données (localhost:5555)
 npm run build          # build de production
 ```
+
+## 17. Journal — Analyse du coach (défaites)
+
+Le Journal transforme chaque défaite enregistrée en analyse structurée
+(cause principale, terme technique, meilleure ligne probable, leçon,
+exercice) — voir `src/lib/defeatAnalysis.ts` pour toute la logique
+(déterministe, sans appel à une IA externe : elle croise uniquement les
+cases cochées et champs renseignés par le joueur avec un référentiel de
+vocabulaire compétitif OPTCG).
+
+Règles non négociables, respectées partout dans ce module :
+- "Ma raison initiale" (texte du joueur) n'est **jamais** écrasée ni
+  réécrite par l'analyse — elle vit dans `Match.lossReason`, modifiable
+  seulement à la main.
+- Chaque régénération de l'analyse crée une **nouvelle** ligne
+  `CoachInsight` (jamais un update en place) : l'historique reste
+  consultable dans le Journal.
+- Aucune classification n'est annoncée sans au moins une case cochée qui
+  la soutient ; à défaut, la partie est classée "Informations
+  insuffisantes" plutôt que de deviner.
+
+Ce module ajoute des champs au modèle `Match` (raison initiale, état du
+board au moment critique, cartes de main de départ, Life restantes) et
+étend `CoachInsight` — **exécute `npm run db:push` après avoir récupéré
+ces changements** pour que la base de données (Neon) ait les nouvelles
+colonnes ; comme pour tout le reste du schéma, tous ces champs sont
+facultatifs et n'affectent aucune partie déjà enregistrée.
+
+Tests de la logique pure (sans base de données) :
+
+```bash
+npx tsx scripts/test-defeat-analysis.ts
+```
+
+## 18. Espace de coaching, d'entraînement et de motivation (Journal v2)
+
+Cette mise à jour transforme l'app en un vrai espace d'entraînement
+compétitif, sans reconstruire ni supprimer l'existant. Résumé technique —
+voir le message de livraison pour le résumé fonctionnel complet.
+
+### Phase d'entraînement (test vs officiel)
+
+- `Match.trainingPhase` ("test" | "official_training") — le défaut Prisma
+  `"test"` ne sert QUE de backfill automatique pour les parties déjà
+  enregistrées lors du `db push` ; toute nouvelle partie (saisie manuelle
+  ou import Kaizoku) passe explicitement `"official_training"` côté API.
+  Aucune partie existante n'est jamais supprimée ni modifiée par ce
+  changement — voir `src/app/api/matches/route.ts` et `src/lib/kaizokuSync.ts`.
+- `AppSettings.officialTrainingStartDate` (ligne singleton) — date de
+  départ de l'entraînement officiel, modifiable via `PATCH /api/settings`.
+
+### Compteur quotidien, séries, semaine (`src/lib/trainingPhase.ts`)
+
+Moteur pur (testable sans Prisma) qui calcule le jour civil en Asia/Bangkok
+(UTC+7 fixe), le compteur `X/4` du jour, la série en cours / record, la
+progression hebdomadaire et les jours avant le tournoi. Consommé par
+`GET /api/coach/daily-progress`, affiché par le widget d'en-tête
+(`HeaderTrainingCounter`, visible sur toutes les pages) et par la zone
+"Entraînement du jour" en tête de `/journal`. Un jour manqué ne crée
+jamais de dette ni ne supprime de partie — seul le compteur affiché
+repart à 0/4 le lendemain.
+
+Tests : `npx tsx scripts/test-training-phase.ts`
+
+### Mission d'entraînement unique (`src/lib/missionEngine.ts`)
+
+Une seule mission active à la fois (table `TrainingMission`), sélectionnée
+parmi 12 priorités (`TRAINING_PRIORITIES` dans `defeatAnalysis.ts`, dont 2
+nouvelles : "Gérer le crackback" et "Choisir correctement entre attaquer
+la Life et le board"). Chaque nouvelle partie officielle compte dans la
+progression `X/3` de la mission active ; à 3/3, l'utilisateur choisit
+"continuer" / "valider" / "priorité suivante" via
+`POST /api/coach/missions/:id/decide`. Ne sélectionne jamais une priorité
+sous le seuil minimum de données.
+
+Tests : `npx tsx scripts/test-mission-engine.ts`
+
+### Scores de compétence (section 14)
+
+`computeSkillScores` (`defeatAnalysis.ts`) — 6 indicateurs (Sequencing,
+Counter management, Curve, Tempo, Board control, Lethal calculation),
+directement issus des classifications déjà produites par l'analyse du
+coach. "Données insuffisantes" sous 5 défaites documentées ; au-delà,
+chaque compétence est "en progression" / "stable" / "en baisse" /
+"priorité actuelle" selon sa fréquence récente vs précédente — jamais basé
+sur le seul winrate. Affiché dans `/journal` via `SkillScoresSection`.
+
+### Fiabilité des statistiques (sections 12/13)
+
+`computePersonalStats(myDeck?, phase)` (`src/lib/personalStats.ts`)
+accepte désormais un filtre de phase (`official_training` par défaut,
+`test`, ou `all`), et retourne `documented` (nombre de parties avec une
+analyse renseignée) en plus de `total` — pour ne jamais présenter une
+statistique calculée sur une fraction des parties comme si elle portait
+sur le total. `GET /api/stats/personal?phase=...`.
+
+### /journal — page unique (section 5/6)
+
+Nouvelle page `/journal` (top-level, nav) : zone "Entraînement du jour",
+saisie rapide (<20s : résultat, deck, adversaire avec image, premier/second,
+raison initiale, moment critique), une seule bascule "Ajouter une analyse
+détaillée" pour tout le reste, historique filtrable (phase, résultat,
+premier/second, source, deck, mode) avec rendu en cartes sur mobile,
+édition d'une partie existante, suppression douce avec "Annuler" immédiat,
+et le résumé de suivi (bilan coach, scores de compétence, évolution des
+erreurs, statistiques). L'ancien onglet "Journal" de `/prep` a été retiré
+(remplacé par un lien) ; les onglets "Matchups" et "Révisions" sont
+devenus les pages `/matchups` et `/revisions`.
+
+### Suppression douce (section 18 du cahier des charges)
+
+`Match.deletedAt` — `DELETE /api/matches/:id` ne fait que poser cette date
+(rien n'est jamais réellement supprimé depuis l'app) ; `POST
+/api/matches/:id/restore` l'annule. Toutes les statistiques et le
+compteur quotidien excluent les parties supprimées.
+
+### Outil de normalisation des leaders (section 11)
+
+Nouvelle page `/leaders` : liste toutes les fiches `OpponentLeader` avec
+leurs variantes de texte brut connues, suggère des paires probablement
+identiques (`suggestLeaderMerges` dans `src/lib/leaderMerge.ts` — jamais
+de fusion automatique, seulement une suggestion), permet de fusionner
+manuellement (`POST /api/opponent-leaders/merge`) et de renseigner un
+identifiant canonique basé sur le numéro de carte (`OpponentLeader.cardNumber`,
+ex. "OP17-039 — Rocks.D.Xebec"). Le bouton "Résoudre les parties non
+normalisées" relie les anciennes parties à une fiche leader.
+
+Tests : `npx tsx scripts/test-leader-merge.ts`
+
+### Migration
+
+Comme pour le reste du schéma, tous les nouveaux champs sont facultatifs
+ou ont un défaut sûr — **exécute `npm run db:push`** après avoir récupéré
+ces changements pour que Neon ait les nouvelles colonnes/tables
+(`Match.trainingPhase/decisionQuality/resultReading/deckId/deckVersionNumber/deckNameAtLog/deletedAt`,
+`DeckVersion.versionNumber`, `Deck.matches`, `OpponentLeader.cardNumber`,
+`AppSettings`, `TrainingMission`). Aucune partie existante n'est
+supprimée, renommée ou déplacée par cette migration.

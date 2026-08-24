@@ -24,6 +24,7 @@ import {
   MIHAWK_PRINCIPLES,
   MIHAWK_MATCHUP_NOTES,
   MIHAWK_SOURCES,
+  MIHAWK_NEWS,
 } from "@/lib/mihawkGamePlan";
 
 type Selection = { type: "mihawk" } | { type: "personal" | "winning"; id: string };
@@ -37,10 +38,15 @@ export default function DeckProfilePage() {
     fetch("/api/deck-profile/list")
       .then((r) => r.json())
       .then((d) => {
-        if (d.ok) {
-          setPersonalDecks(d.personalDecks ?? []);
-          setSavedDecks(d.savedTournamentDecks ?? []);
-        }
+        if (!d.ok) return;
+        const personal = d.personalDecks ?? []; // déjà trié par updatedAt desc côté API
+        setPersonalDecks(personal);
+        setSavedDecks(d.savedTournamentDecks ?? []);
+        // Par défaut, affiche toujours le deck personnel le plus récemment
+        // mis à jour plutôt que la référence Mihawk statique — c'est ce
+        // qu'on veut voir en priorité la plupart du temps. La référence
+        // Mihawk reste choisissable manuellement dans le menu déroulant.
+        if (personal.length > 0) setSelection({ type: "personal", id: personal[0].id });
       })
       .catch(() => {});
   }, []);
@@ -209,6 +215,38 @@ function MihawkReferenceProfile() {
         <div className="flex flex-wrap gap-2">
           {MIHAWK_REFERENCE_DECK.cards.map((c) => (
             <CardThumb key={c.cardNumber} cardNumber={c.cardNumber} quantity={c.quantity} size={64} />
+          ))}
+        </div>
+      </div>
+
+      {/* ACTUALITÉS — recherchées le 22/08/2026, chaque entrée cite sa
+          source et son niveau de confiance (voir MIHAWK_NEWS). */}
+      <div className="card-tile p-5 border-emerald/40">
+        <div className="flex items-center justify-between border-b border-line pb-2 mb-3">
+          <h2 className="font-mono text-xs uppercase tracking-widest text-gold">📰 Actus Mihawk</h2>
+          <span className="text-[10px] font-mono text-steel/50">recherché le 22/08/2026</span>
+        </div>
+        <div className="space-y-3">
+          {MIHAWK_NEWS.map((n) => (
+            <div key={n.title} className="bg-panel2 rounded-lg p-3">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span
+                  className={`badge text-[9px] ${
+                    n.confidence === "Résultat de tournoi"
+                      ? "badge-green"
+                      : n.confidence === "Confirmé (révélation officielle)"
+                        ? "badge-green"
+                        : "badge-gold"
+                  }`}
+                >
+                  {n.confidence}
+                </span>
+                <span className="text-[10px] font-mono text-steel/50">{n.date}</span>
+              </div>
+              <div className="text-xs font-mono text-white">{n.title}</div>
+              <div className="text-xs text-steel/70 mt-1">{n.note}</div>
+              <div className="text-[10px] text-steel/40 mt-1">Source : {n.source}</div>
+            </div>
           ))}
         </div>
       </div>

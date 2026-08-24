@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { CopyDecklistButton } from "@/components/CopyDecklistButton";
 import { LEADERS } from "@/lib/leaders";
+import { CardImage } from "@/components/CardImage";
 
 export default function PersonalDeckDetail() {
   const params = useParams();
@@ -70,13 +70,13 @@ export default function PersonalDeckDetail() {
               className="card-tile p-1.5 block hover:border-emerald transition-colors"
             >
               <div className="relative w-full aspect-[5/7] bg-panel2 rounded-sm overflow-hidden">
-                {dc.card.imageUrl ? (
-                  <Image src={dc.card.imageUrl} alt={dc.card.name} fill sizes="140px" className="object-cover" loading="lazy" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-center px-1">
-                    <span className="text-[10px] font-mono text-steel/50">{dc.card.cardNumber}</span>
-                  </div>
-                )}
+                <CardImage
+                  src={dc.card.imageUrl}
+                  alt={dc.card.name}
+                  fallbackLabel={dc.card.cardNumber}
+                  sizes="140px"
+                  loading="lazy"
+                />
                 <span className="absolute top-1 right-1 bg-emerald-dim text-emerald-bright text-[10px] font-mono px-1.5 py-0.5 rounded">
                   x{dc.quantity}
                 </span>

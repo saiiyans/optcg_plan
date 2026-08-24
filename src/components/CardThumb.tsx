@@ -52,6 +52,7 @@ export function CardThumb({
     providedImageUrl !== undefined ? providedImageUrl : imageUrlCache.get(cardNumber) ?? null
   );
   const [loaded, setLoaded] = useState(providedImageUrl !== undefined || imageUrlCache.has(cardNumber));
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +76,7 @@ export function CardThumb({
       title={cardNumber}
     >
       <div className="relative bg-panel2 rounded-md overflow-hidden" style={{ width: size, height }}>
-        {imageUrl ? (
+        {imageUrl && !failed ? (
           <Image
             src={imageUrl}
             alt={cardNumber}
@@ -84,10 +85,11 @@ export function CardThumb({
             unoptimized={imageUrl.includes("spellmana.com")}
             className="rounded-md border border-line group-hover:border-emerald-bright transition-colors object-cover"
             style={{ width: size, height }}
+            onError={() => setFailed(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-center px-1 border border-line rounded-md group-hover:border-emerald-bright transition-colors">
-            <span className="text-[9px] font-mono text-steel/50 leading-tight">
+          <div className="w-full h-full flex items-center justify-center text-center px-1 border border-line rounded-md group-hover:border-emerald-bright transition-colors overflow-hidden">
+            <span className="text-[9px] font-mono text-steel/50 leading-tight line-clamp-3">
               {loaded ? cardNumber : "…"}
             </span>
           </div>

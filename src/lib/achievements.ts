@@ -22,7 +22,7 @@ export interface StreakInfo {
 }
 
 export async function computeStreak(): Promise<StreakInfo> {
-  const matches = await db.match.findMany({ select: { date: true }, orderBy: { date: "desc" } });
+  const matches = await db.match.findMany({ where: { deletedAt: null }, select: { date: true }, orderBy: { date: "desc" } });
   const uniqueDays = Array.from(new Set(matches.map((m) => m.date))).sort().reverse(); // "YYYY-MM-DD" desc
 
   if (uniqueDays.length === 0) {
@@ -81,7 +81,7 @@ export interface Achievement {
 }
 
 export async function computeAchievements(): Promise<Achievement[]> {
-  const matches = await db.match.findMany();
+  const matches = await db.match.findMany({ where: { deletedAt: null } });
   const total = matches.length;
   const wins = matches.filter((m) => m.result === "Victoire").length;
   const objectives = await db.objectiveItem.findMany();

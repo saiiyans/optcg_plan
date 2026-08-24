@@ -147,6 +147,7 @@ model Deck {
   updatedAt DateTime   @updatedAt
   cards     DeckCard[]
   versions  DeckVersion[]
+  matches   Match[] // parties d'entraînement officielles liées à ce deck (section 16)
 }
 
 // --- Versions de deck (Lot 3, Priorité 7B) — à chaque mise à jour de la
@@ -161,6 +162,9 @@ model DeckVersion {
   listJson      String   // JSON [{cardNumber, quantity}] — snapshot exact au moment de l'archivage
   personalNote  String?
   changeReason  String?
+  versionNumber Int?     // numéro de version archivée (nombre de versions précédant celle-ci + 1) ;
+                         // null pour les versions archivées avant l'introduction de ce champ —
+                         // jamais recalculé rétroactivement pour ne pas fabriquer une donnée incertaine
   createdAt     DateTime @default(now())
 
   @@index([deckId])
@@ -313,9 +317,88 @@ model Match {
 
   insights CoachInsight[]
 
+  // --- Journal coaching avancé — tous facultatifs, ajoutés rétroactivement :
+  // aucune partie déjà enregistrée n'est affectée (elles gardent simplement
+  // ces champs à null). Voir src/lib/defeatAnalysis.ts pour la logique qui
+  // les exploite. ---
+
+  // "Ma raison initiale" — texte libre écrit par le joueur juste après la
+  // partie. Ce champ n'est JAMAIS rempli ni modifié par l'analyse du coach :
+  // seul le joueur peut l'écrire ou le corriger, via PATCH /api/matches/:id.
+  // Affiché séparément de "Analyse du coach", toujours dans son propre bloc.
+  lossReason        String?
+  // "Ce que j'aurais pu faire autrement" — propre réflexion du joueur,
+  // distincte de la ligne de jeu suggérée par le coach.
+  whatCouldHaveDoneDifferently String?
+  openingHandKeyCards   String? // "Cartes importantes dans ma main de départ"
+  boardStateAtCritical  String? // "État du board au moment critique"
+  myLifeRemaining       Int?    // "Nombre de Life restantes" (les miennes)
+
+  // --- Phase d'entraînement — sépare la phase de test/apprentissage du
+  // vrai entraînement compétitif. Le défaut Prisma ("test") ne sert QUE
+  // pour le backfill de `db push` sur les parties déjà existantes : toute
+  // nouvelle partie passe explicitement "official_training" côté API
+  // (src/app/api/matches/route.ts), jamais via ce défaut. Voir
+  // src/lib/trainingPhase.ts. ---
+  trainingPhase String @default("test") // "test" | "official_training"
+
+  // --- Qualité de la décision vs lecture du résultat (séparés : une
+  // victoire n'est pas automatiquement une bonne partie, une défaite pas
+  // automatiquement une mauvaise). Tous facultatifs. ---
+  decisionQuality String? // "Très bonne" | "Correcte" | "Plusieurs erreurs" | "Erreur décisive" | "Je ne sais pas"
+  resultReading   String? // "Victoire logique" | "Défaite logique" | "Victoire malgré une erreur" | "Défaite malgré de bonnes décisions" | "Variance importante" | "Je ne sais pas"
+
+  // --- Version du deck utilisée (facultatif) — lien vers Deck (Mes
+  // Decks). deckVersionNumber et deckNameAtLog sont des instantanés pris
+  // au moment de l'enregistrement (nombre de DeckVersion archivées + 1,
+  // et nom du deck à cet instant) : ils ne changent JAMAIS rétroactivement
+  // si le deck est ensuite renommé ou modifié, pour que les statistiques
+  // par version restent stables dans le temps. ---
+  deckId            String?
+  deckRef           Deck?   @relation(fields: [deckId], references: [id])
+  deckVersionNumber Int?
+  deckNameAtLog     String?
+
+  // --- Suppression douce (section 18) — permet une confirmation avant
+  // suppression ET un "annuler" immédiat juste après : DELETE ne fait que
+  // poser cette date, rien n'est jamais réellement effacé depuis l'app.
+  // GET /api/matches exclut ces lignes par défaut. ---
+  deletedAt DateTime?
+
   @@index([myDeck])
   @@index([opponentLeader])
   @@index([opponentLeaderId])
+  @@index([trainingPhase])
+  @@index([deckId])
+  @@index([deletedAt])
+}
+
+// --- Paramètres globaux de l'application — une seule ligne (id fixe
+// "singleton"), créée à la demande. Sert notamment la date de début de
+// l'entraînement officiel, modifiable dans les paramètres (section 1). ---
+model AppSettings {
+  id                         String   @id @default("singleton")
+  officialTrainingStartDate String? // ISO yyyy-mm-dd
+  updatedAt                  DateTime @updatedAt
+}
+
+// --- Mission d'entraînement active (section 10) — une seule mission
+// "active" à la fois par construction applicative (jamais dix erreurs à
+// corriger en même temps). Une nouvelle partie liée à cette mission
+// ajoute son id à matchIdsJson ; au bout de 3, la mission passe à
+// "completed" ou "abandoned" selon le choix du joueur (continuer /
+// valider / passer à la priorité suivante). Voir src/lib/missionEngine.ts.
+model TrainingMission {
+  id           String    @id @default(cuid())
+  priorityKey  String    // une des 10 priorités de TRAINING_PRIORITIES (defeatAnalysis.ts)
+  status       String    @default("active") // "active" | "completed" | "abandoned"
+  why          String?   // pourquoi cette mission a été sélectionnée
+  matchIdsJson String    @default("[]") // JSON string[] — ids des parties comptées vers cette mission (max 3)
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  outcome      String?   // bilan à la clôture (amélioration observée ou non), jamais fabriqué
+
+  @@index([status])
 }
 
 // --- Normalisation des leaders adverses (Lot 2) — regroupe les variantes
@@ -331,8 +414,14 @@ model OpponentLeader {
   rawNames    String   // JSON string[] — toutes les variantes brutes déjà vues
   color       String?
   setCode     String?
+  // Identifiant canonique basé sur le numéro de carte (section 11), ex.
+  // "OP17-039" pour Rocks D. Xebec — facultatif : renseigné à la main via
+  // l'outil de fusion/normalisation, jamais deviné automatiquement.
+  cardNumber  String?
   createdAt   DateTime @default(now())
   matches     Match[]
+
+  @@index([cardNumber])
 }
 
 // --- Coaching (Phase 1) — table séparée, référence Match par id, ne touche
@@ -343,12 +432,32 @@ model CoachInsight {
   id          String   @id @default(cuid())
   matchId     String?
   match       Match?   @relation(fields: [matchId], references: [id])
-  kind        String   // "post_match" | "daily_mission"
+  kind        String   // "post_match" | "daily_mission" | "post_match_defeat"
   lesson      String?
   priorityError String?
   advice      String?
   exercise    String?
   createdAt   DateTime @default(now())
+
+  // --- Analyse du coach (Journal, kind="post_match_defeat") — étend le
+  // modèle sans toucher aux 4 champs déjà présents. Chaque régénération
+  // (bouton "Régénérer l'analyse") crée une NOUVELLE ligne, jamais un
+  // update en place : l'historique des analyses précédentes d'une même
+  // partie reste consultable, et Match.lossReason n'est jamais touché par
+  // ce mécanisme (voir src/lib/defeatAnalysis.ts). ---
+  mainCause            String?  // "Cause principale" — une phrase
+  secondaryCauses      String?  // JSON string[] — jusqu'à 3 raisons secondaires
+  criticalMoment       String?  // "Moment critique"
+  technicalTerm        String?  // clé du terme technique principal (voir TECHNICAL_TERMS)
+  bestLine             String?  // "Meilleure ligne possible"
+  bestLineIsHypothesis Boolean  @default(true) // true si présentée comme hypothèse faute de données
+  lessonFr             String?  // "Leçon à retenir" (distinct de `lesson`, conservé pour compat)
+  exerciseNext         String?  // "Exercice pour la prochaine partie" (distinct de `exercise`)
+  confidenceLevel      String?  // "Élevé" | "Moyen" | "Faible"
+  missingInfoQuestions String?  // JSON string[] — 1 à 3 questions
+  classification       String?  // cause principale de classification (voir section 6 du cahier des charges)
+  classificationSecondary String? // JSON string[] — max 2 causes secondaires
+  fundamentalsFlagged  String?  // JSON string[] — sous-ensemble des 6 fondamentaux soutenus par les données
 
   @@index([matchId])
   @@index([kind])

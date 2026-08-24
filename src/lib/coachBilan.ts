@@ -31,7 +31,7 @@ export interface CoachBilan {
 
 export async function computeCoachBilan(myDeck?: string): Promise<CoachBilan> {
   const matches = await db.match.findMany({
-    where: myDeck ? { myDeck } : undefined,
+    where: { deletedAt: null, ...(myDeck ? { myDeck } : {}) },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });
 
