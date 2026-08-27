@@ -265,12 +265,12 @@ function MihawkReferenceProfile() {
         </div>
       </div>
 
-      {/* ACTUALITÉS — recherchées le 22/08/2026, chaque entrée cite sa
-          source et son niveau de confiance (voir MIHAWK_NEWS). */}
+      {/* ACTUALITÉS — dernière entrée ajoutée le 27/08/2026, chaque entrée
+          cite sa source et son niveau de confiance (voir MIHAWK_NEWS). */}
       <div className="card-tile p-5 border-emerald/40">
         <div className="flex items-center justify-between border-b border-line pb-2 mb-3">
           <h2 className="font-mono text-xs uppercase tracking-widest text-gold">📰 Actus Mihawk</h2>
-          <span className="text-[10px] font-mono text-steel/50">recherché le 22/08/2026</span>
+          <span className="text-[10px] font-mono text-steel/50">mis à jour le 27/08/2026</span>
         </div>
         <div className="space-y-3">
           {MIHAWK_NEWS.map((n) => (

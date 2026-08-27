@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { OPTCG_RESOURCES, MATCHUP_GUIDES } from "@/lib/matchupGuide";
+import { OPTCG_RESOURCES, MATCHUP_GUIDES, META_LEADER_SNAPSHOT, META_SNAPSHOT_SOURCE } from "@/lib/matchupGuide";
 import { getMergedMatchups } from "@/lib/matchupMerge";
 import { DIFFICULTY_LABEL } from "@/lib/matchupCenter";
 import { LeaderImage } from "@/components/LeaderImage";
@@ -98,6 +98,58 @@ export default function MatchupsPage() {
         <p className="text-sm text-steel/70 mt-2 max-w-xl">
           Un plan de jeu clair pour chaque leader adverse — méta communautaire, fiches détaillées et ta propre donnée de jeu, tout au même endroit.
         </p>
+      </div>
+
+      {/* CLASSEMENT MÉTA ACTUELLE — snapshot statique (pas de rafraîchissement
+          auto) capturé sur cardkaizoku.com le 27/08/2026, pour répondre à
+          "quels leaders je vais vraiment croiser en tournoi" avec le taux de
+          jeu réel du format en cours. Complète la grille leader-vs-leader
+          juste en dessous (MetaMatchupGrid, qui elle vient d'opdecks.xyz et
+          se rafraîchit sur clic) plutôt que de la remplacer : l'une montre
+          QUI tu vas croiser, l'autre montre QUI bat QUI. */}
+      <div className="card-tile rounded-sm p-4">
+        <div className="text-[11px] font-mono uppercase tracking-widest text-gold mb-0.5">
+          Classement méta actuelle — qui tu vas vraiment croiser
+        </div>
+        <div className="text-[11px] text-steel/50 mb-3">Snapshot du 27 août 2026 · pas de rafraîchissement automatique</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left border-separate border-spacing-y-1">
+            <thead>
+              <tr className="text-[10px] text-steel/50 uppercase tracking-wider">
+                <th className="pr-2 font-normal">#</th>
+                <th className="pr-2 font-normal">Leader</th>
+                <th className="pr-2 font-normal text-right">Taux de jeu</th>
+                <th className="pr-2 font-normal text-right">Winrate pondéré</th>
+              </tr>
+            </thead>
+            <tbody>
+              {META_LEADER_SNAPSHOT.map((l) => {
+                const isMihawk = l.cardNumber === "OP14-020";
+                return (
+                  <tr key={l.cardNumber} className={isMihawk ? "bg-flame/10" : "bg-panel2"}>
+                    <td className="px-2 py-1.5 rounded-l font-mono text-steel/60">
+                      {l.rank}
+                      {l.trend === "up" && <span className="text-emerald-bright ml-0.5">↑</span>}
+                      {l.trend === "down" && <span className="text-red-400 ml-0.5">↓</span>}
+                    </td>
+                    <td className={`px-2 py-1.5 font-mono ${isMihawk ? "text-flame font-bold" : "text-white"}`}>
+                      {l.name} <span className="text-steel/40">({l.cardNumber})</span>
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-steel/80">{l.playRate.toFixed(2)}%</td>
+                    <td className="px-2 py-1.5 rounded-r text-right font-mono tabular-nums text-steel/80">{l.wtdWinRate.toFixed(2)}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="text-[10px] text-steel/40 mt-2">
+          Source :{" "}
+          <a href="https://www.cardkaizoku.com/ranking" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/70">
+            cardkaizoku.com/ranking
+          </a>{" "}
+          — {META_SNAPSHOT_SOURCE}
+        </div>
       </div>
 
       <MetaMatchupGrid />
@@ -233,6 +285,9 @@ export default function MatchupsPage() {
                         <ul className="space-y-0.5">
                           {m.guide.howToCounter.map((c, j) => <li key={j} className="text-xs text-steel/80">→ {c}</li>)}
                         </ul>
+                        {m.guide.currentMeta && (
+                          <div className="text-[10px] font-mono text-steel/40 mt-2">📊 {m.guide.currentMeta}</div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -273,6 +328,9 @@ export default function MatchupsPage() {
                       <ul className="space-y-0.5">
                         {m.howToCounter.map((c, j) => <li key={j} className="text-xs text-steel/80">→ {c}</li>)}
                       </ul>
+                      {m.currentMeta && (
+                        <div className="text-[10px] font-mono text-steel/40 mt-2">📊 {m.currentMeta}</div>
+                      )}
                     </div>
                   )}
                 </div>

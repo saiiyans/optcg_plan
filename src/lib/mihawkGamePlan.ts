@@ -67,11 +67,18 @@ export interface MihawkNewsItem {
   date: string;
   title: string;
   note: string;
-  confidence: "Résultat de tournoi" | "Confirmé (révélation officielle)" | "Spéculation pré-sortie";
+  confidence: "Résultat de tournoi" | "Confirmé (révélation officielle)" | "Spéculation pré-sortie" | "Donnée agrégée (ladder en ligne)";
   source: string;
 }
 
 export const MIHAWK_NEWS: MihawkNewsItem[] = [
+  {
+    date: "2026-08-27",
+    title: "Mihawk #5 du classement méta actuel (cardkaizoku.com)",
+    note: "Filtre \"OP17 Last Week, All Lobbies\" (1 945 366 parties recensées sur la période) : winrate pondéré 51,89%, taux de jeu 10,36% — 2ᵉ leader le plus joué du format, juste derrière Sabo, et en hausse d'un rang sur la semaine. Donnée agrégée de ladder en ligne, pas des résultats de tournoi officiels — détail complet et classement des 10 leaders les plus joués dans l'onglet Matchups.",
+    confidence: "Donnée agrégée (ladder en ligne)",
+    source: "cardkaizoku.com/ranking",
+  },
   {
     date: "2026-08-19",
     title: "ChinoizeCup #99 — deux Mihawk Vert classés",
