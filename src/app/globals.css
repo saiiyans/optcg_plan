@@ -89,7 +89,10 @@ body {
   border-color: #36D98B;
 }
 .badge {
-  @apply text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-panel2 border border-line text-steel;
+  /* Casse normale, pas de lettres espacées — nakamacompanion.com n'utilise
+     jamais de texte tout-majuscule ni de tracking élargi (vérifié sur les
+     liens de nav et les boutons du site). */
+  @apply text-[11px] font-semibold px-2.5 py-1 rounded-full bg-panel2 border border-line text-steel;
 }
 .badge-green {
   @apply bg-emerald-dim border-emerald text-emerald-bright;
@@ -107,20 +110,21 @@ body {
   @apply bg-panel2 border-line text-steel/70;
 }
 
-/* Nouveaux badges — cohérents avec la légende du cahier des charges */
+/* Nouveaux badges — cohérents avec la légende du cahier des charges.
+   Casse normale (pas d'uppercase/tracking-wider), comme .badge ci-dessus. */
 .badge-winning-core {
-  @apply text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold/15 border border-gold text-gold;
+  @apply text-[11px] font-semibold px-2.5 py-1 rounded-full bg-gold/15 border border-gold text-gold;
 }
 .badge-tech {
-  @apply text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-950/60 border border-violet-700 text-violet-300;
+  @apply text-[11px] font-semibold px-2.5 py-1 rounded-full bg-violet-950/60 border border-violet-700 text-violet-300;
 }
 .badge-flexible {
-  @apply text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-800/60 border border-slate-500 text-slate-300;
+  @apply text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800/60 border border-slate-500 text-slate-300;
 }
 
 /* Chips de filtres rapides */
 .chip {
-  @apply text-xs font-medium px-3.5 py-2 rounded-full bg-panel2 border border-line text-steel hover:border-lineStrong hover:text-ivory transition-colors duration-150 whitespace-nowrap;
+  @apply text-sm font-medium px-3.5 py-2 rounded-full bg-panel2 border border-line text-steel hover:border-lineStrong hover:text-ivory transition-colors duration-150 whitespace-nowrap;
 }
 .chip-active {
   @apply bg-emerald-dim border-emerald text-emerald-bright;
@@ -137,7 +141,7 @@ body {
   50% { opacity: 0.9; }
 }
 .skeleton {
-  background: #151A22;
+  background: #1a1a1a;
   animation: skeleton-pulse 1.6s ease-in-out infinite;
   border-radius: 14px;
 }
@@ -175,4 +179,23 @@ h1 {
   h1 {
     letter-spacing: -0.02em !important;
   }
+}
+
+/* Neutralise l'uppercase + le tracking élargi PARTOUT dans l'app.
+   nakamacompanion.com n'utilise JAMAIS de texte tout-majuscule ni de
+   lettres espacées, nulle part sur le site (nav, boutons, titres,
+   labels) — vérifié par inspection directe. L'app avait ce style
+   "petit label majuscule espacé" utilisé plus de 200 fois dans ~20
+   fichiers (labels de section, badges, en-têtes de stats...) : plutôt
+   que de retoucher chaque occurrence une par une, on neutralise les
+   classes Tailwind uppercase/tracking-wider/tracking-widest ici pour
+   que TOUTE la typographie de l'app suive immédiatement le style de
+   référence, sans risque d'en oublier une. */
+.uppercase {
+  text-transform: none !important;
+}
+.tracking-wide,
+.tracking-wider,
+.tracking-widest {
+  letter-spacing: normal !important;
 }

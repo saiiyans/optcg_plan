@@ -41,12 +41,17 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Manrope partout (refonte) — remplace Inter + Space Grotesk pour
-        // coller au style typographique de Nakama Companion (une seule
-        // famille, du 400 au 800, plutôt que deux familles séparées).
+        // Manrope PARTOUT, y compris pour font-mono (refonte, relevé exact
+        // sur nakamacompanion.com) — leur site n'utilise aucune police à
+        // chasse fixe nulle part (nav, boutons, titres, chiffres : tout est
+        // en Manrope). L'app utilisait encore JetBrains Mono pour beaucoup
+        // de labels/badges/statistiques via la classe font-mono ; en
+        // remappant le token ici, tout ce qui utilise déjà font-mono dans
+        // les ~50 fichiers existants bascule automatiquement sur Manrope,
+        // sans avoir à retoucher chaque fichier un par un.
         sans: ["var(--font-manrope)", "system-ui", "sans-serif"],
         display: ["var(--font-manrope)", "system-ui", "sans-serif"],
-        mono: ["'JetBrains Mono'", "'Courier New'", "monospace"],
+        mono: ["var(--font-manrope)", "system-ui", "sans-serif"],
       },
       boxShadow: {
         // Ombres très légères — la palette sombre + les bordures subtiles
