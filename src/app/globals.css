@@ -82,8 +82,13 @@ body {
 .eyebrow-flame {
   display: none;
 }
+/* Relevé exact sur nakamacompanion.com/collection : fond blanc translucide
+   à 5% (pas un fond opaque bg-ink), bordure blanche à 16% (= lineStrong,
+   pas line/10%), coins à 10px. */
 .input {
-  @apply bg-ink border border-line text-ivory text-sm px-3.5 py-2.5 rounded-xl placeholder:text-textMuted transition-colors duration-150;
+  @apply text-ivory text-sm px-3.5 py-2.5 rounded-[10px] placeholder:text-textMuted transition-colors duration-150;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.8px solid rgba(255, 255, 255, 0.16);
 }
 .input:focus {
   border-color: #36D98B;
@@ -122,12 +127,56 @@ body {
   @apply text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800/60 border border-slate-500 text-slate-300;
 }
 
-/* Chips de filtres rapides */
+/* Chips de filtres rapides — bordure lineStrong (0.16), comme relevé sur
+   les pastilles de couleur et le bouton "Hide Alternative arts" de
+   nakamacompanion.com/collection (pas line/0.10, trop faible). */
 .chip {
-  @apply text-sm font-medium px-3.5 py-2 rounded-full bg-panel2 border border-line text-steel hover:border-lineStrong hover:text-ivory transition-colors duration-150 whitespace-nowrap;
+  @apply text-sm font-medium px-3.5 py-2 rounded-full bg-panel2 border border-lineStrong text-steel hover:text-ivory transition-colors duration-150 whitespace-nowrap;
 }
 .chip-active {
   @apply bg-emerald-dim border-emerald text-emerald-bright;
+}
+
+/* Grille de cartes — relevé exact sur nakamacompanion.com/collection :
+   colonnes de largeur fixe (~140px mini) qui se remplissent automatiquement
+   selon la largeur disponible (repeat(auto-fill, ...)) plutôt que des paliers
+   fixes 2/3/4/5/6 colonnes par breakpoint — le nombre de colonnes s'adapte
+   en continu, exactement comme sur le site de référence. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+/* Tuile de carte façon nakamacompanion.com : l'image EST la tuile (pas de
+   panneau/padding autour, pas de légende texte en dessous — le nom/coût
+   sont déjà imprimés sur l'image de la carte, les répéter serait
+   redondant). Coins à 10px, fond translucide avant chargement, aucune
+   animation au survol (le site de référence n'en a aucune sur ses tuiles). */
+.cgi-tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+/* Pastille de badge en coin de tuile (LEAK, In My Deck...) — même
+   traitement que .cgi-badge sur nakamacompanion.com : pilule pleine,
+   posée sur l'image plutôt qu'une ligne de texte en dessous. */
+.cgi-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #fff;
 }
 
 /* Vignette statistique compacte (StatsOverview) */

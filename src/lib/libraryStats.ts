@@ -17,7 +17,7 @@ export interface DeckStats {
 
 export interface LeaderCardStats {
   fiveStarCount: number;
-  inDeckCount: number; // 0 pour les leaders sans decklist de référence codée (ex. Shanks pour l'instant)
+  inDeckCount: number; // 0 pour les leaders sans decklist de référence codée
 }
 
 /**

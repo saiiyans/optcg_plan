@@ -17,7 +17,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Shopper — Coaching App",
-  description: "Ton coach personnel OPTCG — Mihawk & Shanks",
+  description: "Ton coach personnel OPTCG — Mihawk",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -49,8 +49,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/* Centre : navigation desktop uniquement — sur mobile elle est en bas d'écran.
                   Espacement élargi (gap-5) car le style du menu (relevé sur
                   nakamacompanion.com) est maintenant du texte plat sans fond
-                  en pilule — il faut plus d'air entre les liens pour rester lisible. */}
-              <nav className="hidden md:flex items-center gap-5 text-sm overflow-x-auto max-w-[min(60vw,900px)] scrollbar-thin">
+                  en pilule — il faut plus d'air entre les liens pour rester lisible.
+                  Plus de scrollbar brute ici : avec 15 rubriques, NavLinks ne
+                  montre plus qu'un socle de liens directs + un menu "Plus"
+                  déroulant, qui tient dans n'importe quelle largeur d'écran
+                  raisonnable sans jamais déborder ni se faire tronquer. */}
+              <nav className="hidden md:flex items-center gap-5 text-sm">
                 <NavLinks variant="top" />
               </nav>
 

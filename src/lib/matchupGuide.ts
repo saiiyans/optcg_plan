@@ -6,7 +6,7 @@ export interface MatchupTip {
 }
 
 export interface LeaderMatchupGuide {
-  leaderKey: "mihawk" | "shanks";
+  leaderKey: "mihawk";
   gameplanSummary: string;
   strengths: string[];
   keyStats?: string; // chiffre concret sourcé, quand disponible
@@ -106,29 +106,8 @@ export const MATCHUP_GUIDES: LeaderMatchupGuide[] = [
     sourceNote:
       "Classement basé sur les tier lists publiques OP16 (onepiece.gg, Spell Mana) et les statistiques de opdeckguide.com (37 312 parties, format OP16, consultées début août 2026). Les matchups marqués 'À tester' n'ont pas de verdict clair dans ces sources — utilise le bouton 'Rafraîchir depuis mes parties' pour voir ta propre donnée dès que tu en as assez loguée.",
   },
-  {
-    leaderKey: "shanks",
-    gameplanSummary:
-      "Package Red-Haired Pirates : verrouillage d'une carte adverse reposée (écho direct de l'effet leader Mihawk mais côté Shanks), Rush pour des finisseurs rapides, et protection des pièces clés via Crone Oli.",
-    strengths: [
-      "Effet leader : défausser 1 carte ou reposer 1 DON!! pour empêcher un perso adverse reposé de se relever — outil de contrôle de tempo dès le leader",
-      "Rush sur plusieurs cartes (ex. Shanks OP17-020, Benn Beckman OP17-027) pour appliquer une pression immédiate",
-      "Crone Oli (OP17-021) protège une carte Red-Haired Pirates d'un retrait — résilience face au removal",
-    ],
-    worstMatchups: [
-      {
-        opponent: "L'ensemble du champ méta OP16 actuel (Enel, Teach, Luffy G/B, Yamato, Nami, Imu, Rosinante, Sengoku)",
-        difficulty: "À tester",
-        why: "OP17 sort le 22 août 2026 (JP) — aucun résultat de tournoi n'existe encore. Ce sont les decks que Shanks affrontera très probablement dès sa sortie, d'après le champ OP16 actuel.",
-        howToCounter: [
-          "Prends les fiches de ces leaders dans le tableau ci-dessus (côté Mihawk) comme point de départ — les plans de jeu adverses ne changent pas selon ton propre leader",
-          "Dès les premières parties après le 22 août, logue-les dans le Journal pour remplacer ces hypothèses par de vraies données",
-        ],
-      },
-    ],
-    sourceNote:
-      "OP17 sort le 22 août 2026 (JP) — aucune donnée de tournoi n'existe encore pour établir de vrais matchups. Les points forts ci-dessus sont déduits du texte des cartes déjà révélées, pas de résultats réels. Cette section se remplira automatiquement une fois des decklists Shanks importées.",
-  },
+  // Fiche Shanks OP17 retirée — choix du joueur de ne finalement pas jouer
+  // ce leader au tournoi.
 ];
 
 export const OPTCG_RESOURCES = [

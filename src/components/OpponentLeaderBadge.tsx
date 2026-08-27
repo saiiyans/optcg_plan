@@ -17,6 +17,14 @@ import Image from "next/image";
  */
 
 const cache = new Map<string, string | null>();
+// Une seule requête en vol par label : plusieurs badges affichant le même
+// adversaire (très fréquent sur /matchup-center où un même leader revient
+// dans plusieurs entrées) partagent désormais la même promesse au lieu de
+// déclencher chacun leur propre fetch("/api/cards") en parallèle. Avant ce
+// correctif, N badges identiques montés en même temps = N requêtes
+// concurrentes identiques, ce qui pouvait épuiser le pool de connexions
+// Postgres (Neon) sous charge et faire échouer certaines d'entre elles.
+const inFlight = new Map<string, Promise<string | null>>();
 
 const COLOR_WORDS = ["Red", "Blue", "Purple", "Black", "Yellow", "Green"];
 const COLOR_PREFIX_RE = new RegExp(`^(${COLOR_WORDS.join("|")})(/(${COLOR_WORDS.join("|")}))*\\s+`, "i");
@@ -31,33 +39,51 @@ function parseLabel(raw: string): { name: string; cardNumber: string | null } {
   return { name: raw.replace(COLOR_PREFIX_RE, "").trim(), cardNumber: null };
 }
 
-async function resolveLeaderImage(raw: string): Promise<string | null> {
-  if (cache.has(raw)) return cache.get(raw) ?? null;
+async function fetchLeaderImage(raw: string): Promise<string | null> {
   const { name, cardNumber } = parseLabel(raw);
 
-  try {
-    if (cardNumber) {
-      const res = await fetch(`/api/cards?q=${encodeURIComponent(cardNumber)}&limit=5&color=all`);
-      const data = await res.json();
-      const match = (data.cards ?? []).find((c: any) => c.cardNumber === cardNumber);
-      if (match?.imageUrl) {
-        cache.set(raw, match.imageUrl);
-        return match.imageUrl;
-      }
-    }
-    if (name) {
-      const res = await fetch(`/api/cards?q=${encodeURIComponent(name)}&limit=10&color=all&category=Leader`);
-      const data = await res.json();
-      const leaderMatch = (data.cards ?? [])[0];
-      const url = leaderMatch?.imageUrl ?? null;
+  if (cardNumber) {
+    const res = await fetch(`/api/cards?q=${encodeURIComponent(cardNumber)}&limit=5&color=all`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const match = (data.cards ?? []).find((c: any) => c.cardNumber === cardNumber);
+    if (match?.imageUrl) return match.imageUrl;
+  }
+  if (name) {
+    const res = await fetch(`/api/cards?q=${encodeURIComponent(name)}&limit=10&color=all&category=Leader`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const leaderMatch = (data.cards ?? [])[0];
+    return leaderMatch?.imageUrl ?? null;
+  }
+  return null;
+}
+
+async function resolveLeaderImage(raw: string): Promise<string | null> {
+  if (cache.has(raw)) return cache.get(raw) ?? null;
+
+  const existing = inFlight.get(raw);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    try {
+      const url = await fetchLeaderImage(raw);
+      // Résultat définitif (trouvé ou vraiment absent de la base) : on peut
+      // le mettre en cache pour de bon.
       cache.set(raw, url);
       return url;
+    } catch {
+      // Échec réseau/serveur (timeout, pool de connexions saturé, etc.) :
+      // ce n'est PAS la preuve que l'image n'existe pas, donc on ne "blackliste"
+      // jamais ce label — un futur montage du badge retentera l'appel au lieu
+      // de rester bloqué sur un rond vide pour le reste de la session.
+      return null;
+    } finally {
+      inFlight.delete(raw);
     }
-  } catch {
-    // silencieux — repli sur le texte seul
-  }
-  cache.set(raw, null);
-  return null;
+  })();
+  inFlight.set(raw, promise);
+  return promise;
 }
 
 export function OpponentLeaderBadge({ label, size = 22, className = "" }: { label: string; size?: number; className?: string }) {

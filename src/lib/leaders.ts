@@ -1,5 +1,5 @@
 export interface LeaderConfig {
-  key: "mihawk" | "shanks";
+  key: "mihawk";
   label: string; // affiché dans l'UI
   leaderContext: string; // clé utilisée dans PersonalRating.leaderContext
   leaderCardNumber: string;
@@ -8,6 +8,11 @@ export interface LeaderConfig {
   releaseNote?: string; // affiché tant qu'il n'y a pas encore de données de tournoi
 }
 
+// Shanks OP17 retiré (choix du joueur : ne sera finalement pas joué au
+// tournoi) — Mihawk OP14-020 reste le seul leader suivi activement par
+// l'app. Les anciennes parties déjà loguées avec "Shanks OP17" comme deck
+// restent affichées normalement dans le Journal/Stats (données historiques,
+// jamais supprimées), seul le choix pour de NOUVELLES parties disparaît.
 export const LEADERS: LeaderConfig[] = [
   {
     key: "mihawk",
@@ -16,17 +21,6 @@ export const LEADERS: LeaderConfig[] = [
     leaderCardNumber: "OP14-020",
     deckProfile: "op14mihawk",
     badgeClass: "badge-green",
-  },
-  {
-    key: "shanks",
-    label: "Shanks OP17",
-    leaderContext: "Shanks OP17",
-    leaderCardNumber: "OP17-020",
-    // Slug non confirmé : OP17 n'est pas encore sorti (22 août 2026). À vérifier
-    // sur onepiecetopdecks.com dès que le format OP17 a sa propre page de decklists.
-    deckProfile: "op17shanks",
-    badgeClass: "badge-gold",
-    releaseNote: "OP17 sort le 22 août 2026 (JP) — pas encore de résultats de tournoi disponibles avant cette date.",
   },
 ];
 

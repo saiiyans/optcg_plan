@@ -24,58 +24,64 @@ export function CardTile({ card, onSelect }: { card: CardTileData; onSelect: (n:
   return (
     <button
       onClick={() => onSelect(card.cardNumber)}
-      className="card-tile p-3 text-left flex flex-col gap-2 hover:-translate-y-0.5 group"
+      title={`${card.name} — ${card.cardNumber}`}
+      // Tuile "image seule" relevée à l'identique sur
+      // nakamacompanion.com/collection : pas de panneau ni de légende texte
+      // sous la carte (nom/coût/counter sont déjà imprimés sur l'image),
+      // pas d'animation au survol — le nom complet reste accessible via le
+      // titre au survol et, en un clic, sur la fiche détaillée qui garde
+      // toutes les infos (note, badges, tags).
+      className="cgi-tile text-left"
     >
-      {/* Image seule, jamais recouverte d'informations */}
-      <div className="relative w-full aspect-[5/7] bg-panel2 rounded-lg overflow-hidden">
-        {card.imageUrl && !imgFailed ? (
-          <Image
-            src={card.imageUrl}
-            alt={card.name}
-            fill
-            loading="lazy"
-            sizes="240px"
-            // spellmana.com (source des cartes OP17 leak) bloque les
-            // requêtes serveur-à-serveur de l'optimiseur d'images de
-            // Vercel tout en autorisant les requêtes directes du
-            // navigateur — on contourne donc l'optimisation pour ce
-            // domaine précis plutôt que de laisser l'image casser.
-            unoptimized={card.imageUrl.includes("spellmana.com")}
-            className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-            // Si l'image échoue à charger (coupure réseau ponctuelle,
-            // fréquente sur tablette), afficher un repli visuel plutôt
-            // qu'un espace vide silencieux qu'on pourrait croire cassé.
-            onError={() => setImgFailed(true)}
-          />
-        ) : card.imageUrl && imgFailed ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center px-2 gap-1">
-            <span className="text-[10px] font-mono text-steel/50">{card.cardNumber}</span>
-            <span className="text-[9px] text-steel/40">Image indisponible</span>
-          </div>
-        ) : null}
-      </div>
+      {card.imageUrl && !imgFailed ? (
+        <Image
+          src={card.imageUrl}
+          alt={card.name}
+          fill
+          loading="lazy"
+          sizes="180px"
+          // spellmana.com (source des cartes OP17 leak) bloque les
+          // requêtes serveur-à-serveur de l'optimiseur d'images de
+          // Vercel tout en autorisant les requêtes directes du
+          // navigateur — on contourne donc l'optimisation pour ce
+          // domaine précis plutôt que de laisser l'image casser.
+          unoptimized={card.imageUrl.includes("spellmana.com")}
+          className="object-cover"
+          // Si l'image échoue à charger (coupure réseau ponctuelle,
+          // fréquente sur tablette), afficher un repli visuel plutôt
+          // qu'un espace vide silencieux qu'on pourrait croire cassé.
+          onError={() => setImgFailed(true)}
+        />
+      ) : card.imageUrl && imgFailed ? (
+        <div className="w-full h-full flex flex-col items-center justify-center text-center px-2 gap-1">
+          <span className="text-[10px] font-mono text-steel/50">{card.cardNumber}</span>
+          <span className="text-[9px] text-steel/40">Image indisponible</span>
+        </div>
+      ) : null}
 
-      {/* Identité */}
-      <div className="min-w-0">
-        <div className="text-[15px] text-ivory font-medium leading-snug truncate">{card.name}</div>
-        <div className="text-xs font-mono text-textMuted">{card.cardNumber} · {card.setCode}</div>
-      </div>
+      {/* Badges — coin de l'image, jamais de bloc à part sous la carte
+          (données coach propres à l'app, absentes de l'image imprimée). */}
+      {card.deckQuantity > 0 && (
+        <span className="cgi-badge" style={{ background: "#66BB6A" }}>
+          ×{card.deckQuantity}
+        </span>
+      )}
+      {card.isLeak && (
+        <span className="cgi-badge" style={{ background: "#FFEE58", color: "#111", top: card.deckQuantity > 0 ? 30 : 6 }}>
+          LEAK
+        </span>
+      )}
+      {!legal && (
+        <span className="cgi-badge" style={{ background: "#EF5350" }}>
+          Illegal
+        </span>
+      )}
 
-      {/* Statistiques */}
-      <div className="flex items-center gap-2.5 text-xs text-steel">
-        <span>Cost {card.cost ?? "—"}</span>
-        {card.power != null && <span>{card.power} Pwr</span>}
-        {card.counter ? <span>+{card.counter} Ctr</span> : null}
-      </div>
-
-      {card.rating && <StarRating stars={card.rating.stars} compact />}
-
-      {/* Badges — sous l'image, jamais dessus */}
-      <div className="flex flex-wrap gap-1.5 pt-0.5">
-        <span className={`badge ${legal ? "badge-green" : "badge-red"}`}>{legal ? "Legal" : "Illegal"}</span>
-        {card.isLeak && <span className="badge badge-gold">LEAK</span>}
-        {card.deckQuantity > 0 && <span className="badge badge-green">In My Deck ×{card.deckQuantity}</span>}
-      </div>
+      {card.rating && (
+        <div className="absolute bottom-0 inset-x-0 px-1.5 py-1 bg-gradient-to-t from-black/80 to-transparent">
+          <StarRating stars={card.rating.stars} compact />
+        </div>
+      )}
     </button>
   );
 }

@@ -33,6 +33,15 @@ const MOBILE_PRIMARY_HREFS = ["/dashboard", "/", "/journal", "/prep"];
 const MOBILE_PRIMARY = ITEMS.filter((i) => MOBILE_PRIMARY_HREFS.includes(i.href));
 const MOBILE_MORE = ITEMS.filter((i) => !MOBILE_PRIMARY_HREFS.includes(i.href));
 
+// Nav du haut (desktop/tablette) : avec 15 rubriques, tout afficher à plat
+// ne tient dans aucune largeur d'écran raisonnable (c'était le bug —
+// scrollbar brute et libellés tronqués dès ~1400px). Même principe que la
+// barre du bas : un socle de rubriques directes + un menu "Plus" pour le
+// reste, toujours dans le style plat de la référence (texte, pas de pilule).
+const TOP_PRIMARY_HREFS = ["/dashboard", "/", "/journal", "/cards", "/matchup-center", "/prep"];
+const TOP_PRIMARY = ITEMS.filter((i) => TOP_PRIMARY_HREFS.includes(i.href));
+const TOP_MORE = ITEMS.filter((i) => !TOP_PRIMARY_HREFS.includes(i.href));
+
 export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -44,22 +53,53 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
     // accent — pas de bordure ni de fond coloré comme dans l'ancienne
     // version (qui utilisait des pilules emerald empruntées au reste de
     // l'app plutôt qu'au style réel du site de référence).
+    const linkClass = (active: boolean) =>
+      `px-1 py-2 whitespace-nowrap transition-colors duration-150 border-b-2 ${
+        active ? "text-ivory font-bold border-flame" : "text-steel font-medium border-transparent hover:text-ivory"
+      }`;
+    const moreActive = TOP_MORE.some((i) => i.href === pathname);
+
     return (
       <>
-        {ITEMS.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`px-1 py-2 whitespace-nowrap transition-colors duration-150 border-b-2 ${
-                active ? "text-ivory font-bold border-flame" : "text-steel font-medium border-transparent hover:text-ivory"
-              }`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
+        {TOP_PRIMARY.map((item) => (
+          <Link key={item.href} href={item.href} className={linkClass(pathname === item.href)}>
+            {item.label}
+          </Link>
+        ))}
+
+        <div className="relative">
+          <button
+            onClick={() => setMoreOpen((o) => !o)}
+            className={`${linkClass(moreActive || moreOpen)} inline-flex items-center gap-1`}
+          >
+            Plus
+            <span className={`text-[10px] transition-transform duration-150 ${moreOpen ? "rotate-180" : ""}`}>▾</span>
+          </button>
+
+          {moreOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+              <div className="absolute right-0 top-full mt-2 z-50 w-56 bg-panel border border-line rounded-xl p-1.5 shadow-elevated">
+                {TOP_MORE.map((item) => {
+                  const active = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMoreOpen(false)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors duration-150 ${
+                        active ? "bg-flame/15 text-ivory font-bold" : "text-steel font-medium hover:bg-panel2 hover:text-ivory"
+                      }`}
+                    >
+                      <span className="text-base leading-none">{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
       </>
     );
   }

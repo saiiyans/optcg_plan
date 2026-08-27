@@ -4,7 +4,7 @@ import { CardTile, CardTileData } from "@/components/CardTile";
 import { useRouter } from "next/navigation";
 import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
-import { OP_COLOR_HEX } from "@/lib/opColors";
+import { OP_COLOR_HEX, hexToRgba } from "@/lib/opColors";
 
 // Page entièrement pilotée par des données live (filtres, recherche,
 // import en direct) — ne doit jamais être pré-générée statiquement au
@@ -470,7 +470,7 @@ export default function CardsPage() {
               <button onClick={runSeedCoach} disabled={importBusy} className="btn btn-primary">🦅 Charger le contenu Coach (deck actuel)</button>
             </div>
             <div className="text-xs text-textMuted mb-2">
-              L'import calcule la note de chaque carte pour Mihawk et Shanks en même temps.
+              L'import calcule la note de chaque carte pour Mihawk.
             </div>
             {importProgress && (
               <div className="mb-2">
@@ -567,7 +567,9 @@ export default function CardsPage() {
         )}
       </div>
 
-      {/* RECHERCHE */}
+      {/* RECHERCHE — style relevé à l'identique sur
+          nakamacompanion.com/collection (fond translucide 5%, bordure 16%,
+          coins 10px : voir .input dans globals.css). */}
       <div className="relative">
         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textMuted text-sm">⌕</span>
         <input
@@ -613,20 +615,18 @@ export default function CardsPage() {
         />
       </div>
 
-      {/* FILTRE PAR COULEUR (refonte — pastilles colorées, style Nakama) —
+      {/* FILTRE PAR COULEUR — pastilles relevées à l'identique sur
+          nakamacompanion.com/collection : pilule avec point de 12px, et à
+          l'état actif un fond teinté à 15% de la couleur + bordure pleine +
+          texte blanc gras (pas la pilule emerald générique de .chip-active,
+          chaque couleur garde SA teinte quand elle est sélectionnée).
           "Vert" reste le comportement par défaut de l'app (deck Mihawk) ;
           "Toutes" retire le filtre couleur côté API. */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[10px] uppercase tracking-wider text-textMuted mr-1">Couleur :</span>
-        <button onClick={() => setFilters((f) => ({ ...f, color: "" }))} className={`chip inline-flex items-center gap-1.5 ${filters.color === "" ? "chip-active" : ""}`}>
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: "#22C55E" }} />
-          Vert (défaut)
-        </button>
+        <ColorChip label="Vert (défaut)" hex={OP_COLOR_HEX.Green} active={filters.color === ""} onClick={() => setFilters((f) => ({ ...f, color: "" }))} />
         {COLOR_DOTS.map(({ name, hex }) => (
-          <button key={name} onClick={() => toggle("color", name)} className={`chip inline-flex items-center gap-1.5 ${filters.color === name ? "chip-active" : ""}`}>
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: hex }} />
-            {name}
-          </button>
+          <ColorChip key={name} label={name} hex={hex} active={filters.color === name} onClick={() => toggle("color", name)} />
         ))}
         <button onClick={() => setFilters((f) => ({ ...f, color: "all" }))} className={`chip ${filters.color === "all" ? "chip-active" : ""}`}>
           Toutes
@@ -716,13 +716,9 @@ export default function CardsPage() {
 
       {/* GRILLE */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="p-3 card-tile">
-              <div className="skeleton w-full aspect-[5/7]" />
-              <div className="skeleton h-3 w-3/4 mt-3 rounded" />
-              <div className="skeleton h-3 w-1/2 mt-2 rounded" />
-            </div>
+        <div className="card-grid">
+          {Array.from({ length: 14 }).map((_, i) => (
+            <div key={i} className="skeleton w-full aspect-[5/7]" style={{ borderRadius: 10 }} />
           ))}
         </div>
       ) : cardsError ? (
@@ -740,7 +736,10 @@ export default function CardsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+          {/* Grille relevée à l'identique sur nakamacompanion.com/collection
+              (voir .card-grid dans globals.css : auto-fill, pas de paliers
+              fixes par breakpoint). */}
+          <div className="card-grid">
             {cards.map((c) => (
               <CardTile key={c.cardNumber} card={c} onSelect={(n) => router.push(`/cards/${n}`)} />
             ))}
@@ -774,6 +773,27 @@ function RetryStats({ onRetry }: { onRetry: () => void }) {
       <span className="text-xs text-danger">Impossible de charger les statistiques.</span>
       <button onClick={onRetry} className="btn text-xs py-1.5 px-3">Réessayer</button>
     </div>
+  );
+}
+
+// Pastille de filtre couleur — relevée à l'identique sur
+// nakamacompanion.com/collection : point de 12px + libellé, et à l'état actif
+// un fond teinté à 15% de SA couleur (pas la teinte emerald générique des
+// autres chips) avec bordure pleine et texte blanc gras.
+function ColorChip({ label, hex, active, onClick }: { label: string; hex: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-sm px-3.5 py-2 rounded-full inline-flex items-center gap-1.5 whitespace-nowrap transition-colors duration-150"
+      style={
+        active
+          ? { background: hexToRgba(hex, 0.15), border: `0.8px solid ${hex}`, color: "#fff", fontWeight: 600 }
+          : { background: "transparent", border: "0.8px solid rgba(255,255,255,0.16)", color: "#a0a0a0", fontWeight: 500 }
+      }
+    >
+      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: hex }} />
+      {label}
+    </button>
   );
 }
 

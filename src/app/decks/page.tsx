@@ -6,7 +6,6 @@ import { LeaderImage } from "@/components/LeaderImage";
 
 export default function WinningDecksPage() {
   const [leaderKey, setLeaderKey] = useState<string>("mihawk");
-  const leader = LEADERS.find((l) => l.key === leaderKey) ?? LEADERS[0];
   const [decks, setDecks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ status: "", undefeated: false, country: "", player: "" });
@@ -93,8 +92,7 @@ export default function WinningDecksPage() {
         ))}
       </div>
 
-      {leaderKey === "mihawk" ? (
-        <section className="card-tile p-5">
+      <section className="card-tile p-5">
           <h2 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">
             Winning Mihawk Decks — import depuis onepiecetopdecks.com (OP16)
           </h2>
@@ -128,19 +126,7 @@ export default function WinningDecksPage() {
               {syncResult.totalMihawkRowsOnPage} lignes Mihawk sur la page · {syncResult.alreadyInDb} déjà en base · <b className="text-gold">{syncResult.newDecksDetected} nouvelles</b>
             </div>
           )}
-        </section>
-      ) : (
-        <section className="card-tile p-5">
-          <h2 className="font-mono text-xs uppercase tracking-widest text-gold mb-2 border-b border-line pb-2">
-            Winning Shanks Decks
-          </h2>
-          <p className="text-sm text-steel/70">
-            {leader.releaseNote} Le script <code className="text-emerald-bright">scripts/seed-mihawk-decks.js</code> montre
-            comment ajouter des decks manuellement en attendant — le même principe fonctionnera pour Shanks dès que des
-            résultats de tournoi existeront.
-          </p>
-        </section>
-      )}
+      </section>
 
       <section className="card-tile p-4 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -167,7 +153,7 @@ export default function WinningDecksPage() {
         <div className="text-steel/60 text-sm font-mono">Chargement...</div>
       ) : decks.length === 0 ? (
         <div className="text-steel/60 text-sm font-mono">
-          {leaderKey === "mihawk" ? "Aucun deck importé. Lance le test puis l'import ci-dessus." : "Aucun deck Shanks pour l'instant."}
+          Aucun deck importé. Lance le test puis l'import ci-dessus.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

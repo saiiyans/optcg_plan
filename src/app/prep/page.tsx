@@ -43,12 +43,9 @@ export default function PrepPage() {
         <div>
           <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Préparation tournoi</div>
           <div className="text-white text-sm flex items-center gap-2 flex-wrap">
-            Leaders engagés :
+            Leader engagé :
             <span className="badge badge-green inline-flex items-center gap-1.5">
               <LeaderImage leaderKey="mihawk" size={18} /> Mihawk OP14-020
-            </span>
-            <span className="badge badge-gold inline-flex items-center gap-1.5">
-              <LeaderImage leaderKey="shanks" size={18} /> Shanks OP17
             </span>
           </div>
         </div>

@@ -21,7 +21,7 @@ export interface LeaderTournamentStats {
 /**
  * Calcule, à partir des TournamentDeck déjà importés en base, les
  * statistiques réelles d'une carte dans les listes GAGNANTES (status =
- * "winner") d'un leader donné ("mihawk" ou "shanks"). Rien n'est jamais
+ * "winner") d'un leader donné ("mihawk"). Rien n'est jamais
  * inventé : une carte absente des decks importés retourne usageCount=0 et
  * le badge "No Winning Data", jamais une estimation.
  */

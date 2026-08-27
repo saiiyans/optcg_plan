@@ -36,26 +36,26 @@ export const WEEKS: PlanningWeek[] = [
     n: 3,
     range: "17 – 23 août",
     startDate: "2026-08-17",
-    focus: "Sortie d'OP17 le 22/08 (JP) / 28/08 (EN large). Dès que possible, premiers tests de Shanks en parallèle de Mihawk.",
+    focus: "Sortie d'OP17 le 22/08 (JP) / 28/08 (EN large) — la méta va évoluer avec les nouveaux leaders adverses. Continuer Mihawk et intégrer les nouveaux matchups au fur et à mesure qu'ils apparaissent en tournoi.",
     sim: 12,
     bout: 4,
-    milestone: "Jalon : premières parties avec Shanks jouées.",
+    milestone: "Jalon : premiers matchups contre les nouveaux leaders OP17 logués.",
     warn: true,
   },
   {
     n: 4,
     range: "24 – 30 août",
     startDate: "2026-08-24",
-    focus: "Construction et rodage Shanks : automatismes, courbe de jeu, cartes clés Red-Haired Pirates. Comparatif direct avec Mihawk.",
+    focus: "Affinage Mihawk : resserrer la liste, travailler les matchups les plus fréquents identifiés dans les statistiques.",
     sim: 12,
     bout: 6,
-    milestone: "Objectif : deck Shanks stabilisé (liste quasi figée).",
+    milestone: "Objectif : liste Mihawk quasi figée.",
   },
   {
     n: 5,
     range: "31 août – 6 sept",
     startDate: "2026-08-31",
-    focus: "Affinage des deux decks. Les statistiques doivent commencer à orienter le choix du deck de tournoi.",
+    focus: "Affinage du deck. Les statistiques doivent confirmer les matchups à travailler en priorité avant le tournoi.",
     sim: 12,
     bout: 6,
     milestone: "Objectif : tendance claire sur le deck à privilégier.",
@@ -102,8 +102,6 @@ export const DEFAULT_OBJECTIVES: DefaultObjective[] = [
   { category: "cartes", order: 3, text: "Tashigi OP14-029 — attaquant milieu de partie difficile à retirer" },
   { category: "cartes", order: 4, text: "Coffin Boat OP14-039 — non affecté par le repos du leader, à jouer tôt" },
   { category: "cartes", order: 5, text: "Shanks OP14-027 et Mihawk OP14-119 — finisseurs de fin de partie" },
-  { category: "cartes", order: 6, text: "Shanks OP17 — effet leader : défausser 1 carte ou reposer 1 DON pour empêcher un perso adverse reposé de se réactiver" },
-  { category: "cartes", order: 7, text: "Suivre les cartes Red-Haired Pirates révélées après le 22 août pour compléter la liste Shanks" },
   // Stratégies
   { category: "strat", order: 1, text: "Mihawk gagne +1000 de puissance contre les leaders de type Tranchant (Slash) — jouer plus agressif dans ce match" },
   { category: "strat", order: 2, text: "Ne plus pouvoir jouer de personnage après avoir activé l'effet leader Mihawk — bien timer son utilisation" },
@@ -116,17 +114,14 @@ export const DEFAULT_OBJECTIVES: DefaultObjective[] = [
   { category: "strat", order: 9, text: "[Observation isolée, à vérifier] Jinbe signalé comme le matchup le plus défavorable par un joueur compétitif (un seul avis, pas une donnée de tournoi agrégée)" },
   // Matchups
   { category: "matchups", order: 1, text: "Mihawk vs Enel (OP15-058) — meilleur deck actuel, priorité haute — viser 5 parties minimum" },
-  { category: "matchups", order: 2, text: "Shanks vs Enel (OP15-058) — même priorité, dès que le deck Shanks est jouable" },
-  { category: "matchups", order: 3, text: "Mihawk vs Luffy Vert/Bleu (OP16-022) — tester la stabilisation face à un deck rapide" },
-  { category: "matchups", order: 4, text: "Shanks vs Luffy Vert/Bleu (OP16-022) — vérifier si le deck tient le rythme en early game" },
-  { category: "matchups", order: 5, text: "Mihawk vs Marshall D. Teach (OP16-080/119) — matchup de contrôle, gérer le board wipe" },
-  { category: "matchups", order: 6, text: "Shanks vs Marshall D. Teach (OP16-080/119) — même vigilance côté contrôle" },
-  { category: "matchups", order: 7, text: "Mihawk vs Yamato (OP16-079/096) — anticiper la boucle Rush avant qu'elle ne s'enclenche" },
-  { category: "matchups", order: 8, text: "Mihawk vs Imu (OP13-079) — matchup historiquement défavorable, à retravailler en priorité" },
-  { category: "matchups", order: 9, text: "Mihawk vs Nami (OP11-041) — matchup d'attrition/valeur, tester la patience" },
-  { category: "matchups", order: 10, text: "Mihawk et Shanks vs Sengoku (OP16, Purple) — deck de valeur Marine à découvrir" },
-  { category: "matchups", order: 11, text: "Miroir Vert (Mihawk vs Mihawk, Shanks vs Shanks) — matchup probable en boutique locale" },
-  { category: "matchups", order: 12, text: "Mihawk et Shanks vs les 6 nouveaux leaders OP17 (Newgate, Luffy Noir, Kaido, Big Mom, Xebec, miroir Shanks) dès la sortie du set le 22 août" },
+  { category: "matchups", order: 2, text: "Mihawk vs Luffy Vert/Bleu (OP16-022) — tester la stabilisation face à un deck rapide" },
+  { category: "matchups", order: 3, text: "Mihawk vs Marshall D. Teach (OP16-080/119) — matchup de contrôle, gérer le board wipe" },
+  { category: "matchups", order: 4, text: "Mihawk vs Yamato (OP16-079/096) — anticiper la boucle Rush avant qu'elle ne s'enclenche" },
+  { category: "matchups", order: 5, text: "Mihawk vs Imu (OP13-079) — matchup historiquement défavorable, à retravailler en priorité" },
+  { category: "matchups", order: 6, text: "Mihawk vs Nami (OP11-041) — matchup d'attrition/valeur, tester la patience" },
+  { category: "matchups", order: 7, text: "Mihawk vs Sengoku (OP16, Purple) — deck de valeur Marine à découvrir" },
+  { category: "matchups", order: 8, text: "Miroir Vert (Mihawk vs Mihawk) — matchup probable en boutique locale" },
+  { category: "matchups", order: 9, text: "Mihawk vs les 6 nouveaux leaders OP17 (Newgate, Luffy Noir, Kaido, Big Mom, Xebec, Shanks) dès la sortie du set le 22 août" },
 ];
 
 // Liste complète des leaders OPTCG (toutes couleurs/variantes), tirée de la
@@ -200,4 +195,8 @@ export const META_PRIORITY_LEADERS = [
   "Rocks D. Xebec (OP17)",
 ];
 
-export const MY_DECKS = ["Mihawk OP14-020", "Shanks OP17"];
+// Shanks OP17 retiré (choix du joueur de ne finalement pas le jouer) —
+// seul Mihawk reste proposé pour loguer de nouvelles parties. Les anciennes
+// parties déjà loguées avec "Shanks OP17" restent affichées normalement
+// (données historiques jamais supprimées).
+export const MY_DECKS = ["Mihawk OP14-020"];

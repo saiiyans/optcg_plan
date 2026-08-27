@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { listAllCardNumbers, scrapeCardDetail } from "@/lib/scraper";
 import { computeMihawkRating } from "@/lib/mihawkRating";
-import { computeShanksRating } from "@/lib/shanksRating";
 
 const DEFAULT_SEARCH_URL =
   "https://onepiece.limitlesstcg.com/cards/?q=category%3Aleader%2Ccharacter%2Cevent%2Cstage%20color%3Agreen%20lang%3Aen%20display%3Agrid%20sort%3Aid";
@@ -86,9 +85,11 @@ export async function POST(req: NextRequest) {
         }
 
         const card = await db.card.findUniqueOrThrow({ where: { cardNumber } });
+        // Shanks OP17 retiré : le joueur ne le jouera finalement pas au
+        // tournoi, plus besoin de calculer une note pour ce leader à chaque
+        // import de carte.
         const ratingsToCompute = [
           { leaderContext: "Mihawk OP14-020", rating: computeMihawkRating(scraped) },
-          { leaderContext: "Shanks OP17", rating: computeShanksRating(scraped) },
         ];
         for (const { leaderContext, rating } of ratingsToCompute) {
           const existingRating = await db.personalRating.findUnique({

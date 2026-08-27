@@ -13,8 +13,8 @@ export const OPENING_HAND_OPTIONS = [
 ];
 
 // Erreurs génériques : voir MISTAKE_CATEGORIES dans defeatAnalysis.ts, ne
-// pas dupliquer ici — seulement les cases spécifiques à mes decks (Mihawk
-// OP14-020 / Shanks OP17) sans équivalent générique.
+// pas dupliquer ici — seulement les cases spécifiques à mon deck (Mihawk
+// OP14-020) sans équivalent générique.
 export const DECK_SPECIFIC_MISTAKES = [
   "Setup coût 1 absent", "Mauvaise cible gelée",
   "ST32-003 mal utilisé", "Mauvaise cible jouée par ST32-003",
