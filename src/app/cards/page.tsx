@@ -4,6 +4,7 @@ import { CardTile, CardTileData } from "@/components/CardTile";
 import { useRouter } from "next/navigation";
 import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
+import { OP_COLOR_HEX } from "@/lib/opColors";
 
 // Page entièrement pilotée par des données live (filtres, recherche,
 // import en direct) — ne doit jamais être pré-générée statiquement au
@@ -19,6 +20,14 @@ function searchUrlForColor(color: string) {
 }
 
 const ALL_IMPORT_COLORS = ["green", "red", "blue", "purple", "black", "yellow"] as const;
+
+// Pastilles de couleur pour le filtre "Couleur" (refonte, style Nakama
+// Companion) — source unique src/lib/opColors.ts, réutilisée partout
+// ailleurs où une couleur OPTCG est affichée (ex. /leaders).
+const COLOR_DOTS: { name: string; hex: string }[] = ["Red", "Blue", "Purple", "Black", "Yellow"].map((name) => ({
+  name,
+  hex: OP_COLOR_HEX[name],
+}));
 
 const EMPTY_FILTERS = {
   category: "",
@@ -363,6 +372,17 @@ export default function CardsPage() {
 
   return (
     <div className="space-y-6">
+      {/* EN-TÊTE (refonte — style Nakama Companion : eyebrow + titre gradient + sous-titre) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece Card Game</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory">
+          Bibliothèque de <span className="text-flame-gradient italic">cartes</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-1.5 max-w-xl">
+          Toutes les cartes importées, filtrables par couleur, coût, catégorie et deck — base utilisée par le coach pour ses analyses.
+        </p>
+      </div>
+
       {/* SÉLECTEUR DE LEADER */}
       <div className="flex items-center gap-2 flex-wrap">
         {LEADERS.map((l) => (
@@ -593,16 +613,19 @@ export default function CardsPage() {
         />
       </div>
 
-      {/* FILTRE PAR COULEUR — "Vert" reste le comportement par défaut de
-          l'app (deck Mihawk) ; "Toutes" retire le filtre couleur côté API. */}
+      {/* FILTRE PAR COULEUR (refonte — pastilles colorées, style Nakama) —
+          "Vert" reste le comportement par défaut de l'app (deck Mihawk) ;
+          "Toutes" retire le filtre couleur côté API. */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[10px] uppercase tracking-wider text-textMuted mr-1">Couleur :</span>
-        <button onClick={() => setFilters((f) => ({ ...f, color: "" }))} className={`chip ${filters.color === "" ? "chip-active" : ""}`}>
+        <button onClick={() => setFilters((f) => ({ ...f, color: "" }))} className={`chip inline-flex items-center gap-1.5 ${filters.color === "" ? "chip-active" : ""}`}>
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: "#22C55E" }} />
           Vert (défaut)
         </button>
-        {["Red", "Blue", "Purple", "Black", "Yellow"].map((c) => (
-          <button key={c} onClick={() => toggle("color", c)} className={`chip ${filters.color === c ? "chip-active" : ""}`}>
-            {c}
+        {COLOR_DOTS.map(({ name, hex }) => (
+          <button key={name} onClick={() => toggle("color", name)} className={`chip inline-flex items-center gap-1.5 ${filters.color === name ? "chip-active" : ""}`}>
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: hex }} />
+            {name}
           </button>
         ))}
         <button onClick={() => setFilters((f) => ({ ...f, color: "all" }))} className={`chip ${filters.color === "all" ? "chip-active" : ""}`}>
@@ -693,7 +716,7 @@ export default function CardsPage() {
 
       {/* GRILLE */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="p-3 card-tile">
               <div className="skeleton w-full aspect-[5/7]" />
@@ -717,7 +740,7 @@ export default function CardsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
             {cards.map((c) => (
               <CardTile key={c.cardNumber} card={c} onSelect={(n) => router.push(`/cards/${n}`)} />
             ))}

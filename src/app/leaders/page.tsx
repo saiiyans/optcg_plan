@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
+import { opColorHex } from "@/lib/opColors";
 
 // --- /leaders (section 11) — outil de normalisation des leaders adverses.
 // Affiche chaque fiche canonique avec ses variantes de texte brut connues,
@@ -156,7 +157,15 @@ export default function LeadersPage() {
                 <div className="flex items-center gap-2 min-w-0">
                   <OpponentLeaderBadge label={l.cardNumber ? `${l.displayName} (${l.cardNumber})` : l.displayName} size={26} />
                   <div className="min-w-0">
-                    <div className="text-sm text-white">
+                    <div className="text-sm text-white flex items-center gap-1.5">
+                      {/* Pastille de couleur — même source unique (opColors.ts) que
+                          les filtres de /cards, pour un code couleur cohérent
+                          partout où une couleur OPTCG est affichée. */}
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: opColorHex(l.color) }}
+                        title={l.color ?? "Couleur inconnue"}
+                      />
                       {l.cardNumber ? `${l.cardNumber} — ${l.displayName}` : l.displayName}
                     </div>
                     <div className="text-[10px] text-steel/50 truncate">{l.rawNames.join(", ")}</div>

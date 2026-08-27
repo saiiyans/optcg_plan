@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MATCHUP_GUIDES, OPTCG_RESOURCES } from "@/lib/matchupGuide";
 import { LeaderImage } from "@/components/LeaderImage";
 import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
+import { MetaMatchupGrid } from "@/components/MetaMatchupGrid";
 
 // --- /matchups (section 5/6) — sorti de l'ancien onglet "Matchups" de
 // Prépa pour devenir sa propre page, comme demandé : le Journal reste
@@ -61,10 +62,19 @@ export default function MatchupsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="card-tile rounded-sm p-4">
-        <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Matchups</div>
-        <div className="text-white text-sm mt-1">Fiches par archétype adverse — quoi faire face à chacun, avant de s'asseoir à la table.</div>
+      {/* EN-TÊTE (refonte — style Nakama Companion "Meta Hub") */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Meta Tool</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl md:text-[2.75rem] font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Maîtrise <span className="text-flame-gradient italic">toute la méta.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl">
+          Fiches par archétype adverse, grille de méta communautaire et suivi de tes propres matchups — tout pour savoir
+          quoi faire avant même de t'asseoir à la table.
+        </p>
       </div>
+
+      <MetaMatchupGrid />
 
       <div className="card-tile p-5">
         <p className="text-sm text-steel/80 mb-3">

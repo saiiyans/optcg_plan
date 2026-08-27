@@ -1,12 +1,19 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { NavLinks } from "@/components/NavLinks";
 import { LeaderImage } from "@/components/LeaderImage";
 import { HeaderTrainingCounter } from "@/components/HeaderTrainingCounter";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-space-grotesk", display: "swap" });
+// Police unique (refonte inspirée de Nakama Companion) — remplace
+// Inter + Space Grotesk. Toutes les graisses utilisées dans l'app
+// (texte courant 400/500, boutons 600, titres 700/800) sont chargées ici.
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Shopper — Coaching App",
@@ -25,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="fr" className={manrope.variable}>
       <body className="bg-ink text-steel min-h-screen font-sans">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-24 md:pb-6">
           <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 mb-6 bg-ink/85 backdrop-blur-md border-b border-line">

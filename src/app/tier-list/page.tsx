@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { OPPONENT_LEADERS } from "@/lib/planningData";
 import { CardImage } from "@/components/CardImage";
+import { opColorHex } from "@/lib/opColors";
 
 // Petit cache mémoire pour ne pas refaire la requête si le même numéro de
 // carte apparaît plusieurs fois pendant la session — même logique que
@@ -205,10 +206,21 @@ export default function TierListPage() {
 
   return (
     <div className="space-y-6">
+      {/* EN-TÊTE (refonte — style Nakama Companion "Rank the entire meta") */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Meta Tool</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Classe <span className="text-flame-gradient italic">toute la méta.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl">
+          Glisse-dépose les leaders entre les rangs S à D, ou laisse le classement automatique s'appuyer sur les decklists réelles soumises.
+        </p>
+      </div>
+
       <div className="card-tile p-5">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
-          <h1 className="text-[28px] sm:text-3xl font-display font-bold text-white">Tier List de la méta</h1>
-          <button onClick={autoClassify} disabled={busy} className="btn btn-primary">
+          <h2 className="text-sm font-semibold text-ivory uppercase tracking-wide">Tier List de la méta</h2>
+          <button onClick={autoClassify} disabled={busy} className="btn-flame">
             {busy ? "Classement..." : "🔄 Classer automatiquement (onepiecetopdecks.com)"}
           </button>
         </div>
@@ -275,6 +287,13 @@ export default function TierListPage() {
                         <span className="text-[8px] font-mono text-steel/60 leading-tight">{e.displayName}</span>
                       </div>
                     )}
+                    {/* Liseré de couleur — même code couleur (opColors.ts) que
+                        les pastilles de /cards et /leaders, cohérence demandée
+                        entre les trois zones. */}
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-[3px]"
+                      style={{ background: opColorHex(e.color) }}
+                    />
                     {e.tierSource === "manual" && (
                       <span className="absolute top-0 right-0 text-[7px] bg-gold text-black px-1 rounded-bl">✎</span>
                     )}

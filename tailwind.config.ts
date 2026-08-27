@@ -25,10 +25,23 @@ const config: Config = {
         ivory: "#F5F7FA", // --text
         gold: "#F5C451", // --gold / achievement
         danger: "#FF5C64", // --error / loss
+        // Accent "flame" (refonte inspirée de Nakama Companion, sections
+        // Cartes/Méta actuelle) — rouge -> orange, réservé aux en-têtes et
+        // boutons d'action principaux de ces pages. Ne remplace PAS emerald
+        // (favorable/victoire) ni danger (défavorable/défaite) ailleurs
+        // dans l'app : ces couleurs restent sémantiques partout où elles
+        // sont déjà utilisées.
+        flame: {
+          DEFAULT: "#E63946",
+          light: "#F4A261",
+        },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
+        // Manrope partout (refonte) — remplace Inter + Space Grotesk pour
+        // coller au style typographique de Nakama Companion (une seule
+        // famille, du 400 au 800, plutôt que deux familles séparées).
+        sans: ["var(--font-manrope)", "system-ui", "sans-serif"],
+        display: ["var(--font-manrope)", "system-ui", "sans-serif"],
         mono: ["'JetBrains Mono'", "'Courier New'", "monospace"],
       },
       boxShadow: {
