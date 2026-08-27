@@ -5,10 +5,12 @@ import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
 export default function MatchupCenterPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <div className="text-[11px] font-mono uppercase tracking-widest text-gold">⚔️ Matchup Center</div>
-        <h1 className="text-[28px] sm:text-3xl font-display font-bold text-white">Plans de jeu par leader adverse</h1>
-        <p className="text-xs text-steel/60 mt-1">Analyses stratégiques originales — pas de statistiques inventées, à affiner avec ton propre Journal.</p>
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Meta Tool</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Plans de jeu par <span className="text-flame-gradient italic">leader adverse.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl">Analyses stratégiques originales — pas de statistiques inventées, à affiner avec ton propre Journal.</p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">

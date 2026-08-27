@@ -81,12 +81,17 @@ export default function LeadersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="card-tile rounded-sm p-4">
-        <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Leaders adverses</div>
-        <div className="text-white text-sm mt-1">
-          Une fiche par leader canonique, quelle que soit la façon dont il a été saisi. Fusionne les doublons, renseigne
-          l&rsquo;identifiant canonique (numéro de carte) — rien n&rsquo;est jamais fusionné automatiquement.
-        </div>
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Meta Tool</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Normalise <span className="text-flame-gradient italic">tes leaders adverses.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl">
+          Une fiche par leader canonique, quelle que soit la façon dont il a été saisi. Fusionne les doublons,
+          renseigne l&rsquo;identifiant canonique (numéro de carte) — rien n&rsquo;est jamais fusionné automatiquement.
+        </p>
       </div>
 
       <div className="card-tile rounded-sm p-4 flex items-center justify-between flex-wrap gap-3">

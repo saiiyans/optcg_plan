@@ -99,10 +99,15 @@ export default function CardTierListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="card-tile p-5">
-        <h1 className="text-[28px] sm:text-3xl font-display font-bold text-white mb-2">Tier List des cartes vertes — pour Mihawk OP14-020</h1>
-        <p className="text-xs text-steel/60">
-          Classement basé sur les notes Mihawk déjà calculées dans l'app (préremplies pour les cartes du deck, complétées par la génération Coach) — pas une nouvelle échelle inventée. {rated}/{cards.length} cartes ont déjà une note ; le reste apparaît en "Non noté" jusqu'à ce que tu les notes toi-même ou que tu relances la génération Coach dans l'onglet Cartes.
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List des leaders) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Meta Tool</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Classe <span className="text-flame-gradient italic">tes cartes vertes.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl">
+          Pour Mihawk OP14-020 — classement basé sur les notes Mihawk déjà calculées dans l'app (préremplies pour les cartes du deck, complétées par la génération Coach) — pas une nouvelle échelle inventée. {rated}/{cards.length} cartes ont déjà une note ; le reste apparaît en "Non noté" jusqu'à ce que tu les notes toi-même ou que tu relances la génération Coach dans l'onglet Cartes.
         </p>
       </div>
 

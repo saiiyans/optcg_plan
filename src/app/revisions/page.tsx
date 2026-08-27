@@ -18,9 +18,14 @@ function RevisionCard({ title, children }: { title: string; children: React.Reac
 export default function RevisionsPage() {
   return (
     <div className="space-y-6">
-      <div className="card-tile rounded-sm p-4">
-        <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Révisions</div>
-        <div className="text-white text-sm mt-1">Fiches rapides à relire avant une session.</div>
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Révisions</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Révise <span className="text-flame-gradient italic">avant de jouer.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl">Fiches rapides à relire avant une session.</p>
       </div>
 
       <p className="text-xs text-steel/60">

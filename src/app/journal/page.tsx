@@ -247,6 +247,15 @@ export default function JournalPage() {
 
   return (
     <div className="space-y-6">
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Journal</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Chaque partie <span className="text-flame-gradient italic">compte.</span>
+        </h1>
+      </div>
+
       <EntrainementDuJour onRegisterClick={scrollToForm} />
 
       <TrainingPriorityCard myDeck={filterDeck || undefined} />

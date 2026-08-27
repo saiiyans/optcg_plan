@@ -78,9 +78,14 @@ export default function PhaseTierListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="card-tile p-5">
-        <h1 className="text-[28px] sm:text-3xl font-display font-bold text-white mb-2">Tier List par Phase — courbe de DON!!</h1>
-        <p className="text-xs text-steel/60 mb-3">
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List des leaders) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Meta Tool</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Classe par <span className="text-flame-gradient italic">phase de DON!!.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl mb-3">
           Classement par coût réel des cartes vertes Character, selon le DON!! réellement disponible à chaque tour (règles officielles : 1 DON!! seulement au tour 1 pour le joueur qui commence, plafond de 10 DON!!). Lecture seule — ce n'est pas une opinion, c'est un fait mécanique du jeu.
         </p>
         <div className="flex gap-2">

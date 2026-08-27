@@ -28,6 +28,15 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Statistiques</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Ton <span className="text-flame-gradient italic">bilan de coach.</span>
+        </h1>
+      </div>
+
       {/* PERFORMANCE — en tête : c'est ce qu'on veut voir en premier en
           arrivant sur "Stats" (winrate, forme récente, matchups, erreurs
           fréquentes). La santé de la bibliothèque de cartes (import,

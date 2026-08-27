@@ -70,6 +70,16 @@ export default function WinningDecksPage() {
 
   return (
     <div className="space-y-6">
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Decks</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Decks <span className="text-flame-gradient italic">gagnants.</span>
+        </h1>
+        <p className="text-sm text-steel/70 mt-2 max-w-xl">Decklists de tournoi importées, filtrables par leader et par joueur.</p>
+      </div>
+
       <div className="flex gap-2">
         {LEADERS.map((l) => (
           <button

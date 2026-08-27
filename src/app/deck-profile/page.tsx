@@ -53,6 +53,15 @@ export default function DeckProfilePage() {
 
   return (
     <div className="space-y-6">
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Deck Profile</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Analyse <span className="text-flame-gradient italic">ton deck.</span>
+        </h1>
+      </div>
+
       {/* SÉLECTEUR — la référence Mihawk reste le choix par défaut, contenu
           inchangé. Les autres decks affichent une vue générique honnête
           (composition réelle), sans narratif stratégique inventé. */}

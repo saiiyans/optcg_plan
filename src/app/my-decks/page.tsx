@@ -33,8 +33,13 @@ export default function MyDecksPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-[28px] sm:text-3xl font-display font-bold text-white">Mes Decks</h2>
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Decks</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Mes <span className="text-flame-gradient italic">decks.</span>
+        </h1>
       </div>
 
       <AddNewDeckSection onAdded={load} />

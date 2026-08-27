@@ -30,6 +30,15 @@ export default function PrepPage() {
 
   return (
     <div className="space-y-6">
+      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
+          Cartes/Matchups/Tier List) */}
+      <div className="pt-1 pb-1">
+        <span className="eyebrow-flame">✦ One Piece TCG · Préparation</span>
+        <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Prépare <span className="text-flame-gradient italic">le tournoi.</span>
+        </h1>
+      </div>
+
       <div className="card-tile rounded-sm p-4 flex items-center justify-between">
         <div>
           <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Préparation tournoi</div>
