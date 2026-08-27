@@ -47,11 +47,86 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="card-tile p-5 flex items-center justify-between">
+      {/* HERO — un seul prochain pas évident, jamais 7 widgets à interpréter
+          en même temps. Le compte à rebours tournoi + la priorité du jour du
+          coach + un seul bouton d'action fusionnent ici ; tout le reste
+          (stats détaillées, actus, objectifs...) reste disponible juste en
+          dessous, en second plan visuel plutôt qu'à égalité. */}
+      <CoachHero daysLeft={daysLeft} currentWeek={currentWeek} />
+
+      <StreakAndAchievementsWidget />
+
+      <div>
+        <h2 className="text-xs font-mono uppercase tracking-widest text-steel/50 mb-3 pt-2 border-t border-line">Vue d'ensemble</h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          <CoachDiagnosticWidget />
+          <GameCounterWidget />
+          <TrainingWidget dailyTarget={dailyTarget} weekTarget={currentWeek.sim + currentWeek.bout} />
+          <ObjectivesWidget />
+          <SimWinrateWidget />
+        </div>
+        <div className="mt-4">
+          <MihawkNewsWidget />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Message du coach — court, direct, ton encourageant. Jamais de chiffre
+ * froid sans phrase autour : la donnée existe déjà ailleurs sur la page,
+ * ici c'est la voix qui doit motiver à jouer la prochaine partie. */
+function coachLine(opts: {
+  hasData: boolean;
+  mission?: string;
+  streakDays?: number;
+  atRisk?: boolean;
+  progressDelta?: number;
+}): string {
+  if (opts.atRisk && (opts.streakDays ?? 0) > 0) {
+    return `Ta série de ${opts.streakDays} jour${opts.streakDays! > 1 ? "s" : ""} tient à un fil — une partie aujourd'hui et elle continue.`;
+  }
+  if (opts.progressDelta !== undefined && opts.progressDelta > 0) {
+    return "Ta forme remonte sur tes dernières parties — sur cette lancée, une de plus ?";
+  }
+  if (opts.hasData && opts.mission) {
+    return opts.mission;
+  }
+  return "Chaque partie loguée rend le coach plus précis sur ce qui compte pour toi. Go, la première ?";
+}
+
+function CoachHero({ daysLeft, currentWeek }: { daysLeft: number; currentWeek: { n: number; range: string } }) {
+  const [state, setState] = useState<LoadState>("loading");
+  const [mission, setMission] = useState<any>(null);
+  const [progress, setProgress] = useState<any>(null);
+  const [streak, setStreak] = useState<any>(null);
+
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      const [coach, achievements] = await Promise.all([
+        fetchWithTimeout("/api/coach/today"),
+        fetchWithTimeout("/api/achievements"),
+      ]);
+      setMission(coach.mission);
+      setProgress(coach.progress);
+      setStreak(achievements.streak);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return (
+    <div className="card-tile p-6 border-emerald/40">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
         <div>
-          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Prochain événement</div>
-          <div className="text-white text-lg font-display">Tournoi One Piece Card Game</div>
-          <div className="text-xs font-mono text-steel/60 mt-0.5">20 septembre 2026 · Semaine {currentWeek.n} en cours ({currentWeek.range})</div>
+          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Tournoi One Piece Card Game · Semaine {currentWeek.n}</div>
+          <div className="text-white text-sm font-mono mt-0.5">{currentWeek.range}</div>
         </div>
         <div className="text-right shrink-0">
           <div className="text-3xl font-mono font-bold text-gold">{daysLeft}</div>
@@ -59,29 +134,41 @@ export default function HomePage() {
         </div>
       </div>
 
-      <CoachPersonnelWidget />
+      {state === "loading" ? (
+        <div className="space-y-2">
+          <div className="skeleton h-6 w-3/4" />
+          <div className="skeleton h-4 w-1/2" />
+        </div>
+      ) : state === "error" ? (
+        <RetryBlock message="Impossible de charger ton coach." onRetry={load} />
+      ) : (
+        <p className="text-lg text-ivory font-semibold leading-snug">
+          🧑‍🏫{" "}
+          {coachLine({
+            hasData: !!mission?.hasData,
+            mission: mission?.mission,
+            streakDays: streak?.currentStreak,
+            atRisk: streak?.atRisk,
+            progressDelta: progress?.hasData ? progress.delta : undefined,
+          })}
+        </p>
+      )}
 
-      <MihawkNewsWidget />
-
-      <StreakAndAchievementsWidget />
-
-      <GameCounterWidget />
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <TrainingWidget dailyTarget={dailyTarget} weekTarget={currentWeek.sim + currentWeek.bout} />
-        <ObjectivesWidget />
-      </div>
-
-      <SimWinrateWidget />
+      <Link href="/journal" className="btn btn-primary mt-4 inline-block">
+        Enregistrer une partie →
+      </Link>
     </div>
   );
 }
 
 type LoadState = "loading" | "ready" | "error";
 
-function CoachPersonnelWidget() {
+/** Diagnostic complet — la version détaillée du message court du Hero
+ * ci-dessus (forces, faiblesse, progression). Volontairement en second plan
+ * (dans "Vue d'ensemble") : utile pour creuser, pas la première chose à lire
+ * en arrivant. */
+function CoachDiagnosticWidget() {
   const [state, setState] = useState<LoadState>("loading");
-  const [mission, setMission] = useState<any>(null);
   const [weakness, setWeakness] = useState<any>(null);
   const [strengths, setStrengths] = useState<any>(null);
   const [progress, setProgress] = useState<any>(null);
@@ -90,7 +177,6 @@ function CoachPersonnelWidget() {
     setState("loading");
     try {
       const d = await fetchWithTimeout("/api/coach/today");
-      setMission(d.mission);
       setWeakness(d.weakness);
       setStrengths(d.strengths);
       setProgress(d.progress);
@@ -105,8 +191,8 @@ function CoachPersonnelWidget() {
   }, [load]);
 
   return (
-    <div className="card-tile p-5 border-emerald/40">
-      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-1 border-b border-line pb-2">🧑‍🏫 Coach personnel</h3>
+    <div className="card-tile p-5">
+      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-1 border-b border-line pb-2">🧑‍🏫 Diagnostic complet</h3>
       <p className="text-[11px] text-steel/50 mb-3">Basé uniquement sur tes parties enregistrées — jamais de règle officielle ici, juste ton propre historique.</p>
 
       {state === "loading" ? (
@@ -119,19 +205,6 @@ function CoachPersonnelWidget() {
         <RetryBlock message="Impossible de charger ton diagnostic." onRetry={load} />
       ) : (
         <div className="space-y-4">
-          {/* PRIORITÉ UNIQUE */}
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-bright mb-1">Priorité du jour</div>
-            {!mission?.hasData ? (
-              <div className="text-xs font-mono text-steel/60">Données insuffisantes — {mission?.reason ?? "pas encore assez de parties enregistrées."}</div>
-            ) : (
-              <>
-                <div className="text-white text-sm font-semibold">{mission.mission}</div>
-                <div className="text-xs text-steel/70 mt-0.5">{mission.why}</div>
-              </>
-            )}
-          </div>
-
           {/* FORCES */}
           <div>
             <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-bright mb-1">Forces</div>
@@ -177,10 +250,6 @@ function CoachPersonnelWidget() {
           </div>
         </div>
       )}
-
-      <div className="flex gap-2 mt-4">
-        <Link href="/prep" className="btn btn-primary text-xs py-2 px-3">Enregistrer une partie</Link>
-      </div>
     </div>
   );
 }
@@ -274,14 +343,29 @@ function StreakAndAchievementsWidget() {
         <span className="text-[10px] text-textMuted">{unlocked.length}/{achievements.length} débloqués</span>
       </div>
 
-      <div className="flex items-center gap-3 mb-4">
-        <div className="text-2xl font-mono font-bold text-emerald-bright">
-          🔥 {streak.currentStreak}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="text-5xl font-mono font-bold text-emerald-bright leading-none">
+          🔥{streak.currentStreak}
         </div>
         <div className="text-xs text-steel/70">
-          jour{streak.currentStreak > 1 ? "s" : ""} d'affilée
-          {streak.atRisk && <span className="text-gold"> — joue aujourd'hui pour la garder</span>}
-          {streak.longestStreak > streak.currentStreak && <span className="text-steel/50"> · record : {streak.longestStreak}</span>}
+          <div className="text-sm text-white font-semibold">
+            {streak.currentStreak >= 30
+              ? "Série incroyable — vraiment impressionnant."
+              : streak.currentStreak >= 14
+                ? "Deux semaines d'affilée, la régularité paie."
+                : streak.currentStreak >= 7
+                  ? "Une semaine complète — belle constance."
+                  : streak.currentStreak >= 3
+                    ? "Ça prend forme, continue comme ça."
+                    : streak.currentStreak >= 1
+                      ? "C'est parti — construis ta série."
+                      : "Prêt à démarrer une série ?"}
+          </div>
+          <div>
+            jour{streak.currentStreak > 1 ? "s" : ""} d'affilée
+            {streak.atRisk && <span className="text-gold"> — joue aujourd'hui pour la garder</span>}
+            {streak.longestStreak > streak.currentStreak && <span className="text-steel/50"> · record : {streak.longestStreak}</span>}
+          </div>
         </div>
       </div>
 
@@ -431,7 +515,7 @@ function TrainingWidget({ dailyTarget, weekTarget }: { dailyTarget: number; week
           </div>
         </>
       )}
-      <Link href="/prep" className="text-xs font-mono text-emerald-bright hover:underline mt-2 inline-block">
+      <Link href="/journal" className="text-xs font-mono text-emerald-bright hover:underline mt-2 inline-block">
         Logger une partie →
       </Link>
     </div>
@@ -495,7 +579,7 @@ function ObjectivesWidget() {
           ))}
         </ul>
       )}
-      <Link href="/prep" className="text-xs font-mono text-emerald-bright hover:underline mt-3 inline-block">
+      <Link href="/journal" className="text-xs font-mono text-emerald-bright hover:underline mt-3 inline-block">
         Voir tous les objectifs →
       </Link>
     </div>
@@ -538,7 +622,7 @@ function SimWinrateWidget() {
       ) : total === 0 ? (
         <div className="text-xs font-mono text-steel/60">
           Aucune partie en mode Simulateur enregistrée pour l'instant. Logue tes parties dans{" "}
-          <Link href="/prep" className="text-emerald-bright hover:underline">Préparation Tournoi</Link>.
+          <Link href="/journal" className="text-emerald-bright hover:underline">Préparation Tournoi</Link>.
         </div>
       ) : (
         <div className="flex items-center gap-6 flex-wrap">

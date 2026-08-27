@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef, Fragment } from "react";
-import { MY_DECKS } from "@/lib/planningData";
+import { MY_DECKS, WEEKS } from "@/lib/planningData";
 import { useOpponentLeaders } from "@/lib/useOpponentLeaders";
 import { LeaderImage } from "@/components/LeaderImage";
 import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
@@ -773,6 +773,9 @@ export default function JournalPage() {
         )}
       </div>
 
+      <PlanningSection />
+      <ObjectifsSection />
+
       <div className="pt-2 border-t border-line">
         <h3 className="font-mono text-xs uppercase tracking-widest text-steel/50 mb-3">Suivi de progression</h3>
         <div className="space-y-6">
@@ -783,6 +786,143 @@ export default function JournalPage() {
           <PersonalStatsSection />
         </div>
       </div>
+    </div>
+  );
+}
+
+// Planning et Objectifs — anciennement sur leur propre page (Prépa),
+// retirée car elle ne contenait plus que ça (le reste — stats, matchups,
+// révisions — était déjà parti ailleurs, sa propre bannière le disait).
+// Repliées par défaut : le Journal reste centré sur "logger une partie",
+// ce contenu de planification reste à portée de clic sans encombrer l'écran.
+function PlanningSection() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="card-tile rounded-sm p-4">
+      <button onClick={() => setOpen((s) => !s)} className="flex items-center justify-between w-full text-left">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold">📅 Planning d'entraînement</h3>
+        <span className="text-textMuted text-xs">{open ? "Masquer ▲" : "Ouvrir ▼"}</span>
+      </button>
+      {open && (
+        <div className="space-y-3 mt-4 pt-4 border-t border-line">
+          {WEEKS.map((w) => (
+            <div key={w.n} className="bg-panel2 rounded-lg p-4">
+              <div className="text-[11px] font-mono text-steel/60 uppercase tracking-wider">Semaine {w.n} · {w.range}</div>
+              <p className="text-sm text-white mt-1 mb-3">{w.focus}</p>
+              <div className="flex gap-6 font-mono text-xs">
+                <div><span className="text-gold text-lg block">{w.sim}</span><span className="text-steel/60">Simulateur</span></div>
+                <div><span className="text-gold text-lg block">{w.bout}</span><span className="text-steel/60">Boutique</span></div>
+                <div><span className="text-gold text-lg block">{w.sim + w.bout}</span><span className="text-steel/60">Total visé</span></div>
+              </div>
+              <div className={`mt-2 pt-2 border-t border-line text-xs font-mono ${w.warn ? "text-red-400" : "text-emerald-bright"}`}>{w.milestone}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ObjectifsSection() {
+  const [open, setOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [items, setItems] = useState<any[]>([]);
+  const [infos, setInfos] = useState<Record<number, string>>({});
+  const [addText, setAddText] = useState<Record<string, string>>({});
+
+  const load = useCallback(async () => {
+    const [oRes, iRes] = await Promise.all([fetch("/api/objectives"), fetch("/api/weekly-infos")]);
+    const oData = await oRes.json();
+    const iData = await iRes.json();
+    setItems(oData.items ?? []);
+    const map: Record<number, string> = {};
+    (iData.infos ?? []).forEach((i: any) => (map[i.weekNumber] = i.content));
+    setInfos(map);
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (open && !loaded) load();
+  }, [open, loaded, load]);
+
+  async function toggle(id: string, done: boolean) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, done } : it)));
+    await fetch(`/api/objectives/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ done }) });
+  }
+
+  async function addCustom(category: string) {
+    const text = addText[category]?.trim();
+    if (!text) return;
+    await fetch("/api/objectives", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category, text }) });
+    setAddText((f) => ({ ...f, [category]: "" }));
+    load();
+  }
+
+  async function saveInfo(weekNumber: number, content: string) {
+    setInfos((prev) => ({ ...prev, [weekNumber]: content }));
+    await fetch("/api/weekly-infos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weekNumber, content }) });
+  }
+
+  const categories: { key: string; label: string }[] = [
+    { key: "meta", label: "Connaissance de la méta" },
+    { key: "cartes", label: "Cartes clés à connaître" },
+    { key: "strat", label: "Stratégies / menaces à surveiller" },
+    { key: "matchups", label: "Matchups à travailler" },
+  ];
+  const done = items.filter((i) => i.done).length;
+
+  return (
+    <div className="card-tile rounded-sm p-4">
+      <button onClick={() => setOpen((s) => !s)} className="flex items-center justify-between w-full text-left">
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold">
+          ✓ Objectifs {loaded && `— ${done} / ${items.length} complétés`}
+        </h3>
+        <span className="text-textMuted text-xs">{open ? "Masquer ▲" : "Ouvrir ▼"}</span>
+      </button>
+      {open && (
+        <div className="space-y-6 mt-4 pt-4 border-t border-line">
+          {!loaded ? (
+            <div className="space-y-2">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-4 w-full" />)}</div>
+          ) : (
+            <>
+              {categories.map((cat) => (
+                <div key={cat.key} className="bg-panel2 rounded-lg p-4">
+                  <h4 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">{cat.label}</h4>
+                  <ul className="space-y-1.5">
+                    {items.filter((it) => it.category === cat.key).map((it) => (
+                      <li key={it.id} className="flex items-start gap-2 text-sm">
+                        <input type="checkbox" checked={it.done} onChange={(e) => toggle(it.id, e.target.checked)} className="mt-1" />
+                        <span className={it.done ? "text-steel/50 line-through" : "text-white"}>{it.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex gap-2 mt-3">
+                    <input className="input flex-1" placeholder="Ajouter un objectif..." value={addText[cat.key] ?? ""} onChange={(e) => setAddText((f) => ({ ...f, [cat.key]: e.target.value }))} />
+                    <button onClick={() => addCustom(cat.key)} className="btn btn-primary">Ajouter</button>
+                  </div>
+                </div>
+              ))}
+
+              <div className="bg-panel2 rounded-lg p-4">
+                <h4 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">5 infos importantes par semaine</h4>
+                {WEEKS.map((w) => (
+                  <div key={w.n} className="mb-3">
+                    <label className="text-[11px] font-mono uppercase text-steel/60 block mb-1">Semaine {w.n} — {w.range}</label>
+                    <textarea
+                      className="input w-full"
+                      rows={3}
+                      placeholder={"1. ...\n2. ...\n3. ...\n4. ...\n5. ..."}
+                      value={infos[w.n] ?? ""}
+                      onChange={(e) => setInfos((prev) => ({ ...prev, [w.n]: e.target.value }))}
+                      onBlur={(e) => saveInfo(w.n, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

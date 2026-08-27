@@ -3,42 +3,45 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Stats en tête de liste — c'est la rubrique la plus consultée, elle ne
-// doit plus être noyée en fin de menu. Combo Lab et Key Cards ont été
-// retirés (rubriques jugées inutiles) ; leurs pages/routes ont aussi été
-// supprimées, pas juste masquées ici.
+// Refonte IA (retour direct de l'utilisateur : trop de rubriques qui ne
+// servent à rien dans un menu censé aider à jouer/progresser). Ce qui a
+// changé par rapport à la liste plate à 15 entrées :
+//  - Matchup Center + Matchups + Révisions racontaient la même histoire
+//    (stratégie par leader adverse) avec 3 UI différentes → fusionnés en
+//    UNE page (/matchups, voir src/lib/matchupMerge.ts). Les 2 autres
+//    routes redirigent, rien n'est cassé pour un ancien lien.
+//  - Prépa ne contenait plus que du contenu déjà parti ailleurs (sa propre
+//    bannière le disait) → retirée, Planning/Objectifs vivent maintenant
+//    dans le Journal (repliés par défaut). Redirige vers /journal.
+//  - Leaders adverses est un outil de nettoyage de données (dédoublonnage),
+//    pas une rubrique de coaching — relabellisé "Outils" et jamais en
+//    accès direct, uniquement dans "Plus".
 const ITEMS = [
   { href: "/dashboard", label: "Stats", icon: "📊" },
   { href: "/", label: "Accueil", icon: "🏠" },
   { href: "/journal", label: "Journal", icon: "📓" },
   { href: "/cards", label: "Cartes", icon: "🃏" },
+  { href: "/deck-profile", label: "Deck Profile", icon: "🦅" },
+  { href: "/matchups", label: "Matchups", icon: "🎯" },
   { href: "/decks", label: "Winner Decks", icon: "🏆" },
   { href: "/my-decks", label: "Mes Decks", icon: "⭐" },
-  { href: "/deck-profile", label: "Deck Profile", icon: "🦅" },
-  { href: "/matchup-center", label: "Matchup Center", icon: "⚔️" },
-  { href: "/matchups", label: "Matchups", icon: "🎯" },
-  { href: "/revisions", label: "Révisions", icon: "📖" },
   { href: "/tier-list", label: "Tier List", icon: "📶" },
   { href: "/card-tier-list", label: "Tier List Cartes", icon: "🃏" },
   { href: "/phase-tier-list", label: "Phase (DON!!)", icon: "⏱️" },
-  { href: "/prep", label: "Prépa", icon: "📋" },
-  { href: "/leaders", label: "Leaders adverses", icon: "🧭" },
+  { href: "/leaders", label: "Outils : leaders", icon: "🧹" },
 ];
 
 // La nav du bas (mobile) garde 4 accès directs + un bouton "Plus" qui ouvre
 // le reste — impossible d'afficher toutes les pages en zones tactiles
 // correctes sur un petit écran, mais toutes doivent rester atteignables.
-// Stats ajouté aux accès directs (cohérent avec sa nouvelle place en tête).
-const MOBILE_PRIMARY_HREFS = ["/dashboard", "/", "/journal", "/prep"];
+const MOBILE_PRIMARY_HREFS = ["/dashboard", "/", "/journal", "/matchups"];
 const MOBILE_PRIMARY = ITEMS.filter((i) => MOBILE_PRIMARY_HREFS.includes(i.href));
 const MOBILE_MORE = ITEMS.filter((i) => !MOBILE_PRIMARY_HREFS.includes(i.href));
 
-// Nav du haut (desktop/tablette) : avec 15 rubriques, tout afficher à plat
-// ne tient dans aucune largeur d'écran raisonnable (c'était le bug —
-// scrollbar brute et libellés tronqués dès ~1400px). Même principe que la
-// barre du bas : un socle de rubriques directes + un menu "Plus" pour le
-// reste, toujours dans le style plat de la référence (texte, pas de pilule).
-const TOP_PRIMARY_HREFS = ["/dashboard", "/", "/journal", "/cards", "/matchup-center", "/prep"];
+// Nav du haut (desktop/tablette) : un socle de rubriques directes (le coeur
+// "coach" de l'app) + un menu "Plus" pour le reste (decks/outils annexes),
+// toujours dans le style plat de la référence (texte, pas de pilule).
+const TOP_PRIMARY_HREFS = ["/dashboard", "/", "/journal", "/cards", "/deck-profile", "/matchups"];
 const TOP_PRIMARY = ITEMS.filter((i) => TOP_PRIMARY_HREFS.includes(i.href));
 const TOP_MORE = ITEMS.filter((i) => !TOP_PRIMARY_HREFS.includes(i.href));
 
