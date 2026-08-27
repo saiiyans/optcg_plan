@@ -38,6 +38,12 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   if (variant === "top") {
+    // Style de menu relevé EXACTEMENT sur nakamacompanion.com : liens texte
+    // plats, pas de fond en pilule, gris muted par défaut (#a0a0a0 —
+    // steel), page active en blanc/gras avec un petit soulignement couleur
+    // accent — pas de bordure ni de fond coloré comme dans l'ancienne
+    // version (qui utilisait des pilules emerald empruntées au reste de
+    // l'app plutôt qu'au style réel du site de référence).
     return (
       <>
         {ITEMS.map((item) => {
@@ -46,8 +52,8 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`px-2.5 py-2 rounded-xl font-medium whitespace-nowrap transition-colors duration-150 border-b-2 ${
-                active ? "bg-emerald-dim text-emerald-bright border-emerald" : "text-steel hover:text-ivory hover:bg-panel2 border-transparent"
+              className={`px-1 py-2 whitespace-nowrap transition-colors duration-150 border-b-2 ${
+                active ? "text-ivory font-bold border-flame" : "text-steel font-medium border-transparent hover:text-ivory"
               }`}
             >
               {item.label}
@@ -62,6 +68,9 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
 
   return (
     <>
+      {/* Barre du bas mobile — mêmes couleurs que le menu du haut (accent
+          flame pour l'état actif au lieu d'emerald), cohérent avec le
+          style plat de nakamacompanion.com. */}
       {MOBILE_PRIMARY.map((item) => {
         const active = pathname === item.href;
         return (
@@ -69,10 +78,10 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
             key={item.href}
             href={item.href}
             className={`relative flex flex-col items-center justify-center gap-0.5 min-h-[44px] py-2.5 text-[10px] font-medium transition-colors duration-150 ${
-              active ? "text-emerald-bright" : "text-steel/70"
+              active ? "text-ivory font-bold" : "text-steel/70"
             }`}
           >
-            {active && <span className="absolute top-0.5 w-1 h-1 rounded-full bg-emerald" />}
+            {active && <span className="absolute top-0.5 w-1 h-1 rounded-full bg-flame" />}
             <span className="text-base leading-none">{item.icon}</span>
             {item.label}
           </Link>
@@ -82,10 +91,10 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
       <button
         onClick={() => setMoreOpen((o) => !o)}
         className={`relative flex flex-col items-center justify-center gap-0.5 min-h-[44px] py-2.5 text-[10px] font-medium transition-colors duration-150 ${
-          moreActive || moreOpen ? "text-emerald-bright" : "text-steel/70"
+          moreActive || moreOpen ? "text-ivory font-bold" : "text-steel/70"
         }`}
       >
-        {(moreActive || moreOpen) && <span className="absolute top-0.5 w-1 h-1 rounded-full bg-emerald" />}
+        {(moreActive || moreOpen) && <span className="absolute top-0.5 w-1 h-1 rounded-full bg-flame" />}
         <span className="text-base leading-none">⋯</span>
         Plus
       </button>
@@ -103,7 +112,7 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
                   href={item.href}
                   onClick={() => setMoreOpen(false)}
                   className={`flex flex-col items-center justify-center gap-1 min-h-[44px] py-3 rounded-xl text-[11px] font-medium transition-colors duration-150 ${
-                    active ? "bg-emerald-dim text-emerald-bright" : "text-steel hover:bg-panel2"
+                    active ? "bg-flame/15 text-ivory font-bold" : "text-steel hover:bg-panel2"
                   }`}
                 >
                   <span className="text-lg leading-none">{item.icon}</span>

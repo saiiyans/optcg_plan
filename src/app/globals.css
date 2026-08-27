@@ -7,14 +7,11 @@ html {
 }
 
 body {
-  /* Fond quasi uni, avec juste une amorce de profondeur en haut de page —
-     la consigne de refonte est explicite : rester sobre, ne pas mettre de
-     glow ni de dégradés partout, pour laisser les illustrations des cartes
-     One Piece (déjà très colorées) porter l'énergie visuelle. */
-  background:
-    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(54, 217, 139, 0.05), transparent 60%),
-    radial-gradient(ellipse 700px 420px at 88% -8%, rgba(230, 57, 70, 0.045), transparent 60%),
-    #090B0F;
+  /* Fond uni #111111 — valeur EXACTE relevée sur nakamacompanion.com
+     (--bg dans leurs variables CSS). Leur page n'a pas de dégradé coloré
+     en fond ; on retire donc celui qu'on avait inventé pour coller
+     fidèlement à la référence. */
+  background: #111111;
   min-height: 100dvh;
 }
 
@@ -28,11 +25,12 @@ body {
   border-radius: 4px;
 }
 
-/* Cartes / panneaux — profondeur via bordure très subtile + ombre légère,
-   pas de dégradé marqué (direction "sobre, premium" plutôt que "glow"). */
+/* Cartes / panneaux — même traitement que les surfaces de
+   nakamacompanion.com (--surface-2 / --line-strong), bordure subtile,
+   pas de dégradé. */
 .card-tile {
-  background: #151A22;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 4px 16px -10px rgba(0, 0, 0, 0.5);
   transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
@@ -55,24 +53,34 @@ body {
   @apply bg-emerald-dim border-emerald text-emerald-bright;
 }
 
-/* --- Accent "flame" (refonte Cartes / Méta actuelle, style Nakama
-   Companion) — bouton plein rouge->orange, pilule complète, jamais utilisé
-   pour du sens victoire/défaite (ça reste emerald/danger partout ailleurs). */
+/* --- Accent "flame" — RELEVÉ EXACT de nakamacompanion.com, pas une
+   interprétation : leur bouton principal ("Sign up") est en couleur PLEINE
+   #E63946 (--accent), jamais un dégradé — on avait inventé un dégradé
+   rouge->orange lors de la première passe de refonte, corrigé ici pour
+   coller au site réel. Toujours réservé aux accents de marque / actions
+   principales, jamais au sens victoire/défaite (emerald/danger ailleurs). */
 .btn-flame {
   @apply text-white text-sm font-semibold px-5 py-2.5 rounded-full active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100 border-0;
-  background: linear-gradient(100deg, #E63946 0%, #F4A261 100%);
+  background: #E63946;
 }
 .btn-flame:hover {
-  filter: brightness(1.08);
+  background: #CF2D3A; /* --accent-hover exact de nakamacompanion.com */
 }
+/* Ancienne classe "titre en dégradé + italique" — nakamacompanion.com
+   n'utilise NI dégradé texte NI italique sur ses titres (H1 "NakamaCompanion"
+   vérifié : couleur pleine, non-italique, graisse 800). On neutralise donc
+   ces deux effets ici plutôt que de retoucher chaque page une par une, pour
+   que tous les titres déjà marqués .text-flame-gradient/italic suivent
+   immédiatement le rendu fidèle au site réel. */
 .text-flame-gradient {
-  background: linear-gradient(100deg, #E63946 0%, #F4A261 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #E63946;
+  font-style: normal !important;
 }
+/* L'eyebrow "✦ ..." au-dessus des titres était une invention de la première
+   passe — nakamacompanion.com n'a aucun label de ce type au-dessus de ses
+   titres de page. Masqué pour coller exactement au site de référence. */
 .eyebrow-flame {
-  @apply inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-flame;
+  display: none;
 }
 .input {
   @apply bg-ink border border-line text-ivory text-sm px-3.5 py-2.5 rounded-xl placeholder:text-textMuted transition-colors duration-150;
@@ -155,8 +163,16 @@ body {
   @apply w-full sm:w-auto;
 }
 
+/* Tracking très serré sur les H1 — relevé exact sur nakamacompanion.com
+   (environ -4% de la taille de police sur leur "NakamaCompanion" en
+   88.5px/-3.54px). Force la valeur même sur les titres qui utilisent déjà
+   une classe Tailwind tracking-tight, pour un rendu fidèle au site réel. */
+h1 {
+  letter-spacing: -0.03em !important;
+}
+
 @media (max-width: 480px) {
   h1 {
-    letter-spacing: 0;
+    letter-spacing: -0.02em !important;
   }
 }

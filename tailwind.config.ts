@@ -6,34 +6,38 @@ const config: Config = {
     extend: {
       colors: {
         // Alias historiques (utilisés dans tout le code existant) — remappés
-        // vers la palette "Competitive TCG Performance App" (refonte
-        // graphique). Aucune classe Tailwind n'a besoin de changer dans les
-        // ~50 fichiers qui les consomment déjà : seules les valeurs changent.
-        ink: "#090B0F", // --background
-        panel: "#10141B", // --surface
-        panel2: "#151A22", // --surface-elevated / cards-panels
-        surfaceHover: "#1A2029",
-        line: "rgba(255, 255, 255, 0.07)", // --border
-        lineStrong: "rgba(255, 255, 255, 0.16)", // --border-strong
+        // vers la palette EXACTE de nakamacompanion.com (relevée en
+        // inspectant les variables CSS --bg/--ink/--accent/--surface-* du
+        // site réel, pas une approximation). Aucune classe Tailwind n'a
+        // besoin de changer dans les fichiers qui les consomment déjà :
+        // seules les valeurs changent.
+        ink: "#111111", // --bg (nakamacompanion.com)
+        panel: "#161616", // --surface-1
+        panel2: "#1a1a1a", // --surface-2 (cards/panels)
+        surfaceHover: "#2a2a2a", // --surface-5
+        line: "rgba(255, 255, 255, 0.10)", // --line
+        lineStrong: "rgba(255, 255, 255, 0.16)", // --line-strong
         emerald: {
           DEFAULT: "#36D98B", // --primary-accent
           bright: "#7CF5B3", // --secondary-green
           dim: "#122A20", // fond sombre desaturé pour pastilles/badges
         },
-        steel: "#98A2B3", // --text-secondary
-        textMuted: "#667085", // --muted
-        ivory: "#F5F7FA", // --text
-        gold: "#F5C451", // --gold / achievement
+        steel: "#a0a0a0", // --muted (nakamacompanion.com)
+        textMuted: "#909090", // --muted-2
+        ivory: "#f0f0f0", // --ink (nakamacompanion.com)
+        gold: "#F5C451", // --gold / achievement (spécifique à l'app, pas de la palette Nakama)
         danger: "#FF5C64", // --error / loss
-        // Accent "flame" (refonte inspirée de Nakama Companion, sections
-        // Cartes/Méta actuelle) — rouge -> orange, réservé aux en-têtes et
-        // boutons d'action principaux de ces pages. Ne remplace PAS emerald
-        // (favorable/victoire) ni danger (défavorable/défaite) ailleurs
-        // dans l'app : ces couleurs restent sémantiques partout où elles
-        // sont déjà utilisées.
+        // Accent "flame" = --accent / --accent2 EXACTS de nakamacompanion.com
+        // (couleur pleine, jamais un dégradé — vérifié sur le site réel :
+        // aucun titre ni bouton n'utilise de gradient). Réservé aux
+        // boutons d'action principaux et accents de marque. Ne remplace PAS
+        // emerald (favorable/victoire) ni danger (défavorable/défaite)
+        // ailleurs dans l'app : ces couleurs restent sémantiques partout où
+        // elles sont déjà utilisées.
         flame: {
-          DEFAULT: "#E63946",
-          light: "#F4A261",
+          DEFAULT: "#E63946", // --accent
+          light: "#F4A261", // --accent2 (usage rare, jamais en dégradé avec DEFAULT)
+          hover: "#CF2D3A", // --accent-hover
         },
       },
       fontFamily: {

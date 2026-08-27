@@ -46,8 +46,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
 
-              {/* Centre : navigation desktop uniquement — sur mobile elle est en bas d'écran */}
-              <nav className="hidden md:flex items-center gap-0.5 text-sm overflow-x-auto max-w-[min(60vw,900px)] scrollbar-thin">
+              {/* Centre : navigation desktop uniquement — sur mobile elle est en bas d'écran.
+                  Espacement élargi (gap-5) car le style du menu (relevé sur
+                  nakamacompanion.com) est maintenant du texte plat sans fond
+                  en pilule — il faut plus d'air entre les liens pour rester lisible. */}
+              <nav className="hidden md:flex items-center gap-5 text-sm overflow-x-auto max-w-[min(60vw,900px)] scrollbar-thin">
                 <NavLinks variant="top" />
               </nav>
 
