@@ -100,7 +100,11 @@ export async function GET(req: NextRequest) {
     // Pré-tri par date d'import — sert uniquement de départage stable pour
     // les decks à date identique une fois retriés chronologiquement
     // ci-dessous (Array.sort est stable), pas le tri final affiché.
-    orderBy: { createdAt: "desc" },
+    // NB : TournamentDeck n'a PAS de champ `createdAt` (juste `importedAt` /
+    // `updatedAt`, voir prisma/schema.prisma) — c'est le champ qu'il fallait
+    // utiliser ici ; `createdAt` faisait échouer le build Vercel (Prisma
+    // rejette un orderBy sur un champ qui n'existe pas dans le schéma).
+    orderBy: { importedAt: "desc" },
   });
 
   let result = decks;
