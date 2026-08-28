@@ -177,10 +177,18 @@ export default function WinningDecksPage() {
         ))}
       </div>
 
-      <section className="card-tile p-5">
-          <h2 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">
-            🌏 Asie — import depuis onepiecetopdecks.com (OP17, Japon)
-          </h2>
+      {/* === SECTION 1/2 : ASIE === (demande du joueur : 2 zones bien
+          séparées visuellement — Asie / US et Europe — chacune avec son
+          propre bouton d'import visible). */}
+      <section className="space-y-3">
+        <h2 className="text-base font-bold text-ivory flex items-center gap-2 border-b-2 border-gold/40 pb-2">
+          <span className="text-xl leading-none">🌏</span> Asie
+        </h2>
+
+        <div className="card-tile p-5">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">
+            Source : onepiecetopdecks.com (OP17, Japon)
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
             <button onClick={runTest3} disabled={busy} className="btn">1. Tester sur 3 decklists</button>
             <button onClick={runImport} disabled={busy} className="btn btn-primary">2. Importer (confirmation requise)</button>
@@ -211,21 +219,35 @@ export default function WinningDecksPage() {
               {syncResult.totalMihawkRowsOnPage} lignes Mihawk sur la page · {syncResult.alreadyInDb} déjà en base · <b className="text-gold">{syncResult.newDecksDetected} nouvelles</b>
             </div>
           )}
+        </div>
       </section>
 
-      {/* PANNEAU LIMITLESS — deuxième source, complémentaire à la source
-          Asie ci-dessus. Le nom "US" vient de la demande du joueur ; en
-          vrai les résultats Limitless couvrent l'Europe et les Amériques
-          (Wolverhampton, Utrecht, Bielefeld, Toronto, Barcelona, Warsaw,
-          São Paulo... pas que les États-Unis) — précisé dans le sous-titre
-          plutôt que de laisser croire à une couverture purement US. Cette
-          source fait 2 requêtes par deck (tableau de résultats + page de
-          decklist individuelle pour les cartes), donc plus lente à
-          importer que la source Asie. */}
-      <section className="card-tile p-5 border-emerald/30">
-          <h2 className="font-mono text-xs uppercase tracking-widest text-gold mb-1 border-b border-line pb-2">
-            🌍 US / International — import depuis Limitless TCG
-          </h2>
+      {/* === SECTION 2/2 : US ET EUROPE === (2 sources regroupées ici —
+          Limitless TCG et OPTCG.gg — car toutes deux classées
+          "international" par regionOf() côté API : aucune des deux ne
+          fournit de pays par résultat, donc pas de découpage US/Europe
+          fiable possible en dessous de ce niveau. Chaque sous-source garde
+          son propre bloc et son propre bouton d'import, comme demandé. */}
+      <section className="space-y-3">
+        <h2 className="text-base font-bold text-ivory flex items-center gap-2 border-b-2 border-emerald/40 pb-2">
+          <span className="text-xl leading-none">🌍</span> US et Europe
+        </h2>
+        <p className="text-[11px] text-steel/50 -mt-1">
+          2 sources suivies pour cette zone, chacune avec son propre bouton d&rsquo;import ci-dessous : Limitless TCG et OPTCG.gg.
+        </p>
+
+        {/* Sous-source : Limitless. Le nom "US" vient de la demande initiale
+            du joueur ; en vrai les résultats Limitless couvrent l'Europe et
+            les Amériques (Wolverhampton, Utrecht, Bielefeld, Toronto,
+            Barcelona, Warsaw, São Paulo... pas que les États-Unis) —
+            précisé dans le sous-titre plutôt que de laisser croire à une
+            couverture purement US. Cette source fait 2 requêtes par deck
+            (tableau de résultats + page de decklist individuelle pour les
+            cartes), donc plus lente à importer que la source Asie. */}
+        <div className="card-tile p-5 border-emerald/30">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-1 border-b border-line pb-2">
+            Source : Limitless TCG
+          </h3>
           <p className="text-[11px] text-steel/50 mt-1.5 mb-3">
             Regionals et Treasure Cups suivis par Limitless (Europe + Amériques — pas exclusivement les États-Unis).
           </p>
@@ -263,17 +285,17 @@ export default function WinningDecksPage() {
               {syncResultIntl.totalRowsOnPage} lignes sur la page · {syncResultIntl.alreadyInDb} déjà en base · <b className="text-gold">{syncResultIntl.newDecksDetected} nouvelles</b>
             </div>
           )}
-      </section>
+        </div>
 
-      {/* PANNEAU OPTCG.GG — 3e source, classée "international" elle aussi
-          (voir regionOf() côté API) car cette source ne fournit pas non
-          plus de pays par résultat. Contrairement aux 2 sources ci-dessus,
-          le détail des cartes vient d'une vraie API JSON — pas de parsing
-          HTML fragile pour les decklists individuelles ici. */}
-      <section className="card-tile p-5 border-emerald/30">
-          <h2 className="font-mono text-xs uppercase tracking-widest text-gold mb-1 border-b border-line pb-2">
-            🏆 OPTCG.gg — 3e source de résultats (US/International)
-          </h2>
+        {/* Sous-source : OPTCG.gg. Classée "international" elle aussi (voir
+            regionOf() côté API) car cette source ne fournit pas non plus de
+            pays par résultat. Contrairement à Limitless ci-dessus, le
+            détail des cartes vient d'une vraie API JSON — pas de parsing
+            HTML fragile pour les decklists individuelles ici. */}
+        <div className="card-tile p-5 border-emerald/30">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-1 border-b border-line pb-2">
+            Source : OPTCG.gg
+          </h3>
           <p className="text-[11px] text-steel/50 mt-1.5 mb-3">
             Flux "Top Decks" récent d'OPTCG.gg (ex. ChinoizeCup). Pas de pays par résultat non plus — classé "International" comme Limitless.
           </p>
@@ -311,6 +333,7 @@ export default function WinningDecksPage() {
               {syncResultOptcgg.totalRowsOnPage} résultat(s) Mihawk sur la page · {syncResultOptcgg.alreadyInDb} déjà en base · <b className="text-gold">{syncResultOptcgg.newDecksDetected} nouvelles</b>
             </div>
           )}
+        </div>
       </section>
 
       <section className="card-tile p-4 space-y-3">
@@ -318,7 +341,7 @@ export default function WinningDecksPage() {
           {[
             { v: "", label: "Toutes régions" },
             { v: "asia", label: "🌏 Asie" },
-            { v: "international", label: "🌍 US/International" },
+            { v: "international", label: "🌍 US et Europe" },
           ].map((o) => (
             <button
               key={o.v}
@@ -349,6 +372,9 @@ export default function WinningDecksPage() {
 
       <div className="text-xs font-mono text-steel/60">
         {loading ? "Recherche..." : `${decks.length} deck${decks.length > 1 ? "s" : ""} trouvé${decks.length > 1 ? "s" : ""}`}
+        {!loading && decks.length > 0 && (
+          <span className="text-steel/40"> — classés par importance de l&rsquo;événement (Championship &gt; Regional &gt; Qualifier &gt; ... ), date en départage</span>
+        )}
       </div>
 
       {loading ? (
@@ -372,6 +398,9 @@ export default function WinningDecksPage() {
               </div>
               <div className="text-xs font-mono text-steel/70">{d.player} · {d.country} · {d.date}</div>
               <div className="text-xs font-mono text-steel/70">{d.placementRaw} · {d.tournamentType} · {d.host}{d.participants ? ` (${d.participants} joueurs)` : ""}</div>
+              {d.eventTier && (
+                <div className="text-[10px] font-mono text-steel/40 mt-1">Tier estimé : {d.eventTier}</div>
+              )}
               {d.validationStatus === "needs_review" && (
                 <div className="text-xs font-mono text-red-400 mt-1">⚠ Données à vérifier ({d.cardCountNonLeader}/50 cartes)</div>
               )}
