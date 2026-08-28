@@ -54,6 +54,32 @@ export default function HomePage() {
           dessous, en second plan visuel plutôt qu'à égalité. */}
       <CoachHero daysLeft={daysLeft} currentWeek={currentWeek} />
 
+      {/* BANNIÈRE JOUR J — n'apparaît que dans les tout derniers jours,
+          exactement quand elle sert : pas de pollution du reste de la
+          préparation, mais impossible à manquer le jour venu (ou la veille,
+          pour vérifier que tout est en ordre). Lien direct vers le mode
+          Jour de Tournoi plutôt que de l'ajouter en accès permanent dans le
+          menu du haut — la nav a déjà été resserrée une fois pour éviter le
+          débordement, pas de raison de la regonfler pour une page utilisée
+          un seul jour. */}
+      {daysLeft <= 1 && (
+        <Link
+          href="/tournament-day"
+          className="card-tile p-5 border-flame/60 flex items-center justify-between gap-4 flex-wrap hover:border-flame transition-colors duration-150"
+        >
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-widest text-flame">
+              {daysLeft === 0 ? "C'est aujourd'hui" : "C'est demain"}
+            </div>
+            <div className="text-white font-semibold mt-0.5">⚔️ Ouvrir le Mode Jour de Tournoi</div>
+            <p className="text-xs text-steel/70 mt-1 max-w-md">
+              Plan de jeu par adversaire en 1 tap à chaque manche, et log rapide du résultat entre deux rounds.
+            </p>
+          </div>
+          <span className="text-flame text-lg shrink-0">→</span>
+        </Link>
+      )}
+
       <StreakAndAchievementsWidget />
 
       <div>

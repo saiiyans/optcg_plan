@@ -20,6 +20,7 @@ const ITEMS = [
   { href: "/dashboard", label: "Stats", icon: "📊" },
   { href: "/", label: "Accueil", icon: "🏠" },
   { href: "/journal", label: "Journal", icon: "📓" },
+  { href: "/tournament-day", label: "Jour J", icon: "⚔️" },
   { href: "/cards", label: "Cartes", icon: "🃏" },
   { href: "/deck-profile", label: "Deck Profile", icon: "🦅" },
   { href: "/matchups", label: "Matchups", icon: "🎯" },
