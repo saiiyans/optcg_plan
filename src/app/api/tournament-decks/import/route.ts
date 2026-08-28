@@ -3,7 +3,12 @@ import { db } from "@/lib/db";
 import { scrapeTournamentDeckTable, isStrictMihawkRow } from "@/lib/scraper";
 import { parseCompactDecklist, classifyPlacement, extractParticipants, buildDeckUniqueKey } from "@/lib/deckParser";
 
-const DEFAULT_URL = "https://onepiecetopdecks.com/deck-list/japan-op16-deck-list-the-time-of-battle/";
+// Format actuel : OP17 "The World's Strongest Warriors" (mis à jour le
+// 28/08/2026 — l'ancienne page OP16 "The Time of Battle" ne reçoit plus de
+// nouveaux résultats). Les decklists OP16 déjà importées restent en base
+// (aucune suppression, voir la règle de dédoublonnage par uniqueKey
+// ci-dessous) — seule la source des NOUVEAUX imports change.
+const DEFAULT_URL = "https://onepiecetopdecks.com/deck-list/japan-op17-deck-list-the-worlds-strongest-warriors/";
 const LEADER = "OP14-020";
 
 /**

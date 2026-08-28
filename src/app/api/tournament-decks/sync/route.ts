@@ -3,12 +3,14 @@ import { db } from "@/lib/db";
 import { scrapeTournamentDeckTable, isStrictMihawkRow } from "@/lib/scraper";
 import { classifyPlacement, buildDeckUniqueKey } from "@/lib/deckParser";
 
-const DEFAULT_URL = "https://onepiecetopdecks.com/deck-list/japan-op16-deck-list-the-time-of-battle/";
+// Format actuel : OP17 "The World's Strongest Warriors" (mis à jour le
+// 28/08/2026) — voir la même note dans import/route.ts.
+const DEFAULT_URL = "https://onepiecetopdecks.com/deck-list/japan-op17-deck-list-the-worlds-strongest-warriors/";
 const LEADER = "OP14-020";
 
 /**
  * POST /api/tournament-decks/sync
- * "Mettre à jour les résultats OP16" : détecte les nouvelles decklists
+ * "Mettre à jour les résultats OP17" : détecte les nouvelles decklists
  * Mihawk absentes de la base. Aperçu uniquement — ne crée rien ; appelle
  * /api/tournament-decks/import ensuite pour les importer réellement.
  * Ne supprime jamais une ancienne liste, même si elle a disparu de la page source.

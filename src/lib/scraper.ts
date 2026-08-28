@@ -252,7 +252,11 @@ export async function testScrapeSample(
 }
 
 // ---------------------------------------------------------------------------
-// Decklists de tournoi ("OP16 Winning Decks")
+// Decklists de tournoi ("Winning Decks") — la fonction ci-dessous prend
+// n'importe quelle URL de page onepiecetopdecks.com en paramètre (voir
+// DEFAULT_URL dans les routes /api/tournament-decks/*), donc elle n'est pas
+// figée sur un format particulier. Format actuellement pointé par défaut :
+// OP17 "The World's Strongest Warriors" (mis à jour le 28/08/2026).
 // ---------------------------------------------------------------------------
 
 export interface ScrapedTournamentRow {
@@ -269,10 +273,11 @@ export interface ScrapedTournamentRow {
 }
 
 /**
- * Parcourt le tableau HTML de la page de decklists OP16 et retourne CHAQUE
- * ligne brute (toutes couleurs confondues). Le filtre strict "op14mihawk"
- * est appliqué ensuite par l'appelant — jamais dans cette fonction, pour
- * garder le scraping et le filtrage séparés et vérifiables indépendamment.
+ * Parcourt le tableau HTML de la page de decklists (le format visé dépend
+ * de l'URL passée en paramètre) et retourne CHAQUE ligne brute (toutes
+ * couleurs confondues). Le filtre strict "op14mihawk" est appliqué ensuite
+ * par l'appelant — jamais dans cette fonction, pour garder le scraping et
+ * le filtrage séparés et vérifiables indépendamment.
  */
 export async function scrapeTournamentDeckTable(pageUrl: string): Promise<ScrapedTournamentRow[]> {
   const html = await politeFetch(pageUrl);

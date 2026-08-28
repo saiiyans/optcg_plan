@@ -44,7 +44,7 @@ export default function WinningDecksPage() {
 
   async function runSync() {
     setBusy(true);
-    setStatus("Recherche de nouveaux résultats OP16...");
+    setStatus("Recherche de nouveaux résultats OP17...");
     const res = await fetch("/api/tournament-decks/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     const data = await res.json();
     setSyncResult(data);
@@ -53,7 +53,7 @@ export default function WinningDecksPage() {
   }
 
   async function runImport() {
-    if (!confirm("Importer toutes les decklists Mihawk (op14mihawk) trouvées sur la page OP16 ?")) return;
+    if (!confirm("Importer toutes les decklists Mihawk (op14mihawk) trouvées sur la page OP17 ?")) return;
     setBusy(true);
     setStatus("Import en cours...");
     const res = await fetch("/api/tournament-decks/import", {
@@ -94,12 +94,12 @@ export default function WinningDecksPage() {
 
       <section className="card-tile p-5">
           <h2 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">
-            Winning Mihawk Decks — import depuis onepiecetopdecks.com (OP16)
+            Winning Mihawk Decks — import depuis onepiecetopdecks.com (OP17)
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
             <button onClick={runTest3} disabled={busy} className="btn">1. Tester sur 3 decklists</button>
             <button onClick={runImport} disabled={busy} className="btn btn-primary">2. Importer (confirmation requise)</button>
-            <button onClick={runSync} disabled={busy} className="btn">Mettre à jour les résultats OP16</button>
+            <button onClick={runSync} disabled={busy} className="btn">Mettre à jour les résultats OP17</button>
           </div>
           {status && <div className="text-xs text-steel/80 font-mono">{status}</div>}
 

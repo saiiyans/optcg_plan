@@ -4,7 +4,9 @@ export const dynamic = "force-dynamic";
 import { scrapeTournamentDeckTable, isStrictMihawkRow } from "@/lib/scraper";
 import { parseCompactDecklist, classifyPlacement, extractParticipants } from "@/lib/deckParser";
 
-const DEFAULT_URL = "https://onepiecetopdecks.com/deck-list/japan-op16-deck-list-the-time-of-battle/";
+// Format actuel : OP17 "The World's Strongest Warriors" (mis à jour le
+// 28/08/2026) — voir la même note dans import/route.ts.
+const DEFAULT_URL = "https://onepiecetopdecks.com/deck-list/japan-op17-deck-list-the-worlds-strongest-warriors/";
 const LEADER = "OP14-020";
 
 /**
