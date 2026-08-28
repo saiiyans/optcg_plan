@@ -125,7 +125,7 @@ export function HeaderTrainingCounter() {
 
           <div className="flex items-center justify-between text-xs">
             <span className="text-textMuted">Cette semaine</span>
-            <span className="text-ivory">{progress.week.gamesThisWeek} parties</span>
+            <span className="text-ivory">{progress.week.gamesThisWeek}/{progress.week.weeklyGoal}</span>
           </div>
 
           <div className="flex items-center justify-between text-xs">

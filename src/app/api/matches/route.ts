@@ -10,6 +10,12 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const myDeck = sp.get("myDeck");
   const mode = sp.get("mode");
+  // Filtre de phase optionnel (section 1/13) — absent par défaut pour ne
+  // rien casser des appels existants (le Journal affiche les 2 phases avec
+  // son propre filtre local), mais tout widget qui prétend montrer des
+  // stats "officielles" doit passer phase=official_training explicitement
+  // plutôt que de les recalculer lui-même sur la liste complète.
+  const phase = sp.get("phase"); // "official_training" | "test" | null (= toutes)
 
   const matches = await db.match.findMany({
     where: {
@@ -18,6 +24,7 @@ export async function GET(req: NextRequest) {
       deletedAt: null,
       ...(myDeck ? { myDeck } : {}),
       ...(mode ? { mode } : {}),
+      ...(phase ? { trainingPhase: phase } : {}),
     },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });

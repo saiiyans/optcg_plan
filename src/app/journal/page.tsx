@@ -805,6 +805,11 @@ function PlanningSection() {
       </button>
       {open && (
         <div className="space-y-3 mt-4 pt-4 border-t border-line">
+          <p className="text-[11px] font-mono text-steel/50">
+            Plan de reprise original (7 semaines, avant le passage à l'objectif fixe 4/jour · 28/semaine affiché en haut de
+            l'app). Gardé ici comme repère de contenu par semaine — les chiffres "visés" ci-dessous ne sont plus le
+            compteur officiel.
+          </p>
           {WEEKS.map((w) => (
             <div key={w.n} className="bg-panel2 rounded-lg p-4">
               <div className="text-[11px] font-mono text-steel/60 uppercase tracking-wider">Semaine {w.n} · {w.range}</div>

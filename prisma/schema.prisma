@@ -379,7 +379,30 @@ model Match {
 model AppSettings {
   id                         String   @id @default("singleton")
   officialTrainingStartDate String? // ISO yyyy-mm-dd
+  // --- Source unique de configuration (refonte "espace de préparation
+  // tournoi") — date du tournoi actif et deck actif, modifiables depuis les
+  // Paramètres plutôt que codés en dur dans chaque page. Repli sur les
+  // constantes DEFAULT_TOURNAMENT_DATE / DEFAULT_DECK_NAME de src/lib/config.ts
+  // tant qu'aucune valeur n'est réglée ici (voir getActiveConfig() dans
+  // src/lib/appConfig.ts — TOUJOURS passer par cette fonction, jamais
+  // relire ces deux champs directement ailleurs dans l'app).
+  activeTournamentDate       String? // ISO yyyy-mm-dd
+  activeDeckName             String? // ex: "Mihawk OP14-020" — texte libre, cohérent avec Match.myDeck
   updatedAt                  DateTime @updatedAt
+}
+
+// --- Instantané de la grille de matchups de la méta actuelle (leader vs
+// leader), récupérée sur demande depuis une source publique externe
+// (opdecks.xyz/winmatrix — voir src/lib/metaMatchupScraper.ts). Différent
+// des statistiques de matchup personnelles (issues des propres parties du
+// joueur, table Match) : ceci reflète la méta communautaire globale.
+// Une seule ligne (id fixe "singleton") — jamais de récupération
+// automatique en arrière-plan, uniquement via le bouton "Actualiser".
+model MetaMatchupSnapshot {
+  id        String   @id @default("singleton")
+  dataJson  String // MetaMatchupData sérialisé (leaders + matrice de %)
+  sourceUrl String
+  fetchedAt DateTime @updatedAt
 }
 
 // --- Mission d'entraînement active (section 10) — une seule mission

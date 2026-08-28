@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
+import { MIN_SAMPLE_SIZE } from "@/lib/config";
 
 /**
  * Statistiques de performance personnelle (parties enregistrées dans le
@@ -21,7 +22,10 @@ export function MatchesOverview() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/matches")
+    // Uniquement l'entraînement officiel — cette vue prétend montrer un
+    // "bilan par leader adverse" fiable, jamais mélangée silencieusement à
+    // la Phase test (section 1/13).
+    fetch("/api/matches?phase=official_training")
       .then((r) => r.json())
       .then((d) => {
         setMatches(d.matches ?? []);
@@ -52,31 +56,44 @@ export function MatchesOverview() {
     .map(([opp, d]) => ({ opp, ...d, wr: Math.round((d.w / d.t) * 100) }))
     .sort((a, b) => a.wr - b.wr);
 
-  const threats = oppRows.filter((r) => r.t >= 2 && r.wr < 50);
+  // Seuil d'échantillon fiable (source unique, src/lib/config.ts) — un
+  // matchup en dessous n'est jamais présenté comme "à surveiller", juste
+  // affiché avec son propre compte pour rester transparent.
+  const threats = oppRows.filter((r) => r.t >= MIN_SAMPLE_SIZE && r.wr < 50);
 
   if (!loaded) return <div className="card-tile rounded-sm p-5"><div className="skeleton h-20" /></div>;
 
   return (
     <>
       <div className="card-tile rounded-sm p-5">
-        <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Vue d'ensemble</h3>
+        <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-1 border-b border-line pb-2">Vue d'ensemble</h3>
+        <p className="text-[11px] text-steel/50 mb-3">Entraînement officiel uniquement.</p>
         <div className="flex gap-4 flex-wrap">
           <div className="bg-panel2 rounded p-3 text-center min-w-[100px]"><div className="text-2xl font-mono text-emerald-bright">{total}</div><div className="text-[10px] uppercase text-steel/60">Parties</div></div>
-          <div className="bg-panel2 rounded p-3 text-center min-w-[100px]"><div className="text-2xl font-mono text-emerald-bright">{winrate}%</div><div className="text-[10px] uppercase text-steel/60">Winrate global</div></div>
+          <div className="bg-panel2 rounded p-3 text-center min-w-[100px]">
+            <div className="text-2xl font-mono text-emerald-bright">{total > 0 ? `${winrate}%` : "—"}</div>
+            <div className="text-[10px] uppercase text-steel/60">Winrate global {total > 0 && `(${wins}/${total})`}</div>
+          </div>
           {Object.entries(byDeck).map(([deck, d]) => (
             <div key={deck} className="bg-panel2 rounded p-3 text-center min-w-[100px]">
               <div className="text-2xl font-mono text-gold">{Math.round((d.w / d.t) * 100)}%</div>
-              <div className="text-[10px] uppercase text-steel/60">{deck.includes("Mihawk") ? "Mihawk" : "Shanks"} ({d.t})</div>
+              <div className="text-[10px] uppercase text-steel/60">{deck} ({d.w}/{d.t})</div>
             </div>
           ))}
         </div>
-        {total < 5 && <div className="text-xs font-mono text-steel/60 mt-3">Continue à logger — encore {5 - total} partie(s) avant que les tendances par adversaire deviennent fiables.</div>}
+        {total < MIN_SAMPLE_SIZE && (
+          <div className="text-xs font-mono text-steel/60 mt-3">
+            Échantillon insuffisant — encore {MIN_SAMPLE_SIZE - total} partie(s) officielle(s) avant que les tendances par adversaire deviennent fiables.
+          </div>
+        )}
       </div>
 
       <div className="card-tile rounded-sm p-5">
         <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Bilan par leader adverse</h3>
         {threats.length > 0 && (
-          <div className="text-xs font-mono text-red-400 mb-2">À surveiller (≥2 parties, winrate &lt;50%) : {threats.map((t) => t.opp).join(", ")}</div>
+          <div className="text-xs font-mono text-red-400 mb-2">
+            À surveiller (≥{MIN_SAMPLE_SIZE} parties, winrate &lt;50%) : {threats.map((t) => t.opp).join(", ")}
+          </div>
         )}
         {oppRows.length === 0 ? (
           <div className="text-steel/60 text-sm font-mono">Pas encore de données.</div>
@@ -87,19 +104,19 @@ export function MatchesOverview() {
             <tbody>
               {oppRows.map((r) => (
                 <tr key={r.opp} className="border-b border-line/50">
-                  <td className={`py-1.5 ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>
+                  <td className={`py-1.5 ${r.t >= MIN_SAMPLE_SIZE && r.wr < 45 ? "text-red-400" : r.t >= MIN_SAMPLE_SIZE && r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>
                     <OpponentLeaderBadge label={r.opp} size={20} />
                   </td>
                   <td className="text-center">{r.t}</td><td className="text-center">{r.w}</td><td className="text-center">{r.l}</td>
-                  <td className={`text-center font-mono ${r.wr < 45 ? "text-red-400" : r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>
-                    {r.wr}%{r.t < 5 && <span className="text-steel/40 font-normal" title="Moins de 5 parties — tendance encore peu fiable">*</span>}
+                  <td className={`text-center font-mono ${r.t >= MIN_SAMPLE_SIZE && r.wr < 45 ? "text-red-400" : r.t >= MIN_SAMPLE_SIZE && r.wr > 65 ? "text-emerald-bright" : "text-white"}`}>
+                    {r.wr}%{r.t < MIN_SAMPLE_SIZE && <span className="text-steel/40 font-normal" title={`Moins de ${MIN_SAMPLE_SIZE} parties — tendance encore peu fiable`}>*</span>}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {oppRows.some((r) => r.t < 5) && (
-            <div className="text-[10px] text-steel/50 mt-2">* Moins de 5 parties contre ce Leader — winrate encore peu fiable, à prendre avec précaution.</div>
+          {oppRows.some((r) => r.t < MIN_SAMPLE_SIZE) && (
+            <div className="text-[10px] text-steel/50 mt-2">* Moins de {MIN_SAMPLE_SIZE} parties contre ce Leader — échantillon insuffisant, winrate à prendre avec précaution.</div>
           )}
           </div>
         )}

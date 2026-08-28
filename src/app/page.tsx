@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { WEEKS, TOURNAMENT_DATE } from "@/lib/planningData";
-import { computeGameCounterStats } from "@/lib/gameCounter";
 import { MIHAWK_NEWS } from "@/lib/mihawkGamePlan";
 
 /** Fetch avec délai maximum — évite qu'un widget reste bloqué en
@@ -19,66 +17,27 @@ async function fetchWithTimeout(url: string, ms = 8000) {
   }
 }
 
+// Refonte "espace de préparation tournoi" — l'accueil doit répondre à 4
+// questions dès l'arrivée, sans scroller : combien de parties reste-t-il à
+// jouer aujourd'hui, suis-je en progression, quelle est ma priorité, suis-je
+// prêt pour le tournoi. Un seul appel à /api/coach/daily-progress (source
+// unique : phase officielle uniquement, fuseau Asia/Bangkok, objectifs
+// 4/jour-28/semaine réglés une fois pour toutes dans src/lib/config.ts) —
+// plus aucun widget de la page ne recalcule ces chiffres différemment,
+// contrairement à l'ancienne version (GameCounterWidget sur un plan à 114
+// parties abandonné + TrainingWidget sur un objectif hebdo de 18, tous deux
+// en heure UTC et sans filtre de phase officielle).
 export default function HomePage() {
-  const daysLeft = useMemo(() => {
-    const diff = Math.ceil((new Date(TOURNAMENT_DATE).getTime() - Date.now()) / 86400000);
-    return diff >= 0 ? diff : 0;
-  }, []);
-
-  const currentWeek = useMemo(() => {
-    const todayISO = new Date().toISOString().slice(0, 10);
-    const past = WEEKS.filter((w) => w.startDate <= todayISO);
-    return past.length ? past[past.length - 1] : WEEKS[0];
-  }, []);
-
-  const dailyTarget = Math.round((currentWeek.sim + currentWeek.bout) / 7);
-
   return (
     <div className="space-y-6">
-      {/* EN-TÊTE (refonte — style Nakama Companion, cohérent avec
-          Cartes/Matchups/Tier List) */}
       <div className="pt-1 pb-1">
         <span className="eyebrow-flame">✦ One Piece TCG · Espace de coaching</span>
         <h1 className="mt-1.5 text-3xl sm:text-4xl font-extrabold tracking-tight text-ivory leading-[1.05]">
           Prépare <span className="text-flame-gradient italic">chaque tournoi.</span>
         </h1>
-        <p className="text-sm text-steel/70 mt-2 max-w-xl">
-          Entraînement, cartes, matchups et suivi de progression — tout au même endroit.
-        </p>
       </div>
 
-      {/* HERO — un seul prochain pas évident, jamais 7 widgets à interpréter
-          en même temps. Le compte à rebours tournoi + la priorité du jour du
-          coach + un seul bouton d'action fusionnent ici ; tout le reste
-          (stats détaillées, actus, objectifs...) reste disponible juste en
-          dessous, en second plan visuel plutôt qu'à égalité. */}
-      <CoachHero daysLeft={daysLeft} currentWeek={currentWeek} />
-
-      {/* BANNIÈRE JOUR J — n'apparaît que dans les tout derniers jours,
-          exactement quand elle sert : pas de pollution du reste de la
-          préparation, mais impossible à manquer le jour venu (ou la veille,
-          pour vérifier que tout est en ordre). Lien direct vers le mode
-          Jour de Tournoi plutôt que de l'ajouter en accès permanent dans le
-          menu du haut — la nav a déjà été resserrée une fois pour éviter le
-          débordement, pas de raison de la regonfler pour une page utilisée
-          un seul jour. */}
-      {daysLeft <= 1 && (
-        <Link
-          href="/tournament-day"
-          className="card-tile p-5 border-flame/60 flex items-center justify-between gap-4 flex-wrap hover:border-flame transition-colors duration-150"
-        >
-          <div>
-            <div className="text-[11px] font-mono uppercase tracking-widest text-flame">
-              {daysLeft === 0 ? "C'est aujourd'hui" : "C'est demain"}
-            </div>
-            <div className="text-white font-semibold mt-0.5">⚔️ Ouvrir le Mode Jour de Tournoi</div>
-            <p className="text-xs text-steel/70 mt-1 max-w-md">
-              Plan de jeu par adversaire en 1 tap à chaque manche, et log rapide du résultat entre deux rounds.
-            </p>
-          </div>
-          <span className="text-flame text-lg shrink-0">→</span>
-        </Link>
-      )}
+      <TodayWidget />
 
       <StreakAndAchievementsWidget />
 
@@ -86,8 +45,6 @@ export default function HomePage() {
         <h2 className="text-xs font-mono uppercase tracking-widest text-steel/50 mb-3 pt-2 border-t border-line">Vue d'ensemble</h2>
         <div className="grid md:grid-cols-2 gap-4">
           <CoachDiagnosticWidget />
-          <GameCounterWidget />
-          <TrainingWidget dailyTarget={dailyTarget} weekTarget={currentWeek.sim + currentWeek.bout} />
           <ObjectivesWidget />
           <SimWinrateWidget />
         </div>
@@ -99,9 +56,10 @@ export default function HomePage() {
   );
 }
 
+type LoadState = "loading" | "ready" | "error";
+
 /** Message du coach — court, direct, ton encourageant. Jamais de chiffre
- * froid sans phrase autour : la donnée existe déjà ailleurs sur la page,
- * ici c'est la voix qui doit motiver à jouer la prochaine partie. */
+ * froid sans phrase autour. */
 function coachLine(opts: {
   hasData: boolean;
   mission?: string;
@@ -121,21 +79,30 @@ function coachLine(opts: {
   return "Chaque partie loguée rend le coach plus précis sur ce qui compte pour toi. Go, la première ?";
 }
 
-function CoachHero({ daysLeft, currentWeek }: { daysLeft: number; currentWeek: { n: number; range: string } }) {
+/** LE widget principal de l'accueil — fusionne l'ancien "hero" (message du
+ * coach + compte à rebours) et les deux anciens compteurs de parties
+ * (compteur global 7-semaines + objectif du jour) en UN seul bloc cohérent,
+ * entièrement dérivé de /api/coach/daily-progress. Répond directement aux
+ * 4 questions demandées : parties restantes aujourd'hui, progression,
+ * priorité du jour, prêt pour le tournoi (compte à rebours + accès Jour J). */
+function TodayWidget() {
   const [state, setState] = useState<LoadState>("loading");
-  const [mission, setMission] = useState<any>(null);
   const [progress, setProgress] = useState<any>(null);
+  const [mission, setMission] = useState<any>(null);
   const [streak, setStreak] = useState<any>(null);
+  const [coachProgress, setCoachProgress] = useState<any>(null);
 
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const [coach, achievements] = await Promise.all([
+      const [daily, coach, achievements] = await Promise.all([
+        fetchWithTimeout("/api/coach/daily-progress"),
         fetchWithTimeout("/api/coach/today"),
         fetchWithTimeout("/api/achievements"),
       ]);
+      setProgress(daily.progress);
       setMission(coach.mission);
-      setProgress(coach.progress);
+      setCoachProgress(coach.progress);
       setStreak(achievements.streak);
       setState("ready");
     } catch {
@@ -147,52 +114,108 @@ function CoachHero({ daysLeft, currentWeek }: { daysLeft: number; currentWeek: {
     load();
   }, [load]);
 
+  const daysLeft = progress?.daysUntilTournament ?? null;
+
   return (
-    <div className="card-tile p-6 border-emerald/40">
-      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-        <div>
-          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Tournoi One Piece Card Game · Semaine {currentWeek.n}</div>
-          <div className="text-white text-sm font-mono mt-0.5">{currentWeek.range}</div>
+    <div className="card-tile p-5 sm:p-6 border-emerald/40">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+        <div className="min-w-0">
+          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Grand Asia OPTCG Championship LCQ</div>
+          {state === "loading" ? (
+            <div className="skeleton h-5 w-2/3 mt-1.5" />
+          ) : state === "error" ? (
+            <div className="text-xs text-red-400 mt-1">Chargement impossible.</div>
+          ) : (
+            <p className="text-base text-ivory font-semibold leading-snug mt-1">
+              🧑‍🏫{" "}
+              {coachLine({
+                hasData: !!mission?.hasData,
+                mission: mission?.mission,
+                streakDays: streak?.currentStreak,
+                atRisk: streak?.atRisk,
+                progressDelta: coachProgress?.hasData ? coachProgress.delta : undefined,
+              })}
+            </p>
+          )}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-3xl font-mono font-bold text-gold">{daysLeft}</div>
+          <div className="text-3xl font-mono font-bold text-gold">{daysLeft ?? "…"}</div>
           <div className="text-[10px] uppercase tracking-wider text-steel/60">jours restants</div>
         </div>
       </div>
 
-      {state === "loading" ? (
-        <div className="space-y-2">
-          <div className="skeleton h-6 w-3/4" />
-          <div className="skeleton h-4 w-1/2" />
-        </div>
-      ) : state === "error" ? (
-        <RetryBlock message="Impossible de charger ton coach." onRetry={load} />
+      {state === "error" ? (
+        <RetryBlock message="Impossible de charger ta progression." onRetry={load} />
       ) : (
-        <p className="text-lg text-ivory font-semibold leading-snug">
-          🧑‍🏫{" "}
-          {coachLine({
-            hasData: !!mission?.hasData,
-            mission: mission?.mission,
-            streakDays: streak?.currentStreak,
-            atRisk: streak?.atRisk,
-            progressDelta: progress?.hasData ? progress.delta : undefined,
-          })}
-        </p>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <MiniProgress
+            label="Aujourd'hui"
+            value={state === "loading" ? null : progress?.gamesToday}
+            goal={state === "loading" ? null : progress?.dailyGoal}
+            color={progress?.colorToday}
+          />
+          <MiniProgress
+            label="Cette semaine"
+            value={state === "loading" ? null : progress?.week?.gamesThisWeek}
+            goal={state === "loading" ? null : progress?.week?.weeklyGoal}
+          />
+        </div>
       )}
 
-      <Link href="/journal" className="btn btn-primary mt-4 inline-block">
-        Enregistrer une partie →
-      </Link>
+      <div className="flex flex-wrap items-center gap-3 mt-4 text-xs font-mono text-steel/60">
+        {state === "ready" && (
+          <>
+            <span>🔥 Série : {streak?.currentStreak ?? 0} jour{(streak?.currentStreak ?? 0) > 1 ? "s" : ""}</span>
+            {progress?.totalOfficialGames != null && <span>· {progress.totalOfficialGames} partie(s) officielle(s) au total</span>}
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 mt-4">
+        <Link href="/journal" className="btn btn-primary">
+          Enregistrer une partie →
+        </Link>
+        {daysLeft !== null && daysLeft <= 1 && (
+          <Link href="/tournament-day" className="btn border-flame/60 text-flame">
+            ⚔️ Mode Jour J
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
 
-type LoadState = "loading" | "ready" | "error";
+function MiniProgress({
+  label,
+  value,
+  goal,
+  color,
+}: {
+  label: string;
+  value: number | null | undefined;
+  goal: number | null | undefined;
+  color?: string;
+}) {
+  const loading = value == null || goal == null;
+  const pct = !loading && goal! > 0 ? Math.min(100, Math.round((value! / goal!) * 100)) : 0;
+  const barColor =
+    color === "gold" ? "bg-gold" : color === "red" ? "bg-red-500" : color === "green" ? "bg-emerald-dim" : "bg-emerald-dim";
 
-/** Diagnostic complet — la version détaillée du message court du Hero
- * ci-dessus (forces, faiblesse, progression). Volontairement en second plan
- * (dans "Vue d'ensemble") : utile pour creuser, pas la première chose à lire
- * en arrivant. */
+  return (
+    <div className="bg-panel2 rounded-lg p-3">
+      <div className="text-[10px] uppercase tracking-wider text-steel/60 mb-1">{label}</div>
+      <div className="text-2xl font-mono font-bold text-white">
+        {loading ? "…" : value} <span className="text-steel/50 text-sm">/ {loading ? "…" : goal}</span>
+      </div>
+      <div className="w-full h-1.5 bg-panel rounded-full overflow-hidden mt-2">
+        <div className={`h-full ${barColor} transition-all`} style={{ width: `${loading ? 0 : pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/** Diagnostic complet — la version détaillée du message court du hero
+ * ci-dessus (forces, faiblesse, progression). */
 function CoachDiagnosticWidget() {
   const [state, setState] = useState<LoadState>("loading");
   const [weakness, setWeakness] = useState<any>(null);
@@ -235,7 +258,7 @@ function CoachDiagnosticWidget() {
           <div>
             <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-bright mb-1">Forces</div>
             {!strengths?.hasData ? (
-              <div className="text-xs font-mono text-steel/60">Données insuffisantes — {strengths?.reason}</div>
+              <div className="text-xs font-mono text-steel/60">Échantillon insuffisant — {strengths?.reason}</div>
             ) : (
               <ul className="space-y-0.5">
                 {strengths.strengths.map((s: any) => (
@@ -251,7 +274,7 @@ function CoachDiagnosticWidget() {
           <div>
             <div className="text-[10px] font-mono uppercase tracking-wider text-red-400 mb-1">Faiblesse principale</div>
             {!weakness?.hasData ? (
-              <div className="text-xs font-mono text-steel/60">Données insuffisantes — {weakness?.reason}</div>
+              <div className="text-xs font-mono text-steel/60">Échantillon insuffisant — {weakness?.reason}</div>
             ) : (
               <div className="text-xs text-steel/80">
                 <span className="text-white">{weakness.topMistake}</span> — présente sur {weakness.count}/{weakness.totalWithMistake} parties notées récemment.
@@ -263,7 +286,7 @@ function CoachDiagnosticWidget() {
           <div>
             <div className="text-[10px] font-mono uppercase tracking-wider text-gold mb-1">Progression récente</div>
             {!progress?.hasData ? (
-              <div className="text-xs font-mono text-steel/60">Données insuffisantes — {progress?.reason}</div>
+              <div className="text-xs font-mono text-steel/60">Échantillon insuffisant — {progress?.reason}</div>
             ) : (
               <div className="text-xs text-steel/80">
                 {progress.delta > 0 ? "↑" : progress.delta < 0 ? "↓" : "→"}{" "}
@@ -280,9 +303,8 @@ function CoachDiagnosticWidget() {
   );
 }
 
-/** Compact — les 2 actus Mihawk les plus récentes, visibles dès l'accueil
- * même si on ne va jamais consulter la fiche complète sur Deck Profile.
- * Données statiques (voir MIHAWK_NEWS), pas de fetch nécessaire. */
+/** Compact — les 2 actus Mihawk les plus récentes. Données statiques (voir
+ * MIHAWK_NEWS), pas de fetch nécessaire. */
 function MihawkNewsWidget() {
   const latest = MIHAWK_NEWS.slice(0, 2);
   if (latest.length === 0) return null;
@@ -360,7 +382,13 @@ function StreakAndAchievementsWidget() {
   }
 
   const unlocked = achievements.filter((a) => a.unlocked);
-  const visibleAchievements = showAll ? achievements : achievements.slice(0, 4);
+  // Section 22 — pas 54 objectifs à la fois : 1 mission principale + 2
+  // priorités secondaires (ici : les 2 badges les plus proches d'être
+  // débloqués) + un accès vers la liste complète.
+  const nextUp = achievements
+    .filter((a) => !a.unlocked)
+    .slice(0, 2);
+  const visibleAchievements = showAll ? achievements : [...unlocked.slice(0, 2), ...nextUp];
 
   return (
     <div className="card-tile p-5">
@@ -428,126 +456,6 @@ function RetryBlock({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
-function GameCounterWidget() {
-  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
-  const [stats, setStats] = useState<ReturnType<typeof computeGameCounterStats> | null>(null);
-
-  const load = useCallback(async () => {
-    setState("loading");
-    try {
-      const d = await fetchWithTimeout("/api/matches");
-      const matches = d.matches ?? [];
-      setStats(computeGameCounterStats(matches));
-      setState("ready");
-    } catch {
-      setState("error");
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  if (state === "loading") {
-    return <div className="card-tile p-5"><div className="skeleton h-20 w-full" /></div>;
-  }
-  if (state === "error" || !stats) {
-    return (
-      <div className="card-tile p-5 flex items-center justify-between">
-        <span className="text-xs text-red-400">Impossible de charger le compteur de parties.</span>
-        <button onClick={load} className="btn text-xs py-1.5 px-3">Réessayer</button>
-      </div>
-    );
-  }
-
-  const pct = stats.totalTarget > 0 ? Math.min(100, Math.round((stats.totalPlayed / stats.totalTarget) * 100)) : 0;
-  const statusLabel = stats.status === "avance" ? "En avance" : stats.status === "retard" ? "En retard" : "Dans le rythme";
-  const statusColor = stats.status === "avance" ? "text-emerald-bright" : stats.status === "retard" ? "text-red-400" : "text-gold";
-
-  return (
-    <div className="card-tile p-5">
-      <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
-        <div>
-          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">Compteur de parties</div>
-          <div className="text-3xl md:text-4xl font-mono font-bold text-white mt-1">
-            {stats.totalPlayed} <span className="text-steel/50 text-lg">/ {stats.totalTarget}</span>
-          </div>
-          <div className="text-xs text-steel/60 mt-0.5">{stats.remaining} parties restantes avant le tournoi</div>
-        </div>
-        <span className={`badge ${stats.status === "avance" ? "badge-green" : stats.status === "retard" ? "badge-red" : "badge-gold"} shrink-0`}>
-          {statusLabel}
-        </span>
-      </div>
-      <div className="w-full h-2 bg-panel2 rounded-full overflow-hidden">
-        <div className="h-full bg-emerald-dim transition-all" style={{ width: `${pct}%` }} />
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs font-mono text-steel/60">
-        <span>Semaine {stats.currentWeekN} : {stats.playedThisWeek} / {stats.weekTarget}</span>
-        <span>Attendu à date : {stats.expectedByToday}</span>
-        <span>Rythme nécessaire : ~{stats.dailyPaceNeeded}/jour ({stats.daysLeft}j restants)</span>
-      </div>
-    </div>
-  );
-}
-
-function TrainingWidget({ dailyTarget, weekTarget }: { dailyTarget: number; weekTarget: number }) {
-  const [state, setState] = useState<LoadState>("loading");
-  const [gamesToday, setGamesToday] = useState(0);
-  const [gamesThisWeek, setGamesThisWeek] = useState(0);
-
-  const load = useCallback(async () => {
-    setState("loading");
-    try {
-      const d = await fetchWithTimeout("/api/matches");
-      const matches = d.matches ?? [];
-      const todayISO = new Date().toISOString().slice(0, 10);
-      setGamesToday(matches.filter((m: any) => m.date === todayISO).length);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 6);
-      const weekAgoISO = weekAgo.toISOString().slice(0, 10);
-      setGamesThisWeek(matches.filter((m: any) => m.date >= weekAgoISO && m.date <= todayISO).length);
-      setState("ready");
-    } catch {
-      setState("error");
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const pct = dailyTarget > 0 ? Math.min(100, Math.round((gamesToday / dailyTarget) * 100)) : 0;
-
-  return (
-    <div className="card-tile p-5">
-      <h3 className="font-mono text-xs uppercase tracking-widest text-gold mb-3 border-b border-line pb-2">Entraînement</h3>
-      {state === "error" ? (
-        <RetryBlock message="Impossible de charger tes parties." onRetry={load} />
-      ) : (
-        <>
-          <div className="flex items-end justify-between mb-2">
-            <div>
-              <div className="text-3xl font-mono font-bold text-white">
-                {state === "loading" ? "…" : gamesToday} <span className="text-steel/50 text-base">/ {dailyTarget}</span>
-              </div>
-              <div className="text-[10px] uppercase tracking-wider text-steel/60">parties aujourd'hui (objectif du jour)</div>
-            </div>
-          </div>
-          <div className="w-full h-2 bg-panel2 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-dim transition-all" style={{ width: `${state === "loading" ? 0 : pct}%` }} />
-          </div>
-          <div className="text-xs font-mono text-steel/60 mt-3">
-            Cette semaine : <span className="text-white">{state === "loading" ? "…" : gamesThisWeek}</span> / {weekTarget} parties visées
-          </div>
-        </>
-      )}
-      <Link href="/journal" className="text-xs font-mono text-emerald-bright hover:underline mt-2 inline-block">
-        Logger une partie →
-      </Link>
-    </div>
-  );
-}
-
 function ObjectivesWidget() {
   const [state, setState] = useState<LoadState>("loading");
   const [items, setItems] = useState<any[]>([]);
@@ -569,11 +477,6 @@ function ObjectivesWidget() {
 
   async function toggle(id: string, done: boolean) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, done } : it)));
-    try {
-      await fetchWithTimeout(`/api/objectives/${id}`);
-    } catch {
-      // Optimiste : on ne bloque pas l'UI pour un échec de sauvegarde isolé.
-    }
     fetch(`/api/objectives/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ done }) }).catch(() => {});
   }
 
@@ -597,7 +500,7 @@ function ObjectivesWidget() {
         <div className="text-xs font-mono text-emerald-bright">Tous les objectifs sont cochés 🎉</div>
       ) : (
         <ul className="space-y-1.5">
-          {pending.slice(0, 5).map((it) => (
+          {pending.slice(0, 3).map((it) => (
             <li key={it.id} className="flex items-start gap-2 text-sm">
               <input type="checkbox" checked={it.done} onChange={(e) => toggle(it.id, e.target.checked)} className="mt-1 shrink-0" />
               <span className="text-white text-xs leading-snug">{it.text}</span>
@@ -648,7 +551,7 @@ function SimWinrateWidget() {
       ) : total === 0 ? (
         <div className="text-xs font-mono text-steel/60">
           Aucune partie en mode Simulateur enregistrée pour l'instant. Logue tes parties dans{" "}
-          <Link href="/journal" className="text-emerald-bright hover:underline">Préparation Tournoi</Link>.
+          <Link href="/journal" className="text-emerald-bright hover:underline">le Journal</Link>.
         </div>
       ) : (
         <div className="flex items-center gap-6 flex-wrap">
@@ -665,7 +568,7 @@ function SimWinrateWidget() {
           <div className="text-sm font-mono space-y-1">
             <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald inline-block" /> {wins} victoire{wins > 1 ? "s" : ""}</div>
             <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-danger inline-block" /> {losses} défaite{losses > 1 ? "s" : ""}</div>
-            <div className="text-steel/60 text-xs mt-1">{total} partie{total > 1 ? "s" : ""} au total sur simulateur</div>
+            <div className="text-steel/60 text-xs mt-1">{total} partie{total > 1 ? "s" : ""} au total sur simulateur — échantillon informatif, pas une stat officielle</div>
           </div>
         </div>
       )}

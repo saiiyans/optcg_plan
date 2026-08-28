@@ -14,7 +14,12 @@
 // QUEL jour civil "aujourd'hui" désigne au moment de l'appel, pas à
 // re-convertir les dates déjà enregistrées.
 
-export const DAILY_GOAL = 4;
+// DAILY_GOAL vit maintenant dans config.ts (source unique de configuration
+// pour toute l'app) — réimporté puis réexporté ici pour ne rien casser des
+// imports existants (`import { DAILY_GOAL } from "./trainingPhase"`), y
+// compris dans scripts/test-training-phase.ts.
+import { DAILY_GOAL, WEEKLY_GOAL } from "./config";
+export { DAILY_GOAL, WEEKLY_GOAL };
 
 const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -80,6 +85,9 @@ export interface DailyProgressInput {
 export interface WeekProgress {
   startDate: string; // lundi
   gamesThisWeek: number;
+  weeklyGoal: number; // toujours DAILY_GOAL × 7 = 28, jamais un autre chiffre (voir config.ts)
+  remainingThisWeek: number;
+  goalMetThisWeek: boolean;
   daysWithGoalMetThisWeek: number;
 }
 
@@ -208,7 +216,14 @@ export function computeDailyProgress(input: DailyProgressInput): DailyProgressRe
     averageGamesPerDay,
     daysWithGoalMet,
 
-    week: { startDate: weekStart, gamesThisWeek, daysWithGoalMetThisWeek },
+    week: {
+      startDate: weekStart,
+      gamesThisWeek,
+      weeklyGoal: WEEKLY_GOAL,
+      remainingThisWeek: Math.max(0, WEEKLY_GOAL - gamesThisWeek),
+      goalMetThisWeek: gamesThisWeek >= WEEKLY_GOAL,
+      daysWithGoalMetThisWeek,
+    },
 
     daysUntilTournament,
   };
