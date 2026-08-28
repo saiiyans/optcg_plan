@@ -27,6 +27,14 @@ export async function POST(req: NextRequest) {
   }
 
   const url = body.url ?? DEFAULT_URL;
+  // Le champ `format` n'était jamais rempli explicitement avant ce
+  // correctif et retombait silencieusement sur le défaut Prisma "OP16" —
+  // y compris pour des decks réellement importés depuis la page OP17.
+  // Redérivé ici depuis l'URL (fiable : contient toujours "opNN" en clair)
+  // plutôt que codé en dur, pour rester correct au prochain changement de
+  // format sans nouvelle édition de ce fichier.
+  const formatMatch = url.match(/\bop(\d{1,2})\b/i);
+  const format = formatMatch ? `OP${formatMatch[1]}` : "OP17";
   const log = await db.importLog.create({
     data: { runType: "full_import", sourceUrl: url, cardsFound: 0, cardsImported: 0, cardsUpdated: 0, cardsSkipped: 0 },
   });
@@ -69,6 +77,7 @@ export async function POST(req: NextRequest) {
             deckProfile: row.deckProfile,
             deckColor: row.deckColor,
             deckName: row.deckName,
+            format,
             player: row.player,
             country: row.country,
             date: row.date,

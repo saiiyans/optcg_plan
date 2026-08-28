@@ -80,6 +80,13 @@ export const MIHAWK_NEWS: MihawkNewsItem[] = [
     source: "cardkaizoku.com/ranking",
   },
   {
+    date: "2026-08-26",
+    title: "ChinoizeCup #101 & #102 — 1ère place puis 5 decks Mihawk en top 8",
+    note: "ChinoizeCup #101 (25/08/2026) : Mihawk Vert (OP14-020) 1er, 225,28$ de gains. ChinoizeCup #102 (26/08/2026, lendemain) : Mihawk prend 5 des 8 places du top 8 (2e, 3e, 6e, 7e, 8e). Deux cups locales consécutives, pas des événements majeurs, mais un signal fort et très récent (post-OP17) sur la solidité du deck.",
+    confidence: "Résultat de tournoi",
+    source: "OPTCG.gg",
+  },
+  {
     date: "2026-08-19",
     title: "ChinoizeCup #99 — deux Mihawk Vert classés",
     note: "7e place (\"Dracule Mihawk - FenoHS\") et 9e place (\"Dracule Mihawk - Brian\") — un cup local, pas un événement majeur, mais le résultat le plus récent trouvé.",
