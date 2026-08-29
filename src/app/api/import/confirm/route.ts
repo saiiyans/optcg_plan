@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { listAllCardNumbers, scrapeCardDetail } from "@/lib/scraper";
 import { computeMihawkRating } from "@/lib/mihawkRating";
+import { isAllowedSyncUrl } from "@/lib/adminAuth";
 
 const DEFAULT_SEARCH_URL =
   "https://onepiece.limitlesstcg.com/cards/?q=category%3Aleader%2Ccharacter%2Cevent%2Cstage%20color%3Agreen%20lang%3Aen%20display%3Agrid%20sort%3Aid";
@@ -25,6 +26,9 @@ export async function POST(req: NextRequest) {
   }
 
   const searchUrl = body.url ?? DEFAULT_SEARCH_URL;
+  if (!isAllowedSyncUrl(searchUrl)) {
+    return NextResponse.json({ ok: false, error: "URL non autorisée — domaine hors liste blanche." }, { status: 400 });
+  }
   const log = await db.importLog.create({
     data: {
       runType: "full_import",

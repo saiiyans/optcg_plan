@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,10 @@ export const dynamic = "force-dynamic";
  * brute, pour qu'on puisse voir les vrais noms de champs avant d'écrire le
  * mapping définitif. Ne touche à aucune donnée en base.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   const apiKey = process.env.APITCG_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

@@ -73,8 +73,37 @@ function parseTurnNumber(keyTurn: string | null): number | null {
   return m ? parseInt(m[1], 10) : null;
 }
 
+// Sous-ensemble des champs réels du modèle Match (prisma/schema.prisma)
+// utilisés dans cette fonction. Annotation nécessaire dans cet environnement
+// de dev : le client Prisma généré localement est un client "vide" (le
+// générateur ne peut pas télécharger son moteur depuis binaries.prisma.sh,
+// bloqué par le réseau du bac à sable), donc TS ne peut pas déduire seul le
+// type renvoyé par db.match.findMany ici. Sur Vercel, où `prisma generate`
+// tourne normalement avant le build, le vrai type Match (structurellement
+// compatible avec ce sous-ensemble) est assigné sans problème.
+interface MatchRow {
+  result: string;
+  myDeck: string;
+  mode: string;
+  turnOrder: string | null;
+  mulligan: boolean | null;
+  openingHandQuality: string | null;
+  gameDurationMinutes: number | null;
+  keyTurn: string | null;
+  lossReason: string | null;
+  mainMistake: string | null;
+  mistakesJson: string | null;
+  decisiveMoment: string | null;
+  boardStateAtCritical: string | null;
+  mihawkActivations: number | null;
+  mihawkEffectForgotten: boolean | null;
+  mihawkEffectTooEarly: boolean | null;
+  firstCost5Turn: number | null;
+  donRecoveredUnused: number | null;
+}
+
 export async function computePersonalStats(myDeck?: string, phase: PhaseFilter = "official_training"): Promise<PersonalStats> {
-  const matches = await db.match.findMany({
+  const matches: MatchRow[] = await db.match.findMany({
     where: {
       deletedAt: null,
       ...(myDeck ? { myDeck } : {}),

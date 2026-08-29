@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { COACH_SEED } from "@/lib/coachSeed";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   let updated = 0;
   const skipped: string[] = [];
 

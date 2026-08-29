@@ -29,8 +29,26 @@ export interface CoachBilan {
   nextTrainingGoal?: string;
 }
 
+// Sous-ensemble des champs réels du modèle Match (prisma/schema.prisma)
+// utilisés dans cette fonction. Annotation nécessaire dans cet environnement
+// de dev : le client Prisma généré localement est un client "vide" (le
+// générateur ne peut pas télécharger son moteur depuis binaries.prisma.sh,
+// bloqué par le réseau du bac à sable), donc TS ne peut pas déduire seul le
+// type renvoyé par db.match.findMany ici. Sur Vercel, où `prisma generate`
+// tourne normalement avant le build, le vrai type Match (structurellement
+// compatible avec ce sous-ensemble) est assigné sans problème.
+interface MatchRow {
+  result: string;
+  opponentLeader: string;
+  turnOrder: string | null;
+  mainMistake: string | null;
+  mostUsefulCard: string | null;
+  uselessCard: string | null;
+  gameDurationMinutes: number | null;
+}
+
 export async function computeCoachBilan(myDeck?: string): Promise<CoachBilan> {
-  const matches = await db.match.findMany({
+  const matches: MatchRow[] = await db.match.findMany({
     where: { deletedAt: null, ...(myDeck ? { myDeck } : {}) },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });

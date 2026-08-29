@@ -405,8 +405,14 @@ export default function WinningDecksPage() {
                   {d.status === "top_performer" && <span className="badge">Top Cut</span>}
                 </div>
               </div>
+              {/* Hiérarchie : le placement (résultat du deck, l'info la plus
+                  scannée dans une grille de decks gagnants) ressort en gras
+                  clair — le reste (contexte joueur/tournoi) reste en gris
+                  secondaire, plutôt qu'un seul poids uniforme partout. */}
               <div className="text-xs font-mono text-steel/70">{d.player} · {d.country} · {d.date}</div>
-              <div className="text-xs font-mono text-steel/70">{d.placementRaw} · {d.tournamentType} · {d.host}{d.participants ? ` (${d.participants} joueurs)` : ""}</div>
+              <div className="text-xs font-mono text-steel/70">
+                <span className="text-ivory font-semibold">{d.placementRaw}</span> · {d.tournamentType} · {d.host}{d.participants ? ` (${d.participants} joueurs)` : ""}
+              </div>
               {d.eventTier && (
                 <div className="text-[10px] font-mono text-steel/40 mt-1">Tier estimé : {d.eventTier}</div>
               )}

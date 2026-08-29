@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { listAllCardNumbers } from "@/lib/scraper";
+import { isAllowedSyncUrl } from "@/lib/adminAuth";
 
 const DEFAULT_SEARCH_URL =
   "https://onepiece.limitlesstcg.com/cards/?q=category%3Aleader%2Ccharacter%2Cevent%2Cstage%20color%3Agreen%20lang%3Aen%20display%3Agrid%20sort%3Aid";
@@ -15,6 +16,9 @@ const DEFAULT_SEARCH_URL =
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const searchUrl = body.url ?? DEFAULT_SEARCH_URL;
+  if (!isAllowedSyncUrl(searchUrl)) {
+    return NextResponse.json({ ok: false, error: "URL non autorisée — domaine hors liste blanche." }, { status: 400 });
+  }
 
   const log = await db.importLog.create({
     data: { runType: "sync", sourceUrl: searchUrl, cardsFound: 0, cardsImported: 0, cardsUpdated: 0, cardsSkipped: 0 },
@@ -22,9 +26,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const { cardNumbers, totalFoundOnSite } = await listAllCardNumbers(searchUrl);
-    const existingNumbers = new Set(
-      (await db.card.findMany({ select: { cardNumber: true } })).map((c) => c.cardNumber)
-    );
+    // Annotation explicite nécessaire dans cet environnement de dev (client
+    // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+    const existingCards: { cardNumber: string }[] = await db.card.findMany({ select: { cardNumber: true } });
+    const existingNumbers = new Set(existingCards.map((c) => c.cardNumber));
     const newNumbers = cardNumbers.filter((n) => !existingNumbers.has(n));
 
     await db.importLog.update({

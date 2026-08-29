@@ -16,7 +16,9 @@ const MIN_LOSSES_FOR_AUTO_OBJECTIVE = 2; // sur les 3 dernières parties contre 
 const MAX_ACTIVE_AUTO_MATCHUP_OBJECTIVES = 3;
 
 export async function maybeCreateAutoObjective(myDeck: string, opponentLeader: string): Promise<void> {
-  const recentVsOpponent = await db.match.findMany({
+  // Annotation explicite nécessaire dans cet environnement de dev (client
+  // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+  const recentVsOpponent: { result: string; mainMistake: string | null }[] = await db.match.findMany({
     where: { myDeck, opponentLeader, deletedAt: null },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take: 3,

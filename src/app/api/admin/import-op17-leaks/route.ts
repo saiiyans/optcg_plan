@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import confirmedData from "@/lib/data/op17-confirmed.json";
 import pendingData from "@/lib/data/op17-pending.json";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,10 @@ interface OP17Pending {
  * Idempotent : relancer plusieurs fois ne crée aucun doublon (upsert sur
  * cardNumber pour les confirmées, sur tempId pour les pending).
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   try {
     const confirmed = confirmedData as OP17Confirmed[];
     const pending = pendingData as OP17Pending[];

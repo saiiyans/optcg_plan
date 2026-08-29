@@ -31,7 +31,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json().catch(() => ({}));
   const { raw, changeReason, personalNote } = body;
 
-  const deck = await db.deck.findUnique({ where: { id: params.id }, include: { cards: { include: { card: true } } } });
+  // Annotation explicite nécessaire dans cet environnement de dev (client
+  // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+  const deck: {
+    id: string;
+    leaderCardNumber: string;
+    cards: { quantity: number; card: { cardNumber: string } }[];
+  } | null = await db.deck.findUnique({ where: { id: params.id }, include: { cards: { include: { card: true } } } });
   if (!deck) return NextResponse.json({ ok: false, error: "Deck introuvable." }, { status: 404 });
 
   if (!raw?.trim()) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 import { testLimitlessSample, LIMITLESS_ARCHETYPE_URL } from "@/lib/limitlessScraper";
+import { checkSyncUrl } from "@/lib/importRouteHelpers";
 
 /**
  * GET /api/tournament-decks/limitless/test3
@@ -14,6 +15,8 @@ import { testLimitlessSample, LIMITLESS_ARCHETYPE_URL } from "@/lib/limitlessScr
  */
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url") ?? LIMITLESS_ARCHETYPE_URL;
+  const urlError = checkSyncUrl(url);
+  if (urlError) return urlError;
   try {
     const result = await testLimitlessSample(url);
     return NextResponse.json({ ok: true, ...result });

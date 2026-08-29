@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,10 @@ export const dynamic = "force-dynamic";
  * TOUS les decks existants. Idempotent — ne touche que les decks dont le
  * format stocké diffère de celui redérivé, safe à relancer plusieurs fois.
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   const decks = await db.tournamentDeck.findMany({ select: { id: true, sourceUrl: true, format: true } });
   let updated = 0;
   const skippedNoFormatInUrl: string[] = [];

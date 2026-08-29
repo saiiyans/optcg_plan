@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import fs from "fs";
 import path from "path";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,10 @@ export const dynamic = "force-dynamic";
  * supprime et ne duplique aucune carte : seules les lignes déjà
  * existantes sont mises à jour.
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   try {
     const largeDir = path.join(process.cwd(), "public", "cards", "large");
     const smallDir = path.join(process.cwd(), "public", "cards", "small");

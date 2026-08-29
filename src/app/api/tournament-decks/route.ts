@@ -83,7 +83,35 @@ export async function GET(req: NextRequest) {
   const source = sp.get("source"); // "asia" | "international" | null (= toutes)
   const leader = getLeader(sp.get("leader"));
 
-  const decks = await db.tournamentDeck.findMany({
+  // Annotation explicite nécessaire dans cet environnement de dev (client
+  // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+  // Le vrai objet renvoyé par Prisma contient tous les champs du modèle ;
+  // cette interface ne liste que ceux réellement lus dans ce fichier — le
+  // `...d` plus bas propage quand même l'objet complet au JSON de réponse.
+  type TournamentDeckRow = {
+    id: string;
+    leaderCardNumber: string;
+    deckProfile: string;
+    deckColor: string;
+    deckName: string;
+    format: string;
+    player: string;
+    country: string;
+    date: string;
+    placementRaw: string;
+    wins: number | null;
+    losses: number | null;
+    undefeated: boolean;
+    status: string;
+    proofLevel: string | null;
+    tournamentType: string;
+    host: string;
+    participants: number | null;
+    sourceUrl: string;
+    savedToMyDecks: boolean;
+    cards: { cardNumber: string; quantity: number }[];
+  };
+  const decks: TournamentDeckRow[] = await db.tournamentDeck.findMany({
     where: {
       deckProfile: leader.deckProfile,
       ...(status ? { status } : {}),

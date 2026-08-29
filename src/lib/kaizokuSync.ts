@@ -30,7 +30,9 @@ export async function syncKaizokuMatches(
     return { parsed: 0, inserted: 0, skipped: 0, warnings };
   }
 
-  const existing = await db.match.findMany({
+  // Annotation explicite nécessaire dans cet environnement de dev (client
+  // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+  const existing: { kaizokuId: string | null }[] = await db.match.findMany({
     where: { kaizokuId: { in: matches.map((m) => m.kaizokuId) } },
     select: { kaizokuId: true },
   });

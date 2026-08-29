@@ -7,7 +7,34 @@ import { DuplicateDeckButton } from "@/components/DuplicateDeckButton";
 import { CardImage } from "@/components/CardImage";
 
 export default async function DeckDetail({ params }: { params: { id: string } }) {
-  const deck = await db.tournamentDeck.findUnique({ where: { id: params.id }, include: { cards: true } });
+  // Annotations explicites nécessaires dans cet environnement de dev : le
+  // client Prisma généré localement est un client "vide" (le générateur ne
+  // peut pas télécharger son moteur depuis binaries.prisma.sh, bloqué par le
+  // réseau du bac à sable), donc TS ne peut pas déduire seul les types
+  // renvoyés par ces requêtes ici. Sur Vercel, où `prisma generate` tourne
+  // normalement avant le build, les vrais types Prisma (structurellement
+  // compatibles avec ces sous-ensembles, vérifiés contre prisma/schema.prisma)
+  // s'assignent sans problème.
+  const deck: {
+    id: string;
+    leaderCardNumber: string;
+    format: string;
+    deckName: string;
+    player: string;
+    date: string;
+    tournamentType: string;
+    country: string;
+    host: string;
+    status: string;
+    undefeated: boolean;
+    wins: number | null;
+    losses: number | null;
+    savedToMyDecks: boolean;
+    sourceUrl: string;
+    importedAt: Date;
+    cardCountNonLeader: number;
+    cards: { id: string; cardNumber: string; quantity: number }[];
+  } | null = await db.tournamentDeck.findUnique({ where: { id: params.id }, include: { cards: true } });
   if (!deck) notFound();
 
   const comparison = compareWithMyDeck(deck.cards.map((c) => ({ cardNumber: c.cardNumber, quantity: c.quantity })));
@@ -15,7 +42,7 @@ export default async function DeckDetail({ params }: { params: { id: string } })
   // Jointure avec la Green Card Library pour récupérer l'image + le nom de
   // chaque carte, quand elle a déjà été importée. Une carte pas encore
   // importée s'affiche simplement sans image plutôt que de casser la page.
-  const libraryCards = await db.card.findMany({
+  const libraryCards: { cardNumber: string; imageUrl: string; name: string }[] = await db.card.findMany({
     where: { cardNumber: { in: deck.cards.map((c) => c.cardNumber) } },
     select: { cardNumber: true, imageUrl: true, name: true },
   });
@@ -26,7 +53,7 @@ export default async function DeckDetail({ params }: { params: { id: string } })
   // gagnant — jamais de fausse conclusion : le composant AssociatedMatches
   // affiche juste le décompte réel, sans winrate garanti fiable si
   // l'échantillon est trop petit.
-  const associatedMatches = await db.match.findMany({
+  const associatedMatches: { id: string; date: string; opponentLeader: string; result: string }[] = await db.match.findMany({
     where: { inspiredByDeckId: deck.id, deletedAt: null },
     orderBy: { date: "desc" },
   });

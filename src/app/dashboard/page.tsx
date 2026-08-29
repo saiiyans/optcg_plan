@@ -13,7 +13,9 @@ export default async function Dashboard() {
 
   const leaderStats = await Promise.all(
     LEADERS.map(async (leader) => {
-      const ratings = await db.personalRating.findMany({ where: { leaderContext: leader.leaderContext } });
+      // Annotation explicite nécessaire dans cet environnement de dev (client
+      // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+      const ratings: { stars: number }[] = await db.personalRating.findMany({ where: { leaderContext: leader.leaderContext } });
       const winningDecks = await db.tournamentDeck.count({ where: { deckProfile: leader.deckProfile, status: "winner" } });
       const allDecks = await db.tournamentDeck.count({ where: { deckProfile: leader.deckProfile } });
       return {

@@ -6,6 +6,7 @@ import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
 import { OP_COLOR_HEX, hexToRgba } from "@/lib/opColors";
 import { useConfirm } from "@/components/ConfirmDialogProvider";
+import { ADMIN_HEADERS } from "@/lib/adminHeaders";
 
 // Page entièrement pilotée par des données live (filtres, recherche,
 // import en direct) — ne doit jamais être pré-générée statiquement au
@@ -197,7 +198,7 @@ export default function CardsPage() {
         setCoachStatus(`[${color}] Génération en cours... ${totalDone} carte(s) traitée(s) au total.`);
         const res = await fetch("/api/admin/generate-coach-content", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...ADMIN_HEADERS },
           body: JSON.stringify({ color, limit: 5 }),
         });
         const data = await res.json();
@@ -339,7 +340,7 @@ export default function CardsPage() {
   async function runSeedCoach() {
     setImportBusy(true);
     setImportStatus("Chargement du contenu Coach rédigé à la main...");
-    const res = await fetch("/api/admin/coach-content/seed", { method: "POST" });
+    const res = await fetch("/api/admin/coach-content/seed", { method: "POST", headers: ADMIN_HEADERS });
     const data = await res.json();
     setImportStatus(
       data.ok

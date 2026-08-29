@@ -30,13 +30,32 @@ export interface DeckComposition {
   cards: DeckCompositionCard[];
 }
 
+// Sous-ensemble des champs réels du modèle Card (prisma/schema.prisma) utilisés
+// dans cette fonction. Annotation nécessaire dans cet environnement de dev : le
+// client Prisma généré localement est un client "vide" (le générateur ne peut
+// pas télécharger son moteur depuis binaries.prisma.sh, bloqué par le réseau du
+// bac à sable), donc TS ne peut pas déduire seul le type renvoyé par
+// db.card.findMany ici. Sur Vercel, où `prisma generate` tourne normalement
+// avant le build, le vrai type Card (structurellement compatible avec ce
+// sous-ensemble) est assigné sans problème — ce n'est pas un contournement qui
+// devine le schéma, juste une copie fidèle des champs déclarés plus haut.
+interface CardRow {
+  cardNumber: string;
+  name: string;
+  imageUrl: string;
+  localImagePath: string | null;
+  cost: number | null;
+  counter: number | null;
+  category: string;
+}
+
 export async function computeDeckComposition(
   list: { cardNumber: string; quantity: number }[]
 ): Promise<DeckComposition> {
-  const cardData = await db.card.findMany({
+  const cardData: CardRow[] = await db.card.findMany({
     where: { cardNumber: { in: list.map((c) => c.cardNumber) } },
   });
-  const byNumber = new Map(cardData.map((c) => [c.cardNumber, c]));
+  const byNumber = new Map(cardData.map((c) => [c.cardNumber, c] as const));
 
   const costCurve: Record<string, number> = {};
   let counter1000Count = 0;

@@ -10,7 +10,12 @@ export const dynamic = "force-dynamic";
  * les decks personnels, et les decks gagnants sauvegardés dans Mes Decks.
  */
 export async function GET() {
-  const [personalDecks, savedTournamentDecks] = await Promise.all([
+  // Annotations explicites nécessaires dans cet environnement de dev (client
+  // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+  const [personalDecks, savedTournamentDecks]: [
+    { id: string; name: string; leaderCardNumber: string }[],
+    { id: string; deckName: string; player: string; leaderCardNumber: string }[],
+  ] = await Promise.all([
     db.deck.findMany({ orderBy: { updatedAt: "desc" } }),
     db.tournamentDeck.findMany({ where: { savedToMyDecks: true }, orderBy: { importedAt: "desc" } }),
   ]);

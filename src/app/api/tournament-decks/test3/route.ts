@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { scrapeTournamentDeckTable, isStrictMihawkRow } from "@/lib/scraper";
 import { parseCompactDecklist, classifyPlacement, extractParticipants } from "@/lib/deckParser";
+import { checkSyncUrl } from "@/lib/importRouteHelpers";
 
 // Format actuel : OP17 "The World's Strongest Warriors" (mis à jour le
 // 28/08/2026) — voir la même note dans import/route.ts.
@@ -17,6 +18,8 @@ const LEADER = "OP14-020";
  */
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url") ?? DEFAULT_URL;
+  const urlError = checkSyncUrl(url);
+  if (urlError) return urlError;
   try {
     const allRows = await scrapeTournamentDeckTable(url);
     const mihawkRows = allRows.filter((r) => isStrictMihawkRow(r, LEADER)).slice(0, 3);

@@ -9,6 +9,7 @@ import {
   LEADER_CARD_NUMBER,
 } from "@/lib/optcggScraper";
 import { buildDeckUniqueKey } from "@/lib/deckParser";
+import { checkSyncUrl, requireConfirm, openImportLog, closeImportLogSuccess, closeImportLogFailure } from "@/lib/importRouteHelpers";
 
 /**
  * POST /api/tournament-decks/optcgg/import  { url?, confirm: true }
@@ -23,14 +24,13 @@ import { buildDeckUniqueKey } from "@/lib/deckParser";
  */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  if (body.confirm !== true) {
-    return NextResponse.json({ ok: false, error: "Confirmation requise : envoie { confirm: true }." }, { status: 400 });
-  }
+  const confirmError = requireConfirm(body);
+  if (confirmError) return confirmError;
 
   const url = body.url ?? OPTCGG_TOP_DECKS_URL;
-  const log = await db.importLog.create({
-    data: { runType: "full_import", sourceUrl: url, cardsFound: 0, cardsImported: 0, cardsUpdated: 0, cardsSkipped: 0 },
-  });
+  const urlError = checkSyncUrl(url);
+  if (urlError) return urlError;
+  const log = await openImportLog(url);
 
   let created = 0;
   let skippedDuplicate = 0;
@@ -100,24 +100,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await db.importLog.update({
-      where: { id: log.id },
-      data: {
-        cardsFound: mihawkRows.length,
-        cardsImported: created,
-        cardsUpdated: 0,
-        cardsSkipped: skippedDuplicate + errors.length,
-        errors: JSON.stringify(errors),
-        finishedAt: new Date(),
-      },
+    await closeImportLogSuccess(log.id, {
+      cardsFound: mihawkRows.length,
+      cardsImported: created,
+      cardsSkipped: skippedDuplicate + errors.length,
+      errors,
     });
 
     return NextResponse.json({ ok: true, totalRowsFound: mihawkRows.length, created, skippedDuplicate, needsReview, errors });
   } catch (e: any) {
-    await db.importLog.update({
-      where: { id: log.id },
-      data: { errors: JSON.stringify([{ error: e.message ?? String(e) }]), finishedAt: new Date() },
-    });
+    await closeImportLogFailure(log.id, e);
     return NextResponse.json({ ok: false, error: e.message ?? String(e) }, { status: 500 });
   }
 }

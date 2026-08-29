@@ -25,14 +25,32 @@ export interface LeaderTournamentStats {
  * inventé : une carte absente des decks importés retourne usageCount=0 et
  * le badge "No Winning Data", jamais une estimation.
  */
+// Sous-ensemble des champs réels de TournamentDeck (+ relation cards, voir
+// prisma/schema.prisma) utilisés dans cette fonction. Annotation nécessaire
+// dans cet environnement de dev : le client Prisma généré localement est un
+// client "vide" (le générateur ne peut pas télécharger son moteur depuis
+// binaries.prisma.sh, bloqué par le réseau du bac à sable), donc TS ne peut
+// pas déduire seul le type renvoyé par db.tournamentDeck.findMany ici. Sur
+// Vercel, où `prisma generate` tourne normalement avant le build, le vrai
+// type (structurellement compatible avec ce sous-ensemble) est assigné sans
+// problème.
+interface TournamentDeckRow {
+  undefeated: boolean;
+  date: string;
+  country: string;
+  tournamentType: string;
+  proofLevel: string | null;
+  cards: { cardNumber: string; quantity: number }[];
+}
+
 export async function computeLeaderTournamentStats(cardNumber: string, leaderKey: string): Promise<LeaderTournamentStats> {
   const leader = getLeader(leaderKey);
 
-  const winningDecks = await db.tournamentDeck.findMany({
+  const winningDecks: TournamentDeckRow[] = await db.tournamentDeck.findMany({
     where: { deckProfile: leader.deckProfile, status: "winner" },
     include: { cards: true },
   });
-  const allDecksForLeader = await db.tournamentDeck.findMany({
+  const allDecksForLeader: TournamentDeckRow[] = await db.tournamentDeck.findMany({
     where: { deckProfile: leader.deckProfile },
     include: { cards: true },
   });

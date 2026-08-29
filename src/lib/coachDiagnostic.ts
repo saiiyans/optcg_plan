@@ -231,7 +231,9 @@ const PROGRESS_WINDOW = 10;
  * garantie, juste une observation sur un échantillon encore petit.
  */
 export async function computeRecentProgress(myDeck?: string): Promise<ProgressSummary> {
-  const matches = await db.match.findMany({
+  // Annotation explicite nécessaire dans cet environnement de dev (client
+  // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+  const matches: { result: string }[] = await db.match.findMany({
     where: { deletedAt: null, ...(myDeck ? { myDeck } : {}) },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     take: PROGRESS_WINDOW * 2,

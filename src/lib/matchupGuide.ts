@@ -63,82 +63,96 @@ export const MATCHUP_GUIDES: LeaderMatchupGuide[] = [
     keyStats:
       "Classement actuel (cardkaizoku.com, format OP17, 27 août 2026) : Mihawk est #5 sur 117 leaders recensés, winrate pondéré 51,89% (brut 52,33%), taux de jeu 10,36% — c'est le 2ᵉ leader le plus joué du format actuel, juste derrière Sabo, et il a gagné un rang sur la semaine. Donnée plus ancienne mais toujours utile sur le fond du jeu : sur 37 312 parties en OP16 (opdeckguide.com, août 2026), le winrate global était de 52,6%, avec un net avantage à jouer en second (56,1% vs 43,9% en premier) — Mihawk profite davantage de voir le board adverse avant d'agir que de prendre l'initiative.",
     worstMatchups: [
-      // --- AJOUT 27/08/2026 — les leaders les plus joués du format actuel
-      // (cardkaizoku.com, voir META_LEADER_SNAPSHOT) n'avaient aucune fiche
-      // dans l'app : quasi tout le contenu existant ci-dessous cible des
-      // leaders OP16 aujourd'hui peu joués. Honnêteté d'abord — je n'ai pas
-      // de vraie base (guide, tier list, partie loguée) pour donner un plan
-      // de contre spécifique à Mihawk sur ces nouveaux leaders, donc ces
-      // fiches sont volontairement "À tester" : les vrais chiffres méta
-      // actuels + le conseil générique en attendant tes propres parties,
-      // plutôt qu'une tactique inventée.
+      // --- AJOUT 27/08/2026, complété 29/08/2026 — les leaders les plus
+      // joués du format actuel (cardkaizoku.com, voir META_LEADER_SNAPSHOT)
+      // n'avaient aucune fiche dans l'app. Le 29/08/2026, chaque leader a été
+      // recherché individuellement (onepiece.gg, opdeckguide.com,
+      // spellmana.com) pour remplacer le conseil générique par le vrai plan
+      // de deck adverse. Deux matchups ont pu passer à un verdict confirmé
+      // par une source externe explicite (Rocks D. Xebec — attribut Slash
+      // confirmé, en lien direct avec le bonus de Mihawk ; Monkey D. Luffy
+      // OP17-079 — cité comme défavorable pour Luffy par sa propre source).
+      // Pour les autres, aucune source consultée ne donne de verdict
+      // Mihawk-contre-ce-leader précis : ils restent "À tester", mais avec
+      // le vrai plan de jeu adverse plutôt qu'un conseil générique. Honnêteté
+      // d'abord — jamais de tactique inventée pour combler un manque de
+      // source.
       {
         opponent: "Sabo (OP13-004)",
         difficulty: "À tester",
-        why: "Leader #1 du format actuel — 11,38% des parties, le meilleur winrate pondéré du classement (54,44%). C'est statistiquement l'adversaire que tu croiseras le plus souvent en tournoi. Pas de verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
+        why: "Deck Rouge/Noir tempo-combo (source : onepiece.gg) — l'effet leader donne +1000 de puissance (leader + tous les personnages) tant qu'un personnage coût 8+ posé avec 1 DON!! est en jeu, un bonus qui monte jusqu'à 6000 de puissance quand Sabo est à 3 vies ou moins ; le deck referme la partie via une récursion de cimetière avec Monkey D. Dragon. Leader #1 du format actuel (11,38% des parties, meilleur winrate pondéré du classement, 54,44%) — statistiquement l'adversaire le plus fréquent en tournoi. Aucun verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées : ce qui précède décrit le plan du deck Sabo lui-même, pas un rapport de force confirmé contre Mihawk.",
         howToCounter: [
-          "Pas de plan de contre spécifique trouvé pour l'instant — logue tes parties contre ce leader dans le Journal pour bâtir ta propre donnée en priorité, vu sa fréquence.",
-          "En attendant, applique le plan de jeu général de Mihawk : contrôle du tempo, verrouillage des pièces clés, ne pas se précipiter.",
+          "Presser tôt et éviter de laisser Sabo descendre confortablement à 3 vies ou moins — c'est le palier qui active son bonus de puissance maximal (6000).",
+          "Cibler en priorité le personnage coût 8+/1 DON!! qui active le bonus leader plutôt qu'un attaquant secondaire — sans lui, l'effet leader ne s'active pas.",
+          "Garder un œil sur Monkey D. Dragon en fin de partie : c'est la pièce de récursion qui referme la partie, une bonne cible pour un verrouillage (rest-lock) si tu en as un disponible.",
+          "Logue tes parties contre ce leader dans le Journal — reste la meilleure source pour un vrai verdict de matchup, vu sa fréquence.",
         ],
         currentMeta: "Rang 1/117 · 11,38% des parties · winrate pondéré 54,44% (cardkaizoku.com, 27/08/2026)",
       },
       {
         opponent: "Kaido (OP17-058)",
         difficulty: "À tester",
-        why: "3ᵉ leader le plus joué du format actuel (10,38% des parties) — presque aussi fréquent que Mihawk lui-même. Pas de verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
+        why: "Deck Violet ramp vers 10 DON!! (source : opdeckguide.com) — Queen recycle la main, King (coût 6) est la pièce maîtresse pour récupérer du DON!!. Faiblesse documentée par la source : un début de partie inconsistant/friable, vulnérable à l'agression lourde. 3ᵉ leader le plus joué du format actuel (10,38% des parties) — presque aussi fréquent que Mihawk lui-même. Aucun verdict de matchup spécifique contre Mihawk trouvé : Mihawk n'étant pas un deck d'agression pure, cette faiblesse documentée ne se traduit pas forcément en avantage direct.",
         howToCounter: [
+          "Le deck est documenté comme faible en early-game si sa main est mauvaise ('main friable') — presser tôt reste une piste sérieuse même si Mihawk n'est pas un deck d'agression pure.",
+          "Repérer King (coût 6) : c'est la pièce qui relance le DON!! adverse, une cible logique pour ton verrouillage (rest-lock) si tu dois choisir.",
           "Logue tes parties contre ce leader dans le Journal — priorité haute vu sa fréquence en table.",
-          "Plan de jeu général Mihawk en attendant : contrôle du tempo, verrouillage des pièces clés.",
         ],
         currentMeta: "Rang 6/117 · 10,38% des parties · winrate pondéré 51,48% (cardkaizoku.com, 27/08/2026)",
       },
       {
         opponent: "Rocks D. Xebec (OP17-039)",
-        difficulty: "À tester",
-        why: "4ᵉ leader le plus joué du format actuel (9,86% des parties). Pas de verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
+        difficulty: "Favorable",
+        why: "Deck Bleu midrange Rocks Pirates (source : opdeckguide.com) — et surtout : Rocks D. Xebec est un leader à attribut Tranchant (Slash), confirmé par la source elle-même qui cite explicitement un désavantage « contre des matchups spécifiques comme les decks Mihawk ». C'est directement le bonus passif +1000 de Mihawk contre tout attribut Slash (voir plus haut) — un des rares matchups de cette liste avec un vrai lien mécanique confirmé par une source externe, pas une supposition. Faiblesse propre au deck Rocks (source) : pas de main de Counter sans carte Stage posée. 4ᵉ leader le plus joué du format actuel (9,86% des parties).",
         howToCounter: [
-          "Logue tes parties contre ce leader dans le Journal.",
-          "Plan de jeu général Mihawk en attendant : contrôle du tempo, verrouillage des pièces clés.",
+          "Exploiter le bonus +1000 systématique contre son attribut Tranchant (Slash) — engage le combat plus franchement que d'habitude, ce matchup encaisse mieux les échanges directs.",
+          "Repérer si l'adversaire a une carte Stage posée : sans elle, le deck Rocks n'a pas de main de Counter (faiblesse documentée) — un bon moment pour presser.",
+          "Ce matchup a une base mécanique confirmée par une source externe (attribut Slash) — reste une bonne priorité à confirmer via tes propres parties dans le Journal pour valider le winrate réel.",
         ],
         currentMeta: "Rang 7/117 · 9,86% des parties · winrate pondéré 51,28% (cardkaizoku.com, 27/08/2026)",
       },
       {
         opponent: "Portgas D. Ace (OP16-001)",
         difficulty: "À tester",
-        why: "Version actuelle d'Ace, très différente de l'ancienne impression (OP13-002, tout en bas de ce classement aujourd'hui) — 6,90% des parties du format actuel, top 4 du classement. Pas de verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
+        why: "Deck Rouge (source : spellmana.com) — construit des personnages Barbe Blanche/Luffy à haute puissance ; l'effet leader donne Rush à partir de 8000 de puissance, et en milieu de partie un Ace coût 5 convertit la puissance en main en ressources Counter tout en cherchant des cartes. Le deck passe d'un early-game maîtrisé à une explosion offensive. Version actuelle (OP16-001), très différente de l'ancienne impression (OP13-002, aujourd'hui tout en bas du classement) — top 4 du classement actuel (6,90% des parties). Aucun verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
         howToCounter: [
-          "Logue tes parties contre ce leader dans le Journal (bien vérifier le numéro de carte OP16-001, à ne pas confondre avec l'ancienne version OP13-002).",
-          "Plan de jeu général Mihawk en attendant : contrôle du tempo, verrouillage des pièces clés.",
+          "Le seuil de Rush à 8000 de puissance est le vrai point de bascule du deck — garder un Counter fort ou un verrouillage pour la première grosse attaque après ce seuil plutôt que de le dépenser avant.",
+          "L'Ace coût 5 est la pièce qui transforme la main adverse en pression (ressources Counter + recherche de cartes) — une cible utile pour un rest-lock si tu dois prioriser.",
+          "Bien vérifier le numéro de carte (OP16-001, à ne pas confondre avec l'ancienne version OP13-002) avant de comparer tes notes de matchup.",
+          "Logue tes parties contre ce leader dans le Journal.",
         ],
         currentMeta: "Rang 4/117 · 6,90% des parties · winrate pondéré 52,01% (cardkaizoku.com, 27/08/2026)",
       },
       {
         opponent: "Nico Robin (OP09-062)",
         difficulty: "À tester",
-        why: "2ᵉ meilleur winrate pondéré du classement actuel (53,07%) et 5,42% des parties. Pas de verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
+        why: "Deck Violet/Jaune ramp (source : onepiece.gg) — l'effet leader donne un DON!! reposé à chaque attaque de Robin en échange de défausser une carte Trigger de la main, ce qui permet de jouer des personnages à haut coût dès le tour 3. Le mot-clé Bannissement (Banish) sur ses attaques force l'adversaire à dépenser des ressources Counter. Faiblesses documentées par la source : Doflamingo Bleu (agression qui épuise les Counters), Shanks Rouge (réduction de puissance), Marshall D. Teach Noir (désactive les effets « à la pose » + réduction de coût qui menace le board) — Mihawk n'apparaît dans aucune des trois. 2ᵉ meilleur winrate pondéré du classement actuel (53,07%), 5,42% des parties, aucun verdict de matchup spécifique contre Mihawk trouvé.",
         howToCounter: [
-          "Logue tes parties contre ce leader dans le Journal.",
-          "Plan de jeu général Mihawk en attendant : contrôle du tempo, verrouillage des pièces clés.",
+          "Le mot-clé Bannissement force une dépense de Counter à chaque attaque de Robin — anticiper cette pression sur tes ressources plutôt que de les garder pour plus tard.",
+          "Le ramp démarre dès le tour 3 via la défausse de cartes Trigger — repérer si l'adversaire garde ou défausse ses Trigger donne une bonne indication de son plan.",
+          "Logue tes parties contre ce leader dans le Journal — aucune des trois faiblesses documentées par les sources ne concerne Mihawk directement, donc ta propre donnée est ici particulièrement utile.",
         ],
         currentMeta: "Rang 2/117 · 5,42% des parties · winrate pondéré 53,07% (cardkaizoku.com, 27/08/2026)",
       },
       {
         opponent: "Monkey D. Luffy (OP17-079)",
-        difficulty: "À tester",
-        why: "Impression Luffy actuelle du format OP17, distincte de la version Vert/Bleu (OP16-022) déjà couverte plus bas — 4,87% des parties. Pas de verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
+        difficulty: "Favorable",
+        why: "Deck Noir swarm autour des personnages Elbaph (source : opdeckguide.com) — courbe « 2, 4, 6 puis 8 DON!! », l'effet leader donne le statut Bloqueur à tous les personnages coût 12+. Pièces clés : Usopp (coût 2, cherche des cartes Elbaph), Jaguar D. Saul (coût 4, installe des menaces coût 12), Loki (coût 6), Luffy (coût 8, pioche + recycle des persos coût 2 depuis le cimetière). La source cite explicitement Dracule Mihawk parmi les matchups défavorables pour ce deck Luffy (avec Kaido et Portgas D. Ace) — un des rares matchups de cette liste avec une confirmation directe et sourcée, cette fois dans le bon sens. Impression OP17, distincte de la version Vert/Bleu (OP16-022) déjà couverte plus bas — 4,87% des parties du format actuel.",
         howToCounter: [
-          "Logue tes parties contre ce leader dans le Journal (bien noter la version : OP17-079).",
-          "Plan de jeu général Mihawk en attendant : contrôle du tempo, verrouillage des pièces clés.",
+          "C'est un des matchups les mieux confirmés de cette liste (source externe explicite) — joue ton plan habituel de contrôle du tempo avec confiance plutôt que de sur-adapter.",
+          "Le deck a une courbe stricte (2/4/6/8 DON!!) — perturber une étape tôt (verrouillage sur Usopp ou Jaguar D. Saul) peut casser tout l'enchaînement plutôt que de viser une pièce plus tardive.",
+          "Logue quand même tes parties dans le Journal (bien noter la version : OP17-079) pour confirmer ce winrate favorable avec tes propres chiffres.",
         ],
         currentMeta: "Rang 8/117 · 4,87% des parties · winrate pondéré 51,26% (cardkaizoku.com, 27/08/2026)",
       },
       {
         opponent: "Charlotte Linlin (OP17-099)",
         difficulty: "À tester",
-        why: "3,74% des parties du format actuel, top 3 du classement par winrate pondéré (52,38%). Pas de verdict de matchup spécifique contre Mihawk trouvé dans les sources consultées.",
+        why: "Deck Jaune « Big Mom Pirates » axé soin et contrôle du board (source : opdeckguide.com), stratégie décrite comme « rope-a-dope » : encaisser l'agression adverse grâce au soin, étaler des personnages Trigger à 4000 de puissance, puis poser la Linlin coût 10 qui transforme tout le board en menaces à 8000 de puissance. Faiblesse documentée par la source : un adversaire qui « l'affame » en évitant de l'attaquer la prive de ses déclenchements de soin ; le board reste aussi fragile (4000 de puissance de base) tant que la finisheuse coût 10 n'est pas arrivée. La source cite Rocks D. Xebec et Monkey D. Luffy OP17 comme matchups difficiles pour Linlin, mais ne mentionne pas Mihawk. 3ᵉ du classement actuel par winrate pondéré (52,38%), 3,74% des parties.",
         howToCounter: [
-          "Logue tes parties contre ce leader dans le Journal.",
-          "Plan de jeu général Mihawk en attendant : contrôle du tempo, verrouillage des pièces clés.",
+          "La source documente une vraie faiblesse : éviter d'attaquer son board pour ne pas déclencher ses effets de soin (« l'affamer ») — cohérent avec le plan de jeu naturellement patient de Mihawk, à tester en priorité.",
+          "Le board reste à 4000 de puissance de base tant que la Linlin coût 10 n'est pas posée — presser avant l'arrivée de cette carte plutôt qu'après.",
+          "Logue tes parties dans le Journal : aucune source consultée ne donne de verdict Mihawk-vs-Linlin direct, ta propre donnée est donc précieuse ici.",
         ],
         currentMeta: "Rang 3/117 · 3,74% des parties · winrate pondéré 52,38% (cardkaizoku.com, 27/08/2026)",
       },
@@ -151,6 +165,16 @@ export const MATCHUP_GUIDES: LeaderMatchupGuide[] = [
           "Plan de jeu général Mihawk en attendant : contrôle du tempo, verrouillage des pièces clés.",
         ],
         currentMeta: "Rang 10/117 · 1,64% des parties · winrate pondéré 49,15% (cardkaizoku.com, 27/08/2026)",
+      },
+      {
+        opponent: "Miroir (Dracule Mihawk vs Dracule Mihawk)",
+        difficulty: "Serré",
+        why: "Aucune source externe consultée ne documente ce miroir spécifiquement — l'estimation ci-dessous est un raisonnement générique de miroir entre decks tempo-contrôle identiques (initiative, parité de ressources), pas un résultat observé ou une tier list. Étiqueté « opinion », pas fait constaté — à vérifier en priorité avec tes propres parties, vu que c'est le seul matchup de cette liste où l'adversaire a exactement les mêmes outils que toi.",
+        howToCounter: [
+          "Le bonus +1000 vs Slash ne s'applique évidemment pas dans un miroir — le matchup se joue sur l'exécution (qui verrouille la bonne pièce au bon moment), pas sur un avantage structurel.",
+          "Garder un œil sur qui active en premier l'effet leader (3 DON!! en reposant 1 carte, si un coût 5+ est en jeu) — dans un miroir, prendre cette initiative en premier peut suffire à gagner le tempo.",
+          "Logue spécifiquement ces parties dans le Journal — un miroir est justement le genre de matchup où l'expérience personnelle vaut plus que n'importe quelle source publique.",
+        ],
       },
       // --- Contenu existant (tier lists/stats publiques OP16) ---
       {
@@ -237,7 +261,7 @@ export const MATCHUP_GUIDES: LeaderMatchupGuide[] = [
       },
     ],
     sourceNote:
-      "Classement basé sur les tier lists publiques OP16 (onepiece.gg, Spell Mana), les statistiques de opdeckguide.com (37 312 parties, format OP16, consultées début août 2026), et le classement des leaders de cardkaizoku.com (format OP17, 27 août 2026, 1 945 366 parties — voir le tableau 'Classement méta actuelle' en haut de cette page pour le détail). Les matchups marqués 'À tester' n'ont pas de verdict clair dans ces sources — utilise le bouton 'Rafraîchir depuis mes parties' pour voir ta propre donnée dès que tu en as assez loguée.",
+      "Classement basé sur les tier lists publiques OP16 (onepiece.gg, Spell Mana), les statistiques de opdeckguide.com (37 312 parties, format OP16, consultées début août 2026), les guides de deck individuels par leader (onepiece.gg, opdeckguide.com, spellmana.com — consultés le 29/08/2026 pour les 7 leaders les plus joués du format actuel), et le classement des leaders de cardkaizoku.com (format OP17, 27 août 2026, 1 945 366 parties — voir le tableau 'Classement méta actuelle' en haut de cette page pour le détail). Les matchups marqués 'À tester' n'ont pas de verdict Mihawk-contre-ce-leader clair dans ces sources (même quand le plan de deck adverse, lui, est bien documenté) — utilise le bouton 'Rafraîchir depuis mes parties' pour voir ta propre donnée dès que tu en as assez loguée.",
   },
   // Fiche Shanks OP17 retirée — choix du joueur de ne finalement pas jouer
   // ce leader au tournoi.

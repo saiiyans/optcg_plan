@@ -17,13 +17,17 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Shopper — Coaching App",
-  description: "Ton coach personnel OPTCG — Mihawk",
+  // "Shopper" était un nom de template resté par erreur (relevé par l'audit
+  // design — incohérent avec le contenu réel de l'app, un coach OPTCG). Le
+  // nom ici doit rester cohérent avec public/manifest.json et le header
+  // (src/components/NavLinks + logo) — modifier les trois ensemble.
+  title: "Mihawk Coach — OPTCG",
+  description: "Ton coach personnel OPTCG — deck Dracule Mihawk (OP14-020)",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Shopper",
+    title: "Mihawk Coach",
   },
   icons: {
     apple: "/apple-touch-icon.png",
@@ -41,9 +45,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center justify-between gap-4">
               {/* Gauche : identité */}
               <div className="min-w-0 shrink-0 flex items-center gap-2.5">
-                <img src="/logo-header.png" alt="Shopper" className="h-9 w-auto shrink-0" />
+                <img src="/logo-header.png" alt="Mihawk Coach" className="h-9 w-auto shrink-0" />
                 <div className="min-w-0">
-                  <h1 className="text-lg sm:text-xl font-display font-semibold text-ivory leading-none">Shopper</h1>
+                  <h1 className="text-lg sm:text-xl font-display font-semibold text-ivory leading-none">Mihawk Coach</h1>
                   <div className="text-[11px] text-textMuted mt-0.5 hidden sm:block">Coaching App — Mihawk Deck Intelligence</div>
                 </div>
               </div>

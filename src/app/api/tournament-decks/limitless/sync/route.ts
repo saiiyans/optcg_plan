@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { scrapeLimitlessResults, LIMITLESS_ARCHETYPE_URL, LEADER_CARD_NUMBER } from "@/lib/limitlessScraper";
 import { classifyPlacement, buildDeckUniqueKey } from "@/lib/deckParser";
+import { checkSyncUrl } from "@/lib/importRouteHelpers";
 
 /**
  * POST /api/tournament-decks/limitless/sync
@@ -13,6 +14,8 @@ import { classifyPlacement, buildDeckUniqueKey } from "@/lib/deckParser";
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const url = body.url ?? LIMITLESS_ARCHETYPE_URL;
+  const urlError = checkSyncUrl(url);
+  if (urlError) return urlError;
 
   try {
     const rows = await scrapeLimitlessResults(url);

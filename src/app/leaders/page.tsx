@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { OpponentLeaderBadge } from "@/components/OpponentLeaderBadge";
 import { opColorHex } from "@/lib/opColors";
+import { ADMIN_HEADERS } from "@/lib/adminHeaders";
 
 // --- /leaders (section 11) — outil de normalisation des leaders adverses.
 // Affiche chaque fiche canonique avec ses variantes de texte brut connues,
@@ -70,7 +71,7 @@ export default function LeadersPage() {
 
   async function runBackfill() {
     setBackfillBusy(true);
-    const res = await fetch("/api/admin/backfill-opponent-leaders", { method: "POST" });
+    const res = await fetch("/api/admin/backfill-opponent-leaders", { method: "POST", headers: ADMIN_HEADERS });
     const data = await res.json();
     setBackfillResult({ total: data.total ?? 0, updated: data.updated ?? 0 });
     setBackfillBusy(false);

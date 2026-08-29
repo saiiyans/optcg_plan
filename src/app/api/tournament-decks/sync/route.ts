@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { scrapeTournamentDeckTable, isStrictMihawkRow } from "@/lib/scraper";
 import { classifyPlacement, buildDeckUniqueKey } from "@/lib/deckParser";
+import { checkSyncUrl } from "@/lib/importRouteHelpers";
 
 // Format actuel : OP17 "The World's Strongest Warriors" (mis à jour le
 // 28/08/2026) — voir la même note dans import/route.ts.
@@ -18,12 +19,19 @@ const LEADER = "OP14-020";
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const url = body.url ?? DEFAULT_URL;
+  // Empêche cette route de récupérer une URL arbitraire côté serveur
+  // (SSRF) — seuls les domaines déjà utilisés par l'app sont acceptés.
+  const urlError = checkSyncUrl(url);
+  if (urlError) return urlError;
 
   try {
     const allRows = await scrapeTournamentDeckTable(url);
     const mihawkRows = allRows.filter((r) => isStrictMihawkRow(r, LEADER));
 
-    const existingKeys = new Set((await db.tournamentDeck.findMany({ select: { uniqueKey: true } })).map((d) => d.uniqueKey));
+    // Annotation explicite nécessaire dans cet environnement de dev (client
+    // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+    const existingRows: { uniqueKey: string }[] = await db.tournamentDeck.findMany({ select: { uniqueKey: true } });
+    const existingKeys = new Set(existingRows.map((d) => d.uniqueKey));
 
     const newRows = mihawkRows.filter((row) => {
       const placement = classifyPlacement(row.placementRaw);

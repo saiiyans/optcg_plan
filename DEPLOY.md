@@ -84,6 +84,28 @@ dans ta base Neon. Tu ne le refais qu'à chaque fois que tu modifies
 6. Une fois terminé, Vercel te donne une URL du type
    `https://optcg-green-library-xxxx.vercel.app`.
 
+## Sécuriser les routes d'administration (ADMIN_SECRET)
+
+Les routes `/api/admin/*` (import de cartes leak, correctifs ponctuels,
+génération de contenu Coach...) ne sont plus ouvertes à tout le monde —
+elles exigent un secret partagé, comme la synchronisation Kaizoku
+(`CRON_SECRET`) le fait déjà. **Sans ce réglage, ces routes refusent tout
+le monde, y compris toi** — donc à faire avant d'utiliser les boutons
+correspondants dans l'app (ex. "Générer le contenu Coach" sur /cards,
+"Résoudre les leaders manquants" sur /leaders).
+
+1. Génère une valeur aléatoire (dans un terminal : `openssl rand -hex 32`,
+   ou n'importe quelle longue chaîne aléatoire).
+2. Sur Vercel → ton projet → **Settings → Environment Variables**, ajoute
+   DEUX variables avec la MÊME valeur :
+   - `ADMIN_SECRET` (lue côté serveur)
+   - `NEXT_PUBLIC_ADMIN_SECRET` (la même valeur, utilisée par les boutons
+     de l'app pour s'authentifier automatiquement — c'est normal qu'elle
+     soit publique, ce n'est qu'une barrière contre les robots/scanners,
+     pas un vrai mot de passe personnel)
+3. Redéploie (Vercel → Deployments → ⋯ sur le dernier déploiement →
+   Redeploy, ou repousse simplement un commit).
+
 ## Étape 5 — Ouvrir sur ton téléphone
 
 Ouvre cette URL Vercel dans le navigateur de ton téléphone (Safari,

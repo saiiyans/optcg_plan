@@ -26,7 +26,9 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
   const leaderPanels = await Promise.all(
     LEADERS.map(async (leader) => ({
       leader,
-      rating: card.ratings.find((r) => r.leaderContext === leader.leaderContext) ?? null,
+      // Annotation explicite nécessaire dans cet environnement de dev (client
+      // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+      rating: card.ratings.find((r: { leaderContext: string }) => r.leaderContext === leader.leaderContext) ?? null,
       stats: await computeLeaderTournamentStats(card.cardNumber, leader.key),
     }))
   );
@@ -43,7 +45,7 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
           <div>
             <div className="text-[11px] font-mono uppercase tracking-wider text-gold mb-1">Autres illustrations</div>
             <div className="grid grid-cols-3 gap-1.5">
-              {card.prints.map((p) => (
+              {card.prints.map((p: { id: string; imageUrl: string; printLabel: string }) => (
                 <div key={p.id} className="relative aspect-[5/7] overflow-hidden card-tile">
                   <CardImage src={p.imageUrl} alt={p.printLabel} fallbackLabel={p.printLabel} sizes="90px" />
                 </div>
@@ -197,10 +199,14 @@ export default async function CardDetail({ params }: { params: { cardNumber: str
 
         {(() => {
           const tags = deriveMihawkTags(card);
+          // badge-gray (neutre), pas badge-green : ces tags sont des faits
+          // descriptifs (SLASH, LOW COST, NO COUNTER...), pas un signal
+          // "positif" — badge-green est réservé au sens victoire/légal
+          // ailleurs dans l'app (voir la note sur .btn-flame dans globals.css).
           return tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((t) => (
-                <span key={t} className="badge badge-green">{t}</span>
+                <span key={t} className="badge badge-gray">{t}</span>
               ))}
             </div>
           ) : null;

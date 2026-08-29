@@ -1,7 +1,7 @@
 {
-  "name": "Shopper Coaching App",
-  "short_name": "Shopper",
-  "description": "Ton coach personnel OPTCG — Mihawk & Shanks",
+  "name": "Mihawk Coach — OPTCG",
+  "short_name": "Mihawk Coach",
+  "description": "Ton coach personnel OPTCG — deck Dracule Mihawk (OP14-020)",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#090B0F",

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 // en direct, elle ne doit jamais être servie depuis un cache.
 export const dynamic = "force-dynamic";
 import { listAllCardNumbers, testScrapeSample } from "@/lib/scraper";
+import { isAllowedSyncUrl } from "@/lib/adminAuth";
 
 const DEFAULT_SEARCH_URL =
   "https://onepiece.limitlesstcg.com/cards/?q=category%3Aleader%2Ccharacter%2Cevent%2Cstage%20color%3Agreen%20lang%3Aen%20display%3Agrid%20sort%3Aid";
@@ -18,6 +19,9 @@ const DEFAULT_SEARCH_URL =
 export async function GET(req: NextRequest) {
   const searchUrl = req.nextUrl.searchParams.get("url") ?? DEFAULT_SEARCH_URL;
   const mode = req.nextUrl.searchParams.get("mode") ?? "count";
+  if (!isAllowedSyncUrl(searchUrl)) {
+    return NextResponse.json({ ok: false, error: "URL non autorisée — domaine hors liste blanche." }, { status: 400 });
+  }
 
   try {
     if (mode === "test5") {

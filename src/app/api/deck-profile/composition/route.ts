@@ -23,13 +23,24 @@ export async function GET(req: NextRequest) {
     let list: { cardNumber: string; quantity: number }[] = [];
 
     if (type === "personal") {
-      const deck = await db.deck.findUnique({ where: { id }, include: { cards: { include: { card: true } } } });
+      // Annotation explicite nécessaire dans cet environnement de dev (client
+      // Prisma généré localement "vide" — voir la note dans deckComposition.ts).
+      const deck: {
+        name: string;
+        leaderCardNumber: string;
+        cards: { quantity: number; card: { cardNumber: string } }[];
+      } | null = await db.deck.findUnique({ where: { id }, include: { cards: { include: { card: true } } } });
       if (!deck) return NextResponse.json({ ok: false, error: "Deck introuvable." }, { status: 404 });
       name = deck.name;
       leaderCardNumber = deck.leaderCardNumber;
       list = deck.cards.map((c) => ({ cardNumber: c.card.cardNumber, quantity: c.quantity }));
     } else if (type === "winning") {
-      const deck = await db.tournamentDeck.findUnique({ where: { id }, include: { cards: true } });
+      const deck: {
+        deckName: string;
+        player: string;
+        leaderCardNumber: string;
+        cards: { cardNumber: string; quantity: number }[];
+      } | null = await db.tournamentDeck.findUnique({ where: { id }, include: { cards: true } });
       if (!deck) return NextResponse.json({ ok: false, error: "Deck introuvable." }, { status: 404 });
       name = `${deck.deckName} — ${deck.player}`;
       leaderCardNumber = deck.leaderCardNumber;

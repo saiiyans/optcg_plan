@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
 const LEADER_CONTEXT = "Mihawk OP14-020";
 
@@ -39,7 +40,10 @@ const SEED_RATINGS: { cardNumber: string; stars: number; justification: string }
  * Ne touche jamais aux notes déjà corrigées à la main (isManualOverride).
  * Ne touche à aucun autre champ de Card (nom, effet, couleur, image...).
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   const results: { cardNumber: string; status: string }[] = [];
 
   for (const seed of SEED_RATINGS) {

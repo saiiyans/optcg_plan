@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { bangkokDateString } from "@/lib/trainingPhase";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -48,12 +49,18 @@ async function computePreview() {
   };
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   const preview = await computePreview();
   return NextResponse.json({ ok: true, ...preview });
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   const preview = await computePreview();
 
   if (preview.alreadyInitialized) {

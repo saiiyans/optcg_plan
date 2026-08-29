@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolveOpponentLeaderId } from "@/lib/leaderNormalization";
+import { requireAdminSecret } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,10 @@ export const dynamic = "force-dynamic";
  * Résout opponentLeaderId pour toutes les parties déjà enregistrées avant
  * l'introduction de la normalisation — ne touche à aucun autre champ.
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const denied = requireAdminSecret(req);
+  if (denied) return denied;
+
   const matches = await db.match.findMany({ where: { opponentLeaderId: null } });
   let updated = 0;
   for (const m of matches) {
