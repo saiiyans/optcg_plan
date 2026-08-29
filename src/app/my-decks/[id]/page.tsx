@@ -5,10 +5,12 @@ import { useRouter, useParams } from "next/navigation";
 import { CopyDecklistButton } from "@/components/CopyDecklistButton";
 import { LEADERS } from "@/lib/leaders";
 import { CardImage } from "@/components/CardImage";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 export default function PersonalDeckDetail() {
   const params = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const id = params.id as string;
   const [deck, setDeck] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -23,12 +25,12 @@ export default function PersonalDeckDetail() {
   }, [id]);
 
   async function deleteDeck() {
-    if (!confirm(`Supprimer définitivement "${deck.name}" (${deck.leaderCardNumber}, ${totalCards} cartes) ? Cette action est irréversible.`)) return;
+    if (!(await confirm(`Supprimer définitivement "${deck.name}" (${deck.leaderCardNumber}, ${totalCards} cartes) ? Cette action est irréversible.`, { destructive: true, confirmLabel: "Supprimer" }))) return;
     await fetch(`/api/personal-decks/${id}`, { method: "DELETE" });
     router.push("/my-decks");
   }
 
-  if (loading) return <div className="text-steel/60 text-sm font-mono">Chargement...</div>;
+  if (loading) return <div className="card-tile p-5"><div className="skeleton h-40" /></div>;
   if (!deck) return <div className="text-steel/60 text-sm">Deck introuvable.</div>;
 
   const leader = LEADERS.find((l) => l.leaderCardNumber === deck.leaderCardNumber);
@@ -120,6 +122,7 @@ export default function PersonalDeckDetail() {
 }
 
 function DeckUpdateSection({ deckId, onUpdated }: { deckId: string; onUpdated: () => void }) {
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [raw, setRaw] = useState("");
   const [changeReason, setChangeReason] = useState("");
@@ -129,7 +132,7 @@ function DeckUpdateSection({ deckId, onUpdated }: { deckId: string; onUpdated: (
 
   async function submit() {
     if (!raw.trim()) return;
-    if (!confirm("La liste actuelle sera archivée dans l'historique (jamais perdue) puis remplacée par la nouvelle. Continuer ?")) return;
+    if (!(await confirm("La liste actuelle sera archivée dans l'historique (jamais perdue) puis remplacée par la nouvelle. Continuer ?"))) return;
     setBusy(true);
     setResult(null);
     const res = await fetch(`/api/personal-decks/${deckId}`, {

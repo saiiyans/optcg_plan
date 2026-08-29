@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MULLIGAN_SCENARIOS, shuffledScenarios, type MulliganScenario } from "@/lib/mulliganQuiz";
 import { CardThumb } from "@/components/CardThumb";
 
@@ -10,7 +10,20 @@ import { CardThumb } from "@/components/CardThumb";
 // mains d'exemple).
 
 export default function MulliganQuizPage() {
-  const [order, setOrder] = useState<MulliganScenario[]>(() => shuffledScenarios());
+  // IMPORTANT : ne JAMAIS appeler shuffledScenarios() (Math.random()) dans
+  // l'initialiseur de useState — ça tourne aussi côté serveur au premier
+  // rendu, avec un ordre aléatoire différent de celui du client, ce qui
+  // provoque une erreur d'hydratation React (mismatch serveur/client). React
+  // doit alors jeter et refaire tout l'arbre, et les boutons Garder/Mulligan
+  // pouvaient rester inertes au premier chargement — c'est le bug "ça marche
+  // pas" remonté par le joueur. Fix : état initial déterministe (ordre non
+  // mélangé, identique serveur/client), puis mélange dans un useEffect —
+  // qui ne s'exécute jamais côté serveur, donc plus aucun risque de
+  // mismatch.
+  const [order, setOrder] = useState<MulliganScenario[]>(MULLIGAN_SCENARIOS);
+  useEffect(() => {
+    setOrder(shuffledScenarios());
+  }, []);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState<"garder" | "mulligan" | null>(null);
   const [score, setScore] = useState({ correct: 0, total: 0 });

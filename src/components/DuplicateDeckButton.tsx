@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 export function DuplicateDeckButton({ deckId, asTest, label }: { deckId: string; asTest: boolean; label: string }) {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+  const confirm = useConfirm();
 
   async function duplicate() {
-    if (!confirm(`Créer une copie personnelle indépendante de ce deck ${asTest ? "(marquée version test) " : ""}? Le deck gagnant original ne sera jamais modifié.`)) return;
+    if (!(await confirm(`Créer une copie personnelle indépendante de ce deck ${asTest ? "(marquée version test) " : ""}? Le deck gagnant original ne sera jamais modifié.`))) return;
     setBusy(true);
     const res = await fetch(`/api/tournament-decks/${deckId}/duplicate`, {
       method: "POST",

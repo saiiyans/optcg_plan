@@ -3,8 +3,10 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { LEADERS } from "@/lib/leaders";
 import { CardThumb } from "@/components/CardThumb";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 export default function MyDecksPage() {
+  const confirm = useConfirm();
   const [savedDecks, setSavedDecks] = useState<any[]>([]);
   const [personalDecks, setPersonalDecks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function MyDecksPage() {
   async function deletePersonalDeck(id: string) {
     const d = personalDecks.find((x: any) => x.id === id);
     const name = d?.name ?? "ce deck";
-    if (!confirm(`Supprimer définitivement "${name}" ? Les parties déjà enregistrées dans le Journal ne seront pas supprimées, mais ce deck personnel disparaîtra. Cette action est irréversible.`)) return;
+    if (!(await confirm(`Supprimer définitivement "${name}" ? Les parties déjà enregistrées dans le Journal ne seront pas supprimées, mais ce deck personnel disparaîtra. Cette action est irréversible.`, { destructive: true, confirmLabel: "Supprimer" }))) return;
     await fetch(`/api/personal-decks/${id}`, { method: "DELETE" });
     load();
   }
@@ -50,7 +52,10 @@ export default function MyDecksPage() {
           Mes decks personnels
         </h3>
         {loading ? (
-          <div className="text-steel/60 text-sm font-mono">Chargement...</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="skeleton h-[84px]" />
+            <div className="skeleton h-[84px]" />
+          </div>
         ) : personalDecks.length === 0 ? (
           <div className="card-tile p-5 text-sm text-steel/70">Aucun deck personnel pour l'instant — ajoute-en un ci-dessus.</div>
         ) : (
@@ -69,7 +74,8 @@ export default function MyDecksPage() {
                         e.preventDefault();
                         deletePersonalDeck(d.id);
                       }}
-                      className="text-steel/60 hover:text-red-400 text-xs"
+                      aria-label={`Supprimer ${d.name}`}
+                      className="flex items-center justify-center w-11 h-11 -m-2 text-steel/60 hover:text-red-400 text-sm shrink-0"
                     >
                       ✕
                     </button>
@@ -91,7 +97,10 @@ export default function MyDecksPage() {
           Decks gagnants sauvegardés
         </h3>
         {loading ? (
-          <div className="text-steel/60 text-sm font-mono">Chargement...</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="skeleton h-[84px]" />
+            <div className="skeleton h-[84px]" />
+          </div>
         ) : savedDecks.length === 0 ? (
           <div className="card-tile p-5 text-sm text-steel/70">
             Aucun deck sauvegardé pour l'instant. Va sur{" "}

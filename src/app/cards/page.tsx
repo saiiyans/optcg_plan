@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
 import { OP_COLOR_HEX, hexToRgba } from "@/lib/opColors";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 // Page entièrement pilotée par des données live (filtres, recherche,
 // import en direct) — ne doit jamais être pré-générée statiquement au
@@ -44,6 +45,7 @@ const EMPTY_FILTERS = {
 };
 
 export default function CardsPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const [leaderKey, setLeaderKey] = useState<string>("mihawk");
   const leader = LEADERS.find((l) => l.key === leaderKey) ?? LEADERS[0];
@@ -181,7 +183,7 @@ export default function CardsPage() {
   const [coachErrors, setCoachErrors] = useState<{ cardNumber: string; error: string }[]>([]);
 
   async function runCoachGeneration() {
-    if (!confirm("Générer le contenu Coach (traduction FR + explications) pour toutes les couleurs, dans l'ordre Vert → Rouge → Violet → Jaune → Noir ? Ça appelle l'API Gemini (gratuite) et peut prendre longtemps vu le volume de cartes.")) return;
+    if (!(await confirm("Générer le contenu Coach (traduction FR + explications) pour toutes les couleurs, dans l'ordre Vert → Rouge → Violet → Jaune → Noir ? Ça appelle l'API Gemini (gratuite) et peut prendre longtemps vu le volume de cartes."))) return;
     setCoachBusy(true);
     setCoachDone(0);
     setCoachErrors([]);
@@ -261,7 +263,7 @@ export default function CardsPage() {
       return;
     }
     const colorLabel = importColors.length === ALL_IMPORT_COLORS.length ? "toutes les couleurs" : importColors.join(", ");
-    if (!confirm(`Importer les cartes ${colorLabel} (leaders compris) trouvées sur Limitless ? Avec plusieurs couleurs, cela peut prendre plusieurs minutes au total — tu peux garder l'onglet ouvert sans crainte de blocage.`)) return;
+    if (!(await confirm(`Importer les cartes ${colorLabel} (leaders compris) trouvées sur Limitless ? Avec plusieurs couleurs, cela peut prendre plusieurs minutes au total — tu peux garder l'onglet ouvert sans crainte de blocage.`))) return;
 
     setImportBusy(true);
     setImportErrors([]);

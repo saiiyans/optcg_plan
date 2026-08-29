@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { OPPONENT_LEADERS } from "@/lib/planningData";
 import { CardImage } from "@/components/CardImage";
 import { opColorHex } from "@/lib/opColors";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 // Petit cache mémoire pour ne pas refaire la requête si le même numéro de
 // carte apparaît plusieurs fois pendant la session — même logique que
@@ -62,6 +63,7 @@ const TIER_BAND_STYLE: Record<string, string> = {
 };
 
 export default function TierListPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const [entries, setEntries] = useState<any[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
@@ -172,7 +174,7 @@ export default function TierListPage() {
   }
 
   async function removeEntry(entry: any) {
-    if (!confirm(`Retirer "${entry.displayName}" de la tier list ?`)) return;
+    if (!(await confirm(`Retirer "${entry.displayName}" de la tier list ?`))) return;
     await fetch(`/api/tier-list?cardNumber=${encodeURIComponent(entry.cardNumber || entry.displayName)}`, { method: "DELETE" });
     load();
   }
@@ -191,7 +193,7 @@ export default function TierListPage() {
   }
 
   async function autoClassify() {
-    if (!confirm("Classer automatiquement selon les données onepiecetopdecks.com (comptage réel de decklists) ? Les leaders déjà déplacés à la main ne seront jamais touchés.")) return;
+    if (!(await confirm("Classer automatiquement selon les données onepiecetopdecks.com (comptage réel de decklists) ? Les leaders déjà déplacés à la main ne seront jamais touchés."))) return;
     setBusy(true);
     const res = await fetch("/api/tier-list/auto-classify", { method: "POST" });
     const data = await res.json();

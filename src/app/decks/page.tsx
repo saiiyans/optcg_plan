@@ -3,8 +3,10 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { LEADERS } from "@/lib/leaders";
 import { LeaderImage } from "@/components/LeaderImage";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 export default function WinningDecksPage() {
+  const confirm = useConfirm();
   const [leaderKey, setLeaderKey] = useState<string>("mihawk");
   const [decks, setDecks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +70,7 @@ export default function WinningDecksPage() {
   }
 
   async function runImport() {
-    if (!confirm("Importer toutes les decklists Mihawk (op14mihawk) trouvées sur la page OP17 (Asie, onepiecetopdecks.com) ?")) return;
+    if (!(await confirm("Importer toutes les decklists Mihawk (op14mihawk) trouvées sur la page OP17 (Asie, onepiecetopdecks.com) ?"))) return;
     setBusy(true);
     setStatus("Import en cours...");
     const res = await fetch("/api/tournament-decks/import", {
@@ -103,7 +105,7 @@ export default function WinningDecksPage() {
   }
 
   async function runImportIntl() {
-    if (!confirm("Importer tous les résultats Mihawk trouvés sur Limitless TCG (US/International) ? Cette source fait une 2e requête par decklist (parsing des cartes), donc c'est plus lent que l'import Asie.")) return;
+    if (!(await confirm("Importer tous les résultats Mihawk trouvés sur Limitless TCG (US/International) ? Cette source fait une 2e requête par decklist (parsing des cartes), donc c'est plus lent que l'import Asie."))) return;
     setBusyIntl(true);
     setStatusIntl("Import en cours (une requête par decklist, ça peut prendre un moment)...");
     const res = await fetch("/api/tournament-decks/limitless/import", {
@@ -138,7 +140,7 @@ export default function WinningDecksPage() {
   }
 
   async function runImportOptcgg() {
-    if (!confirm("Importer tous les résultats Mihawk trouvés sur OPTCG.gg ?")) return;
+    if (!(await confirm("Importer tous les résultats Mihawk trouvés sur OPTCG.gg ?"))) return;
     setBusyOptcgg(true);
     setStatusOptcgg("Import en cours...");
     const res = await fetch("/api/tournament-decks/optcgg/import", {
@@ -378,10 +380,17 @@ export default function WinningDecksPage() {
       </div>
 
       {loading ? (
-        <div className="text-steel/60 text-sm font-mono">Chargement...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="skeleton h-[92px]" />
+          <div className="skeleton h-[92px]" />
+          <div className="skeleton h-[92px]" />
+          <div className="skeleton h-[92px]" />
+        </div>
       ) : decks.length === 0 ? (
-        <div className="text-steel/60 text-sm font-mono">
-          Aucun deck importé. Lance le test puis l'import ci-dessus.
+        <div className="card-tile p-6 text-center space-y-2">
+          <div className="text-2xl">🔍</div>
+          <div className="text-sm text-steel/70">Aucun deck importé pour l&rsquo;instant.</div>
+          <div className="text-xs text-steel/50">Utilise les boutons &laquo;&nbsp;Importer&nbsp;&raquo; dans les sections Asie ou US et Europe ci-dessus pour remplir cette liste.</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -11,6 +11,7 @@ import { TrainingPriorityCard, MistakeTrendSection, MatchDefeatPanel, SkillScore
 import { EntrainementDuJour } from "@/components/EntrainementDuJour";
 import { notifyMatchLogged } from "@/lib/trainingCounterBus";
 import { KAIZOKU_HISTORY_URL, OPENING_HAND_OPTIONS, DECK_SPECIFIC_MISTAKES } from "@/lib/journalConstants";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 // --- /journal (section 5) — page unique, sans sous-onglets. Contient
 // l'entraînement du jour, la saisie rapide (<20s, section 6), l'historique
@@ -21,6 +22,7 @@ import { KAIZOKU_HISTORY_URL, OPENING_HAND_OPTIONS, DECK_SPECIFIC_MISTAKES } fro
 type PhaseFilter = "" | "official_training" | "test";
 
 export default function JournalPage() {
+  const confirm = useConfirm();
   const opponentLeaders = useOpponentLeaders();
   const [matches, setMatches] = useState<any[]>([]);
   const [filterDeck, setFilterDeck] = useState("");
@@ -169,7 +171,7 @@ export default function JournalPage() {
   async function deleteMatch(id: string) {
     const m = matches.find((x) => x.id === id);
     const label = m ? `du ${m.date} contre ${m.opponentLeader} (${m.result})` : "";
-    if (!confirm(`Supprimer cette partie ${label} ? Tu pourras l'annuler juste après.`)) return;
+    if (!(await confirm(`Supprimer cette partie ${label} ? Tu pourras l'annuler juste après.`, { destructive: true, confirmLabel: "Supprimer" }))) return;
     await fetch(`/api/matches/${id}`, { method: "DELETE" });
     setDeletedToast({ id, label });
     setTimeout(() => setDeletedToast((t) => (t?.id === id ? null : t)), 8000);
@@ -687,14 +689,14 @@ export default function JournalPage() {
                     </span>
                     {m.kaizokuId ? <span className="badge badge-gold">📥 Import</span> : <span className="badge">✎ Manuel</span>}
                   </div>
-                  <div className="flex items-center gap-3 mt-2 text-[11px] font-mono">
+                  <div className="flex items-center gap-1 mt-2 text-[11px] font-mono -mx-2">
                     {m.result === "Défaite" && (
-                      <button onClick={() => setExpandedMatchId((id) => (id === m.id ? null : m.id))} className="text-emerald-bright hover:underline">
+                      <button onClick={() => setExpandedMatchId((id) => (id === m.id ? null : m.id))} className="min-h-[40px] px-2 text-emerald-bright hover:underline">
                         {expandedMatchId === m.id ? "▲ Fermer" : "🧑‍🏫 Analyse"}
                       </button>
                     )}
-                    <button onClick={() => startEdit(m)} className="text-steel/70 hover:text-ivory">✎ Modifier</button>
-                    <button onClick={() => deleteMatch(m.id)} className="text-steel/60 hover:text-red-400">✕ Supprimer</button>
+                    <button onClick={() => startEdit(m)} className="min-h-[40px] px-2 text-steel/70 hover:text-ivory">✎ Modifier</button>
+                    <button onClick={() => deleteMatch(m.id)} className="min-h-[40px] px-2 text-steel/60 hover:text-red-400">✕ Supprimer</button>
                   </div>
                   {editingMatchId === m.id && editForm && <EditMatchForm form={editForm} setForm={setEditForm} onSave={() => saveEdit(m.id)} onCancel={() => setEditingMatchId(null)} />}
                   {expandedMatchId === m.id && (
@@ -742,13 +744,21 @@ export default function JournalPage() {
                         </td>
                         <td>
                           {m.result === "Défaite" && (
-                            <button onClick={() => setExpandedMatchId((id) => (id === m.id ? null : m.id))} className="text-[10px] font-mono text-emerald-bright hover:underline whitespace-nowrap">
+                            <button onClick={() => setExpandedMatchId((id) => (id === m.id ? null : m.id))} className="min-h-[40px] px-2 -mx-2 text-[10px] font-mono text-emerald-bright hover:underline whitespace-nowrap">
                               {expandedMatchId === m.id ? "▲ Fermer" : "🧑‍🏫 Analyse"}
                             </button>
                           )}
                         </td>
-                        <td><button onClick={() => startEdit(m)} className="text-[10px] font-mono text-steel/70 hover:text-ivory whitespace-nowrap">✎ Modifier</button></td>
-                        <td><button onClick={() => deleteMatch(m.id)} className="text-steel/60 hover:text-red-400">✕</button></td>
+                        <td><button onClick={() => startEdit(m)} className="min-h-[40px] px-2 -mx-2 text-[10px] font-mono text-steel/70 hover:text-ivory whitespace-nowrap">✎ Modifier</button></td>
+                        <td>
+                          <button
+                            onClick={() => deleteMatch(m.id)}
+                            aria-label={`Supprimer la partie du ${m.date} contre ${m.opponentLeader}`}
+                            className="flex items-center justify-center w-10 h-10 -m-2 text-steel/60 hover:text-red-400"
+                          >
+                            ✕
+                          </button>
+                        </td>
                       </tr>
                       {editingMatchId === m.id && editForm && (
                         <tr className="border-b border-line/50">

@@ -4,6 +4,7 @@ import { Manrope } from "next/font/google";
 import { NavLinks } from "@/components/NavLinks";
 import { LeaderImage } from "@/components/LeaderImage";
 import { HeaderTrainingCounter } from "@/components/HeaderTrainingCounter";
+import { ConfirmDialogProvider } from "@/components/ConfirmDialogProvider";
 
 // Police unique (refonte inspirée de Nakama Companion) — remplace
 // Inter + Space Grotesk. Toutes les graisses utilisées dans l'app
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className={manrope.variable}>
       <body className="bg-ink text-steel min-h-screen font-sans">
+        <ConfirmDialogProvider>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-24 md:pb-6">
           <header className="sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 mb-6 bg-ink/85 backdrop-blur-md border-b border-line">
             <div className="flex items-center justify-between gap-4">
@@ -78,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <NavLinks variant="bottom" />
           </div>
         </nav>
+        </ConfirmDialogProvider>
       </body>
     </html>
   );
