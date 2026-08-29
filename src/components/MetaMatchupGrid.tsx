@@ -26,6 +26,25 @@ interface MetaMatchupData {
   totalGamesLabel: string | null;
 }
 
+// Lit la réponse comme texte d'abord, puis tente le JSON.parse — plutôt que
+// res.json() directement, qui plante avec un message technique illisible
+// ("Unexpected token '<', ... is not valid JSON") si le serveur renvoie une
+// page d'erreur HTML au lieu de JSON (timeout de fonction Vercel, 404, etc.
+// — voir la note dans metaMatchupScraper.ts). Ici on récupère une erreur
+// lisible à la place.
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      res.ok
+        ? "Réponse du serveur illisible — réessaie dans quelques instants."
+        : `Le serveur a répondu une erreur (${res.status}) au lieu de données — réessaie dans quelques instants.`
+    );
+  }
+}
+
 function cellClass(pct: number | null) {
   if (pct == null) return "bg-panel2 text-steel/30";
   if (pct >= 55) return "bg-emerald-950/50 text-emerald-300 border border-emerald-800/40";
@@ -76,8 +95,8 @@ export function MetaMatchupGrid() {
     setLoading(true);
     try {
       const res = await fetch("/api/meta-matchups");
-      const json = await res.json();
-      if (json.ok && json.hasData) {
+      const json = await safeJson(res);
+      if (json?.ok && json.hasData) {
         setData(json.data);
         setFetchedAt(json.fetchedAt);
         setStale(json.stale);
@@ -124,13 +143,13 @@ export function MetaMatchupGrid() {
     setError(null);
     try {
       const res = await fetch("/api/meta-matchups/refresh", { method: "POST" });
-      const json = await res.json();
-      if (json.ok) {
+      const json = await safeJson(res);
+      if (json?.ok) {
         setData(json.data);
         setFetchedAt(json.fetchedAt);
         setStale(false);
       } else {
-        setError(json.error ?? "Échec de la récupération — réessaie plus tard.");
+        setError(json?.error ?? `Échec de la récupération (${res.status}) — réessaie plus tard.`);
       }
     } catch (e: any) {
       setError(e?.message ?? "Échec de la récupération — réessaie plus tard.");
