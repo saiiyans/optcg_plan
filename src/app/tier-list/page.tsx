@@ -73,6 +73,33 @@ export default function TierListPage() {
   const [addName, setAddName] = useState("");
   const dragKey = useRef<string | null>(null);
 
+  // Tier list "simulateur" (Card D. Kaizoku) — lecture seule, complètement
+  // indépendante de la tier list éditable ci-dessus (pas de glisser-déposer,
+  // pas de sauvegarde en base côté nous, voir /api/tier-list/simulator).
+  const [simData, setSimData] = useState<any>(null);
+  const [simState, setSimState] = useState<"loading" | "ready" | "error">("loading");
+  const [simBusy, setSimBusy] = useState(false);
+  const [simError, setSimError] = useState<string | null>(null);
+
+  const loadSimulator = () => {
+    setSimBusy(true);
+    setSimError(null);
+    fetch("/api/tier-list/simulator")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.ok) throw new Error(d.error || "Échec de la récupération.");
+        setSimData(d);
+        setSimState("ready");
+      })
+      .catch((e) => {
+        setSimError(e?.message ?? "Échec de la récupération.");
+        setSimState((prev) => (prev === "ready" ? "ready" : "error"));
+      })
+      .finally(() => setSimBusy(false));
+  };
+
+  useEffect(loadSimulator, []);
+
   const load = () => {
     setState("loading");
     fetch("/api/tier-list")
@@ -193,7 +220,7 @@ export default function TierListPage() {
   }
 
   async function autoClassify() {
-    if (!(await confirm("Classer automatiquement selon les données onepiecetopdecks.com (comptage réel de decklists) ? Les leaders déjà déplacés à la main ne seront jamais touchés."))) return;
+    if (!(await confirm("Classer automatiquement selon les decklists OP17 réellement soumises sur onepiecetopdecks.com (relecture en direct de la page) ? Les leaders déjà déplacés à la main ne seront jamais touchés."))) return;
     setBusy(true);
     const res = await fetch("/api/tier-list/auto-classify", { method: "POST" });
     const data = await res.json();
@@ -205,6 +232,23 @@ export default function TierListPage() {
   const byTier: Record<string, any[]> = { S: [], A: [], B: [], C: [], D: [] };
   for (const e of entries) (byTier[e.tier] ?? byTier.D).push(e);
   for (const t of TIERS) byTier[t].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  // Date de dernière actualisation persistée : le plus récent `updatedAt`
+  // parmi les entrées "auto" — reste affiché après un rechargement de page,
+  // pas seulement juste après un clic sur "Actualiser" (autoResult, lui,
+  // redevient null au rechargement).
+  const lastAutoUpdate = entries
+    .filter((e) => e.tierSource === "auto" && e.updatedAt)
+    .reduce((max: string, e) => (e.updatedAt > max ? e.updatedAt : max), "");
+  const autoDisplayDate = autoResult?.capturedAt || lastAutoUpdate || null;
+
+  const SIM_TIER_LABEL: Record<string, string> = {
+    S: "Excellent",
+    A: "Très bon",
+    B: "Correct",
+    C: "En dessous",
+    D: "Faible",
+  };
 
   return (
     <div className="space-y-6">
@@ -221,17 +265,30 @@ export default function TierListPage() {
 
       <div className="card-tile p-5">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
-          <h2 className="text-sm font-semibold text-ivory uppercase tracking-wide">Tier List de la méta</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-ivory uppercase tracking-wide">Tier List de la méta — OP17</h2>
+            <div className="text-[10px] font-mono text-steel/50 mt-0.5">
+              {autoDisplayDate
+                ? `Actualisé le ${new Date(autoDisplayDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} à ${new Date(autoDisplayDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+                : "Jamais actualisé"}
+            </div>
+          </div>
           <button onClick={autoClassify} disabled={busy} className="btn-flame">
             {busy ? "Classement..." : "🔄 Classer automatiquement (onepiecetopdecks.com)"}
           </button>
         </div>
         <p className="text-xs text-steel/60">
-          Basé sur le nombre réel de decklists soumises par leader sur onepiecetopdecks.com (format japonais OP16) — le site n'a pas de tier list officielle, ce classement vient du comptage brut des decklists. Certains leaders récents n'ont pas encore de numéro de carte confirmé dans l'app : ils apparaissent en texte seul, marqués "à vérifier", plutôt qu'avec une image devinée.
+          Tier list de la méta <strong className="text-steel/80">OP17 « The World's Strongest Warriors »</strong>, calculée à chaque clic sur « Actualiser » à partir du nombre réel de decklists soumises par leader sur{" "}
+          <a href="https://onepiecetopdecks.com/deck-list/english-op17-deck-list-the-worlds-strongest-warriors/" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/80">
+            onepiecetopdecks.com
+          </a>{" "}
+          (page de decklists, comptage brut — le site n'a pas de tier list officielle). Ce format n'étant pas encore sorti en Occident, la grande majorité des decklists soumises viennent des premiers tournois/événements en ligne — pas exclusivement du Japon malgré ce qu'on pourrait attendre, le site agrège plusieurs régions (dont l'Europe). Certains leaders récents n'ont pas encore de numéro de carte confirmé dans l'app : ils apparaissent en texte seul, marqués "à vérifier", plutôt qu'avec une image devinée.
         </p>
         {autoResult && (
           <div className="text-xs font-mono text-emerald-bright mt-2">
-            {autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà déplacé(s) à la main donc ignoré(s), {autoResult.removed ?? 0} entrée(s) obsolète(s) nettoyée(s).
+            {autoResult.ok === false
+              ? <span className="text-danger">{autoResult.error}</span>
+              : <>{autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà déplacé(s) à la main donc ignoré(s), {autoResult.removed ?? 0} entrée(s) obsolète(s) nettoyée(s) — {autoResult.totalDecksScanned} decklists lues, {autoResult.distinctLeaders} leaders distincts.</>}
           </div>
         )}
       </div>
@@ -309,6 +366,110 @@ export default function TierListPage() {
 
       <p className="text-[10px] text-steel/40">
         Glisse une carte d'une bande à l'autre pour la reclasser à la main. Double-clique une carte pour la retirer complètement de la tier list.
+      </p>
+
+      {/* ------------------------------------------------------------------
+          Tier List "du simulateur" (Card D. Kaizoku) — complètement
+          indépendante de la tier list éditable ci-dessus : pas de
+          glisser-déposer, pas de sauvegarde côté nous. Classement basé sur
+          un TAUX DE VICTOIRE réel (matchs enregistrés par les joueurs),
+          alors que la tier list du dessus est basée sur un NOMBRE de
+          decklists soumises — deux mesures différentes, volontairement
+          présentées séparément plutôt que fusionnées.
+      ------------------------------------------------------------------ */}
+      <div className="pt-2">
+        <span className="eyebrow-flame">✦ Deuxième source</span>
+        <h2 className="mt-1 text-xl sm:text-2xl font-extrabold tracking-tight text-ivory leading-[1.05]">
+          Tier List <span className="text-flame-gradient italic">du simulateur.</span>
+        </h2>
+        <p className="text-sm text-steel/70 mt-1.5 max-w-xl">
+          Classement basé sur le taux de victoire réel (pas un nombre de decklists) — lecture seule, non éditable.
+        </p>
+      </div>
+
+      <div className="card-tile p-5">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
+          <div>
+            <h3 className="text-sm font-semibold text-ivory uppercase tracking-wide">Tier List du simulateur — Card D. Kaizoku</h3>
+            <div className="text-[10px] font-mono text-steel/50 mt-0.5">
+              {simData?.statsFileDate
+                ? `Données du ${new Date(simData.statsFileDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`
+                : simState === "loading"
+                ? "Chargement..."
+                : "Pas encore de données"}
+            </div>
+          </div>
+          <button onClick={loadSimulator} disabled={simBusy} className="btn">
+            {simBusy ? "Actualisation..." : "🔄 Actualiser"}
+          </button>
+        </div>
+        <p className="text-xs text-steel/60">
+          Basé sur le taux de victoire pondéré ("Wtd WR") de vrais matchs enregistrés par les joueurs sur{" "}
+          <a href="https://www.cardkaizoku.com/ranking" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/80">
+            cardkaizoku.com/ranking
+          </a>{" "}
+          — une mesure de performance réelle, différente du comptage de decklists de la tier list ci-dessus. Seuls les leaders avec au moins 300 matchs enregistrés sont classés, pour éviter qu'un tout petit échantillon fausse le résultat.
+        </p>
+        {simError && (
+          <div className="text-xs text-danger bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2 mt-2">
+            {simError} {simData && "— les données ci-dessous restent celles de la dernière récupération réussie."}
+          </div>
+        )}
+      </div>
+
+      {simState === "loading" && !simData && <div className="card-tile p-5"><div className="skeleton h-64" /></div>}
+      {simState === "error" && !simData && (
+        <div className="card-tile p-5 text-xs text-danger">{simError ?? "Impossible de charger la tier list du simulateur."}</div>
+      )}
+
+      {simData?.entries && simData.entries.length > 0 && (
+        <div className="card-tile p-0 overflow-hidden">
+          {TIERS.map((tier) => {
+            const rows = (simData.entries as any[]).filter((e) => e.tier === tier);
+            return (
+              <div key={tier} className="flex border-b border-line last:border-b-0">
+                <div className={`w-16 sm:w-20 shrink-0 flex items-center justify-center font-display font-bold text-2xl sm:text-3xl text-black ${TIER_BAND_STYLE[tier]}`}>
+                  {tier}
+                </div>
+                <div className="flex-1 flex flex-wrap gap-1.5 p-2 bg-panel2 min-h-[90px]">
+                  {rows.length === 0 && (
+                    <div className="text-[10px] text-steel/40 flex items-center px-2">Aucun leader dans ce rang</div>
+                  )}
+                  {rows.map((e) => (
+                    <div
+                      key={e.cardNumber ?? e.displayName}
+                      onClick={() => {
+                        if (e.cardNumber) router.push(`/cards/${e.cardNumber}`);
+                      }}
+                      title={`${e.displayName} — ${e.weightedWinRatePct}% de victoires pondéré sur ${e.matches} matchs (${SIM_TIER_LABEL[tier]})`}
+                      className="relative rounded overflow-hidden border border-line hover:border-emerald transition-colors bg-ink cursor-pointer"
+                      style={{ width: 72, height: 101 }}
+                    >
+                      {e.cardNumber ? (
+                        <TierCardImage cardNumber={e.cardNumber} label={e.displayName} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-center px-1">
+                          <span className="text-[8px] font-mono text-steel/60 leading-tight">{e.displayName}</span>
+                        </div>
+                      )}
+                      <span
+                        className="absolute bottom-0 left-0 right-0 h-[3px]"
+                        style={{ background: opColorHex(e.color) }}
+                      />
+                      <span className="absolute top-0 left-0 right-0 text-center text-[7px] font-mono bg-ink/80 text-emerald-bright py-[1px]">
+                        {e.weightedWinRatePct}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="text-[10px] text-steel/40">
+        Tier list en lecture seule — le pourcentage affiché est le taux de victoire pondéré sur le nombre de matchs indiqué au survol.
       </p>
     </div>
   );

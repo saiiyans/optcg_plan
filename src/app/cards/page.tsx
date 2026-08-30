@@ -175,6 +175,82 @@ export default function CardsPage() {
   const [importColors, setImportColors] = useState<string[]>(["green"]);
   const [colorProgress, setColorProgress] = useState<{ color: string; index: number; total: number } | null>(null);
 
+  // --- Import d'un set complet, toutes couleurs (voir /api/import/preview-set)
+  // — beaucoup plus rapide qu'un import par couleur juste après la sortie
+  // d'un nouveau set (ex. OP17) : évite de rebalayer tous les anciens sets.
+  const [setCodeInput, setSetCodeInput] = useState("OP17");
+  const [bulkSetBusy, setBulkSetBusy] = useState(false);
+  const [bulkSetStatus, setBulkSetStatus] = useState("");
+  const [bulkSetProgress, setBulkSetProgress] = useState<{ done: number; total: number } | null>(null);
+
+  async function runSetImport() {
+    const setCode = setCodeInput.trim().toUpperCase();
+    if (!setCode) {
+      alert("Indique un code de set (ex. OP17).");
+      return;
+    }
+    if (!(await confirm(`Importer TOUT le set ${setCode} (toutes couleurs, leaders compris) depuis Limitless ?`))) return;
+
+    setBulkSetBusy(true);
+    setBulkSetStatus(`[${setCode}] Récupération de la liste complète des cartes...`);
+    setImportErrors([]);
+
+    try {
+      const listRes = await fetch(`/api/import/preview-set?set=${encodeURIComponent(setCode)}`);
+      const listData = await listRes.json();
+      if (!listData.ok) {
+        setBulkSetStatus(`Erreur : ${listData.error}`);
+        setBulkSetBusy(false);
+        return;
+      }
+      const allNumbers: string[] = listData.allNumbers ?? [];
+      const BATCH_SIZE = 15;
+      const batches: string[][] = [];
+      for (let i = 0; i < allNumbers.length; i += BATCH_SIZE) batches.push(allNumbers.slice(i, i + BATCH_SIZE));
+
+      let logId: string | null = null;
+      let totalImported = 0, totalUpdated = 0, totalSkipped = 0;
+      const allErrors: { cardNumber: string; error: string }[] = [];
+      setBulkSetProgress({ done: 0, total: allNumbers.length });
+
+      for (let i = 0; i < batches.length; i++) {
+        const isLast = i === batches.length - 1;
+        const res: Response = await fetch("/api/import/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            numbers: batches[i],
+            sourceUrl: `https://onepiece.limitlesstcg.com/cards/?q=set:${setCode}`,
+            logId,
+            finish: isLast,
+          }),
+        });
+        const data: any = await res.json();
+        if (!data.ok) {
+          setBulkSetStatus(`[${setCode}] Erreur sur un lot : ${data.error} — lots précédents conservés.`);
+          break;
+        }
+        logId = data.logId;
+        totalImported += data.imported;
+        totalUpdated += data.updated;
+        totalSkipped += data.skipped;
+        if (data.errors?.length) allErrors.push(...data.errors);
+        setBulkSetProgress({ done: Math.min((i + 1) * BATCH_SIZE, allNumbers.length), total: allNumbers.length });
+        setBulkSetStatus(`[${setCode}] Import en cours... ${Math.min((i + 1) * BATCH_SIZE, allNumbers.length)} / ${allNumbers.length} cartes traitées.`);
+      }
+
+      setBulkSetStatus(`[${setCode}] Terminé : ${totalImported} ajoutée(s), ${totalUpdated} mise(s) à jour, ${totalSkipped} erreur(s) sur ${allNumbers.length} cartes trouvées.`);
+      setImportErrors(allErrors);
+      loadCards();
+      loadStats();
+    } catch (e: any) {
+      setBulkSetStatus(`Erreur : ${e?.message ?? String(e)}`);
+    } finally {
+      setBulkSetProgress(null);
+      setBulkSetBusy(false);
+    }
+  }
+
   // --- Génération de contenu Coach (traduction + explications) ---
   const COACH_COLOR_ORDER = ["Green", "Red", "Purple", "Yellow", "Black"];
   const [coachBusy, setCoachBusy] = useState(false);
@@ -537,6 +613,40 @@ export default function CardsPage() {
                 )}
               </div>
             )}
+
+            {/* Import d'un set complet, toutes couleurs — le chemin rapide
+                juste après la sortie d'un nouveau set (OP17...), plutôt que
+                d'attendre un import complet des 6 couleurs qui rebalaie
+                aussi tous les anciens sets. */}
+            <div className="mt-4 pt-4 border-t border-line">
+              <div className="text-[10px] uppercase tracking-wider text-textMuted mb-2">
+                Import rapide d'un set complet (toutes couleurs, ex. un set qui vient de sortir)
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  className="input w-32 text-xs py-1.5 px-2.5"
+                  placeholder="ex. OP17"
+                  value={setCodeInput}
+                  onChange={(e) => setSetCodeInput(e.target.value)}
+                  disabled={bulkSetBusy}
+                />
+                <button onClick={runSetImport} disabled={bulkSetBusy} className="btn btn-primary">
+                  {bulkSetBusy ? "Import en cours..." : `Importer tout le set ${setCodeInput.trim().toUpperCase() || "…"}`}
+                </button>
+              </div>
+              {bulkSetProgress && (
+                <div className="mt-2">
+                  <div className="w-full h-2 bg-panel2 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-dim transition-all"
+                      style={{ width: `${Math.round((bulkSetProgress.done / bulkSetProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] text-textMuted mt-1">{bulkSetProgress.done} / {bulkSetProgress.total} cartes</div>
+                </div>
+              )}
+              {bulkSetStatus && <div className="text-xs text-steel mt-2">{bulkSetStatus}</div>}
+            </div>
           </div>
         )}
       </div>

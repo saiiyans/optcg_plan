@@ -124,6 +124,55 @@ export async function listAllCardNumbers(
 }
 
 /**
+ * Variante de listAllCardNumbers() scopée sur UN SEUL SET, TOUTES COULEURS
+ * confondues en une seule recherche (`set:XXX lang:en`, sans `color:`) —
+ * plutôt que de balayer tous les sets pour une seule couleur. Beaucoup plus
+ * rapide pour importer un set fraîchement sorti (~169 cartes pour OP17 par
+ * exemple, contre ~2400+ pour un balayage complet des 6 couleurs), utile
+ * juste après la sortie d'un nouveau set plutôt que d'attendre le prochain
+ * import complet par couleur.
+ *
+ * Contrairement à listAllCardNumbers(), cette recherche dépasse la taille
+ * d'une page par défaut du site (constaté : ~42 cartes/page pour un set
+ * complet toutes couleurs) — la pagination (`&page=N`) est donc gérée ici
+ * explicitement, en s'arrêtant dès qu'une page ne ramène plus aucun numéro
+ * inédit (jamais un nombre de pages codé en dur, pour rester correct même
+ * si la taille du set ou de la page change).
+ */
+export async function listCardNumbersForSet(
+  setCode: string,
+  onProgress?: (page: number) => void
+): Promise<{ cardNumbers: string[]; totalFoundOnSite: number }> {
+  const cardNumbers = new Set<string>();
+  let totalFoundOnSite = 0;
+  const MAX_PAGES = 20; // garde-fou — aucun set réel n'approche cette taille
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const url = `${BASE}/cards/?q=${encodeURIComponent(`set:${setCode} lang:en display:grid sort:id`)}&page=${page}`;
+    const html = await politeFetch(url);
+    const $ = cheerio.load(html);
+
+    if (page === 1) {
+      const bodyText = $("body").text();
+      const m = bodyText.match(/([\d,]+)\s+cards?\s+found/i);
+      if (m) totalFoundOnSite = parseInt(m[1].replace(/,/g, ""), 10);
+    }
+
+    const before = cardNumbers.size;
+    $("a[href*='/cards/']").each((_, el) => {
+      const href = $(el).attr("href") || "";
+      const m = href.match(/\/cards\/(?:en\/)?([A-Z0-9]+-\d+)/i);
+      if (m) cardNumbers.add(m[1].toUpperCase());
+    });
+    onProgress?.(page);
+
+    if (cardNumbers.size === before) break; // page sans rien de nouveau -> fin de pagination
+  }
+
+  return { cardNumbers: Array.from(cardNumbers), totalFoundOnSite: totalFoundOnSite || cardNumbers.size };
+}
+
+/**
  * Étape 2 : récupère la fiche détaillée d'une carte et en extrait tous les
  * champs demandés. Ne fabrique jamais de valeur : un champ absent du HTML
  * reste `null`.
