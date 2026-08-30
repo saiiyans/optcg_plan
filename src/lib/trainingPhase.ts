@@ -18,8 +18,8 @@
 // pour toute l'app) — réimporté puis réexporté ici pour ne rien casser des
 // imports existants (`import { DAILY_GOAL } from "./trainingPhase"`), y
 // compris dans scripts/test-training-phase.ts.
-import { DAILY_GOAL, WEEKLY_GOAL } from "./config";
-export { DAILY_GOAL, WEEKLY_GOAL };
+import { DAILY_GOAL, WEEKLY_GOAL, TOTAL_GAMES_GOAL } from "./config";
+export { DAILY_GOAL, WEEKLY_GOAL, TOTAL_GAMES_GOAL };
 
 const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -117,6 +117,28 @@ export interface DailyProgressResult {
   week: WeekProgress;
 
   daysUntilTournament: number | null;
+
+  /** Objectif global "200 parties avant le tournoi" (compteur visible sur
+   * toutes les pages — voir HeaderTrainingCounter.tsx). null seulement si
+   * aucune date de tournoi n'est disponible (ne devrait jamais arriver en
+   * pratique, getActiveConfig() fournit toujours un repli). */
+  tournamentGoal: TournamentGoalProgress | null;
+}
+
+export interface TournamentGoalProgress {
+  goal: number; // TOTAL_GAMES_GOAL
+  played: number; // = totalOfficialGames, même source que le reste du widget
+  remaining: number;
+  goalMet: boolean;
+  /** Veille du tournoi — dernier jour utile pour compter une partie
+   * d'entraînement officiel, jamais un second chiffre codé en dur : toujours
+   * dérivée de tournamentDate (voir la note dans config.ts). */
+  deadline: string;
+  daysLeft: number; // jusqu'à `deadline` inclus, jamais négatif
+  /** Rythme quotidien nécessaire sur les jours restants pour atteindre
+   * l'objectif — null si l'objectif est déjà atteint ou s'il ne reste plus
+   * de jours (évite une division par zéro plutôt que d'afficher Infinity). */
+  dailyPaceNeeded: number | null;
 }
 
 export function computeDailyProgress(input: DailyProgressInput): DailyProgressResult {
@@ -193,6 +215,22 @@ export function computeDailyProgress(input: DailyProgressInput): DailyProgressRe
     ? Math.max(0, Math.ceil((toUtcMidnight(input.tournamentDate.slice(0, 10)).getTime() - now.getTime()) / 86400000))
     : null;
 
+  let tournamentGoal: TournamentGoalProgress | null = null;
+  if (input.tournamentDate) {
+    const deadline = previousDateString(input.tournamentDate.slice(0, 10)); // veille du tournoi
+    const daysLeft = Math.max(0, daysBetweenDateStrings(today, deadline));
+    const remaining = Math.max(0, TOTAL_GAMES_GOAL - totalOfficialGames);
+    tournamentGoal = {
+      goal: TOTAL_GAMES_GOAL,
+      played: totalOfficialGames,
+      remaining,
+      goalMet: totalOfficialGames >= TOTAL_GAMES_GOAL,
+      deadline,
+      daysLeft,
+      dailyPaceNeeded: remaining > 0 && daysLeft > 0 ? Math.round((remaining / daysLeft) * 10) / 10 : null,
+    };
+  }
+
   return {
     today,
     dailyGoal: DAILY_GOAL,
@@ -226,5 +264,6 @@ export function computeDailyProgress(input: DailyProgressInput): DailyProgressRe
     },
 
     daysUntilTournament,
+    tournamentGoal,
   };
 }

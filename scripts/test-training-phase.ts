@@ -4,6 +4,7 @@ import {
   dailyColor,
   mondayOfWeek,
   DAILY_GOAL,
+  TOTAL_GAMES_GOAL,
 } from "../src/lib/trainingPhase";
 
 let failures = 0;
@@ -110,6 +111,36 @@ assert(dailyColor(4, true) === "green", "4 parties, jour terminé -> vert");
   const result = computeDailyProgress({ matchDates, officialTrainingStartDate: "2026-08-20", now });
   assert(result.gamesToday === 4 && result.goalMetToday, "22/08 atteint son propre objectif malgré le 21/08 manqué");
   assert(result.currentStreak === 1, "série en cours = 1 (seul le 22 compte, le 21 a cassé la série précédente)");
+}
+
+// --- Objectif "200 parties avant le tournoi" (demande du 30/08/2026) ---
+assert(TOTAL_GAMES_GOAL === 200, "objectif total = 200 parties");
+{
+  // Tournoi le 20/09/2026 -> échéance = veille = 19/09/2026.
+  const now = new Date("2026-08-30T05:00:00Z"); // 30/08 midi Bangkok
+  const matchDates = Array(50).fill("2026-08-20"); // 50 parties déjà jouées
+  const result = computeDailyProgress({ matchDates, tournamentDate: "2026-09-20T00:00:00", now });
+  const goal = result.tournamentGoal;
+  if (!goal) {
+    failures++;
+    console.error("FAIL: tournamentGoal ne doit jamais être null quand tournamentDate est fourni");
+  } else {
+    assert(goal.deadline === "2026-09-19", "échéance = veille du tournoi (19/09), jamais un second chiffre codé en dur");
+    assert(goal.played === 50, "50 parties déjà jouées");
+    assert(goal.remaining === 150, "il reste 150 parties (200 - 50)");
+    assert(!goal.goalMet, "objectif pas encore atteint à 50/200");
+    assert(goal.daysLeft === 20, "20 jours entre le 30/08 et le 19/09 inclus");
+    assert(goal.dailyPaceNeeded === 7.5, "150 parties / 20 jours = 7,5 parties/jour");
+  }
+
+  // Objectif déjà atteint -> pas de division, pas de rythme à afficher.
+  const metResult = computeDailyProgress({
+    matchDates: Array(200).fill("2026-08-20"),
+    tournamentDate: "2026-09-20T00:00:00",
+    now,
+  });
+  const metGoal = metResult.tournamentGoal;
+  assert(!!metGoal && metGoal.goalMet && metGoal.remaining === 0 && metGoal.dailyPaceNeeded === null, "objectif atteint à 200/200 -> goalMet, remaining=0, pas de rythme");
 }
 
 if (failures > 0) {

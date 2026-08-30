@@ -23,6 +23,15 @@ export const DAILY_GOAL = 4;
  * planning différent, retiré des compteurs officiels lors de cette refonte). */
 export const WEEKLY_GOAL = DAILY_GOAL * 7;
 
+/** Objectif total de parties d'entraînement officiel avant le tournoi
+ * (demandé explicitement par le joueur le 30/08/2026 : "200 parties avant
+ * le 19 septembre"). La date-limite n'est PAS un second chiffre codé en dur
+ * séparé : elle se déduit toujours de la date du tournoi (veille du
+ * tournoi) via computeDailyProgress() dans trainingPhase.ts — si la date du
+ * tournoi change dans AppSettings, l'échéance de cet objectif suit
+ * automatiquement, sans jamais désynchroniser les deux. */
+export const TOTAL_GAMES_GOAL = 200;
+
 /** En dessous de ce nombre de parties, toute statistique doit s'afficher
  * "Échantillon insuffisant" plutôt qu'une conclusion trompeuse. Reprend le
  * seuil déjà utilisé par personalStats.ts (MIN_SAMPLE) — même valeur,

@@ -77,6 +77,7 @@ export function HeaderTrainingCounter() {
 
   const { progress, activeMission } = data;
   const colorClass = COLOR_CLASSES[progress.colorToday];
+  const goal = progress.tournamentGoal;
 
   return (
     <div className="relative" ref={containerRef}>
@@ -85,18 +86,58 @@ export function HeaderTrainingCounter() {
         className={`badge ${colorClass} inline-flex items-center gap-1.5 !normal-case !tracking-normal font-mono text-xs px-3 py-1.5 hover:brightness-110 transition`}
         aria-expanded={open}
       >
+        {/* Compteur global "vers 200" — segment principal, demandé
+            explicitement pour rester visible sur toutes les pages, y
+            compris en version compacte mobile (voir config.ts, TOTAL_GAMES_GOAL). */}
+        {goal ? (
+          <span className="font-semibold">
+            🎯 {goal.played}/{goal.goal}
+          </span>
+        ) : (
+          <span className="sm:hidden">
+            {progress.gamesToday}/{progress.dailyGoal}
+          </span>
+        )}
         <span className="hidden sm:inline">
-          Aujourd&rsquo;hui {progress.gamesToday}/{progress.dailyGoal}
+          {goal && " • "}Aujourd&rsquo;hui {progress.gamesToday}/{progress.dailyGoal}
           {" • "}Série {progress.currentStreak} jour{progress.currentStreak !== 1 ? "s" : ""}
           {progress.daysUntilTournament !== null && <> • Tournoi J-{progress.daysUntilTournament}</>}
-        </span>
-        <span className="sm:hidden">
-          {progress.gamesToday}/{progress.dailyGoal}
         </span>
       </button>
 
       {open && (
         <div className="absolute right-0 mt-2 w-72 card-tile rounded-xl p-4 z-40 space-y-3 text-sm">
+          {goal && (
+            <div className="pb-3 border-b border-line">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-textMuted text-xs uppercase tracking-wider">Objectif tournoi</span>
+                <span className="text-ivory font-semibold">
+                  {goal.played}/{goal.goal}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-panel2 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${goal.goalMet ? "bg-gold" : "bg-emerald"}`}
+                  style={{ width: `${Math.min(100, (goal.played / goal.goal) * 100)}%` }}
+                />
+              </div>
+              <div className="text-[11px] text-textMuted mt-1">
+                {goal.goalMet ? (
+                  <>Objectif atteint 🎉</>
+                ) : (
+                  <>
+                    {goal.remaining} partie{goal.remaining !== 1 ? "s" : ""} restante{goal.remaining !== 1 ? "s" : ""} avant le{" "}
+                    {new Date(goal.deadline).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+                    {goal.daysLeft > 0 && <> (J-{goal.daysLeft})</>}
+                    {goal.dailyPaceNeeded !== null && (
+                      <> — soit ~{goal.dailyPaceNeeded} partie{goal.dailyPaceNeeded > 1 ? "s" : ""}/jour</>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-textMuted text-xs uppercase tracking-wider">Aujourd&rsquo;hui</span>
