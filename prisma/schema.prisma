@@ -543,3 +543,29 @@ model KeyCardEntry {
   @@index([leaderCardNumber])
   @@index([cardNumber])
 }
+
+// --- Rubrique "Apprentissage" (nouvelle rubrique, demandée le 30/08/2026) —
+// articles de stratégie/fondamentaux OPTCG, récupérés EN DIRECT depuis
+// plusieurs sites (voir src/lib/learnScraper.ts) à chaque clic sur
+// "Actualiser", jamais un contenu écrit à la main ici. isPillar marque les 4
+// articles fondamentaux explicitement désignés par le joueur comme base de
+// la méthodologie du coach (2K Rule, économie du DON!!, erreurs de
+// débutant/défense, glossaire des rôles de matchup) : toujours affichés en
+// premier, jamais supprimés même si une récupération suivante ne les
+// retrouve pas (source="opdecks" protégée, voir refresh/route.ts).
+model LearnArticle {
+  id              String    @id @default(cuid())
+  url             String    @unique
+  source          String    // "opdecks" | "tcgprotectors" | "shonentcg"
+  sourceLabel     String    // libellé humain affiché (nom du site + ce qu'il couvre)
+  title           String
+  summary         String?
+  durationMinutes Int?
+  publishedAt     DateTime?
+  isPillar        Boolean   @default(false)
+  order           Int       @default(0) // position telle que listée par la source (plus récent/pertinent d'abord)
+  capturedAt      DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+
+  @@index([source])
+}

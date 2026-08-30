@@ -36,6 +36,7 @@ const ITEMS: NavItem[] = [
   { href: "/deck-profile", label: "Deck Profile", icon: "🦅", group: "coach" },
   { href: "/cards", label: "Cartes", icon: "🃏", group: "coach" },
   { href: "/tier-list", label: "Tier List", icon: "📶", group: "coach" },
+  { href: "/learn", label: "Apprentissage", icon: "📚", group: "coach" },
   { href: "/card-tier-list", label: "Tier List Cartes", icon: "🃏", group: "coach" },
   { href: "/phase-tier-list", label: "Phase (DON!!)", icon: "⏱️", group: "coach" },
 

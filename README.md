@@ -366,3 +366,72 @@ ces changements pour que Neon ait les nouvelles colonnes/tables
 `DeckVersion.versionNumber`, `Deck.matches`, `OpponentLeader.cardNumber`,
 `AppSettings`, `TrainingMission`). Aucune partie existante n'est
 supprimée, renommée ou déplacée par cette migration.
+
+## 19. Grille de méta actuelle — matchups leader vs leader
+
+Nouvelle section en haut de `/matchups` (`MetaMatchupGrid.tsx`) : une
+grille leader vs leader avec un pourcentage de victoire par case, pour
+tous les leaders les plus joués de la méta actuelle — **distincte** des
+fiches de matchup personnelles plus bas sur la même page (celles-ci
+restent basées sur tes propres parties du Journal).
+
+**Source des données** : la grille n'est jamais calculée depuis tes
+propres parties (échantillon bien trop faible pour 10 leaders x 10). Elle
+vient d'une source publique externe, https://opdecks.xyz/winmatrix
+(données agrégées par "TCG Match Making" depuis leur simulateur en ligne
+classé — des dizaines de milliers de parties). L'attribution reste
+toujours visible sous la grille dans l'app.
+
+**Fonctionnement** :
+- `GET /api/meta-matchups` sert le dernier instantané en cache
+  (`MetaMatchupSnapshot`, une seule ligne en base) — aucun scraping à
+  chaque chargement de page.
+- Le bouton **"🔄 Actualiser"** appelle `POST /api/meta-matchups/refresh`,
+  qui va chercher la page source, la parse (`src/lib/metaMatchupScraper.ts`,
+  cheerio) et met à jour l'instantané. La récupération n'est **jamais**
+  automatique/en arrière-plan — uniquement sur clic, par respect pour le
+  site source (mêmes principes que `scraper.ts` : User-Agent explicite,
+  pas de contournement de protection).
+- Si le site source change de structure ou est injoignable, le parseur
+  échoue avec une erreur explicite plutôt que de renvoyer des données
+  vides ou fabriquées ; l'ancien instantané reste affiché avec un bandeau
+  d'erreur, jamais silencieusement écrasé par un échec.
+- Les images des leaders sont résolues via la base de cartes déjà
+  importée localement (`/api/cards`) — aucun nouveau domaine d'image
+  externe ajouté à `next.config.js`.
+
+Tests (sans réseau, fixture HTML locale) : `npx tsx scripts/test-meta-matchup-parser.ts`
+
+Migration : nouvelle table `MetaMatchupSnapshot` — **exécute `npm run
+db:push`** après avoir récupéré ces changements.
+
+## 20. Apprentissage — articles de fondamentaux OPTCG (`/learn`)
+
+Rubrique qui agrège en direct des articles de stratégie depuis plusieurs
+sites, accessible depuis la navigation (groupe "Coach"). Jamais de contenu
+écrit à la main : tout vient de `src/lib/learnScraper.ts`, une fonction par
+source, chacune indépendante des autres.
+
+**Sources actuelles** :
+- `opdecks.xyz/learn` — petits articles fondamentaux évergreens. Les 4
+  désignés par le joueur comme base de la méthodologie du coach (2K Rule,
+  économie du DON!!, erreurs de débutant, glossaire) sont marqués "Pilier"
+  (`isPillar=true`) et ne sont jamais supprimés d'une actualisation à
+  l'autre, même si le scrape suivant ne les retrouve pas.
+- `tcgprotectors.com` — blog dédié One Piece TCG, via son flux Atom
+  standard Shopify (`/blogs/one-piece-tcg-blog.atom`) — dates de
+  publication fiables, pas de devinette de structure HTML.
+- `shonentcg.com/blog` — blog multi-jeux, filtré par mots-clés
+  (One Piece / OPTCG / "OP-XX") faute de flux dédié ; pas de date fiable
+  disponible côté liste, l'ordre d'apparition sur le site (le plus récent
+  en premier) sert de tri.
+
+**Fonctionnement** : `GET /api/learn` sert le contenu déjà en base (aucun
+appel réseau au chargement) ; le bouton **"🔄 Actualiser"** appelle
+`POST /api/learn/refresh`, qui relit les 3 sources en parallèle. Si une
+source échoue, ses articles déjà en base restent affichés tels quels
+(jamais vidés) et seule son erreur remonte dans le petit résumé sous le
+bouton — les deux autres sources s'actualisent normalement.
+
+Migration : nouvelle table `LearnArticle` — **exécute `npm run db:push`**
+après avoir récupéré ces changements.
