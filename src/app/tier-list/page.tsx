@@ -220,7 +220,7 @@ export default function TierListPage() {
   }
 
   async function autoClassify() {
-    if (!(await confirm("Classer automatiquement selon les decklists OP17 réellement soumises sur onepiecetopdecks.com (relecture en direct de la page) ? Les leaders déjà déplacés à la main ne seront jamais touchés."))) return;
+    if (!(await confirm("Classer automatiquement selon le winrate réel des leaders sur cardkaizoku.com/ranking (filtre Simulator — Standard Last Week, All Lobbies) ? Les leaders déjà déplacés à la main ne seront jamais touchés."))) return;
     setBusy(true);
     const res = await fetch("/api/tier-list/auto-classify", { method: "POST" });
     const data = await res.json();
@@ -259,7 +259,7 @@ export default function TierListPage() {
           Classe <span className="text-flame-gradient italic">toute la méta.</span>
         </h1>
         <p className="text-sm text-steel/70 mt-2 max-w-xl">
-          Glisse-dépose les leaders entre les rangs S à D, ou laisse le classement automatique s'appuyer sur les decklists réelles soumises.
+          Glisse-dépose les leaders entre les rangs S à D, ou laisse le classement automatique s'appuyer sur le winrate réel (cardkaizoku.com).
         </p>
       </div>
 
@@ -267,28 +267,38 @@ export default function TierListPage() {
         <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
           <div>
             <h2 className="text-sm font-semibold text-ivory uppercase tracking-wide">Tier List de la méta — OP17</h2>
-            <div className="text-[10px] font-mono text-steel/50 mt-0.5">
-              {autoDisplayDate
-                ? `Actualisé le ${new Date(autoDisplayDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} à ${new Date(autoDisplayDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
-                : "Jamais actualisé"}
+            <div className="text-[10px] font-mono text-steel/50 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span>
+                {autoDisplayDate
+                  ? `Actualisé le ${new Date(autoDisplayDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} à ${new Date(autoDisplayDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+                  : "Jamais actualisé"}
+              </span>
+              {autoResult?.ok !== false && typeof autoResult?.totalGamesPlayed === "number" && (
+                <span className="text-steel/70">· Total Games Played {autoResult.totalGamesPlayed.toLocaleString("fr-FR")}</span>
+              )}
             </div>
           </div>
           <button onClick={autoClassify} disabled={busy} className="btn-flame">
-            {busy ? "Classement..." : "🔄 Classer automatiquement (onepiecetopdecks.com)"}
+            {busy ? "Classement..." : "🔄 Classer automatiquement (cardkaizoku.com — Simulator, Last Week)"}
           </button>
         </div>
         <p className="text-xs text-steel/60">
-          Tier list de la méta <strong className="text-steel/80">OP17 « The World's Strongest Warriors »</strong>, calculée à chaque clic sur « Actualiser » à partir du nombre réel de decklists soumises par leader sur{" "}
-          <a href="https://onepiecetopdecks.com/deck-list/english-op17-deck-list-the-worlds-strongest-warriors/" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/80">
-            onepiecetopdecks.com
+          Tier list de la méta <strong className="text-steel/80">OP17 « The World's Strongest Warriors »</strong>, calculée à chaque clic sur « Actualiser » à partir du winrate réel des leaders sur{" "}
+          <a href="https://www.cardkaizoku.com/ranking?period=op17_lw" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/80">
+            cardkaizoku.com/ranking
           </a>{" "}
-          (page de decklists, comptage brut — le site n'a pas de tier list officielle). Ce format n'étant pas encore sorti en Occident, la grande majorité des decklists soumises viennent des premiers tournois/événements en ligne — pas exclusivement du Japon malgré ce qu'on pourrait attendre, le site agrège plusieurs régions (dont l'Europe). Certains leaders récents n'ont pas encore de numéro de carte confirmé dans l'app : ils apparaissent en texte seul, marqués "à vérifier", plutôt qu'avec une image devinée.
+          — exactement le filtre <strong className="text-steel/80">Simulator, Standard Last Week (All Lobbies)</strong> du site (vrais matchs enregistrés par les joueurs, pas un comptage de decklists). Seuls les leaders avec au moins 300 matchs enregistrés sont classés. Certains leaders récents n'ont pas encore de numéro de carte confirmé dans l'app : ils apparaissent en texte seul, marqués "à vérifier", plutôt qu'avec une image devinée.
         </p>
+        {autoResult?.fromCache && (
+          <p className="text-[11px] text-gold mt-2">
+            ⚠ cdn.cardkaizoku.com bloque les requêtes directes depuis le serveur (anti-bot) — dernier instantané transmis par Claude utilisé ici, pas forcément celui de cette minute. Demande-lui de l'actualiser pour du tout frais.
+          </p>
+        )}
         {autoResult && (
           <div className="text-xs font-mono text-emerald-bright mt-2">
             {autoResult.ok === false
               ? <span className="text-danger">{autoResult.error}</span>
-              : <>{autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà déplacé(s) à la main donc ignoré(s), {autoResult.removed ?? 0} entrée(s) obsolète(s) nettoyée(s) — {autoResult.totalDecksScanned} decklists lues, {autoResult.distinctLeaders} leaders distincts.</>}
+              : <>{autoResult.applied} leader(s) classé(s), {autoResult.skippedManual} déjà déplacé(s) à la main donc ignoré(s), {autoResult.removed ?? 0} entrée(s) obsolète(s) nettoyée(s) — {autoResult.totalConsidered} leaders classés au total ({autoResult.filterLabel}, fichier du {autoResult.statsFileDate}).</>}
           </div>
         )}
       </div>
@@ -419,6 +429,11 @@ export default function TierListPage() {
           </a>{" "}
           — exactement le filtre "Standard Last Week (All Lobbies)" du site (mode Simulator), une mesure de performance réelle, différente du comptage de decklists de la tier list ci-dessus. Seuls les leaders avec au moins 300 matchs enregistrés sont classés, pour éviter qu'un tout petit échantillon fausse le résultat.
         </p>
+        {simData?.fromCache && (
+          <p className="text-[11px] text-gold mt-2">
+            ⚠ cdn.cardkaizoku.com bloque les requêtes directes depuis le serveur (anti-bot) — dernier instantané transmis par Claude affiché ici, pas forcément celui de cette minute. Demande-lui de l'actualiser pour du tout frais.
+          </p>
+        )}
         {simError && (
           <div className="text-xs text-danger bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2 mt-2">
             {simError} {simData && "— les données ci-dessous restent celles de la dernière récupération réussie."}

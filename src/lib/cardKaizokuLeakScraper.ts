@@ -20,6 +20,8 @@
  * ses cartes déjà en base (voir /api/leaks/refresh), sans script séparé à
  * lancer à la main.
  */
+import { db } from "@/lib/db";
+
 const CARD_DATA_URL = "https://cdn.cardkaizoku.com/card_data.json";
 export const LEAK_SOURCE_PAGE_URL = "https://www.cardkaizoku.com/spoilers";
 export const LEAK_SOURCE_LABEL = "Card D. Kaizoku (cardkaizoku.com/spoilers)";
@@ -76,6 +78,7 @@ export interface LeakFetchResult {
   cards: LeakCardData[];
   capturedAt: string;
   sourceUrl: string;
+  fromCache: boolean; // true = données de secours (cache), le direct depuis Vercel est bloqué — voir CardKaizokuCache
 }
 
 function normalizeCategory(raw: string): string {
@@ -98,11 +101,32 @@ function stripHtml(raw: string | null): string | null {
 }
 
 export async function fetchKaizokuLeakCards(): Promise<LeakFetchResult> {
-  const res = await fetch(CARD_DATA_URL, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
-  if (!res.ok) throw new Error(`HTTP ${res.status} en récupérant ${CARD_DATA_URL}`);
-  const all = (await res.json()) as RawKaizokuCard[];
-  if (!Array.isArray(all)) {
-    throw new Error("Réponse inattendue de card_data.json (pas un tableau) — la structure a peut-être changé.");
+  let all: RawKaizokuCard[];
+  let fromCache = false;
+
+  try {
+    const res = await fetch(CARD_DATA_URL, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const parsed = (await res.json()) as RawKaizokuCard[];
+    if (!Array.isArray(parsed)) throw new Error("format inattendu");
+    all = parsed;
+  } catch {
+    // BUG STRUCTUREL (30/08/2026) : cdn.cardkaizoku.com bloque désormais
+    // TOUTE requête serveur-à-serveur depuis Vercel (403), même avec un
+    // User-Agent de navigateur — vérifié : un fetch Node.js identique reçoit
+    // aussi un 403, alors que le MÊME appel depuis un vrai navigateur
+    // réussit. C'est un blocage réseau/anti-bot au niveau de l'hébergeur
+    // cloud, pas réparable par un changement d'en-têtes côté code. Repli sur
+    // le cache (voir CardKaizokuCache, schema.prisma), rempli par Claude via
+    // un vrai navigateur à la demande — jamais une donnée inventée.
+    const cache = await db.cardKaizokuCache.findUnique({ where: { id: "singleton" } });
+    if (!cache?.cardDataJson) {
+      throw new Error(
+        "cdn.cardkaizoku.com bloque les requêtes directes depuis le serveur (protection anti-bot) et aucune donnée de secours n'est en cache — demande à Claude de l'actualiser depuis un navigateur."
+      );
+    }
+    all = JSON.parse(cache.cardDataJson) as RawKaizokuCard[];
+    fromCache = true;
   }
 
   const leakSetCodes = new Set(LEAK_SET_CODES.map((c) => c.toUpperCase()));
@@ -130,5 +154,5 @@ export async function fetchKaizokuLeakCards(): Promise<LeakFetchResult> {
     };
   });
 
-  return { cards, capturedAt: new Date().toISOString(), sourceUrl: CARD_DATA_URL };
+  return { cards, capturedAt: new Date().toISOString(), sourceUrl: CARD_DATA_URL, fromCache };
 }

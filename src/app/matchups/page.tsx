@@ -122,6 +122,7 @@ export default function MatchupsPage() {
   const [metaStatsDate, setMetaStatsDate] = useState<string | null>(null);
   const [metaTotalGames, setMetaTotalGames] = useState<number | null>(null);
   const [metaFilterLabel, setMetaFilterLabel] = useState<string | null>(null);
+  const [metaFromCache, setMetaFromCache] = useState(false);
 
   async function loadMetaRanking() {
     setMetaState("loading");
@@ -146,6 +147,7 @@ export default function MatchupsPage() {
       setMetaStatsDate(data.statsFileDate ?? null);
       setMetaTotalGames(typeof data.totalGamesPlayed === "number" ? data.totalGamesPlayed : null);
       setMetaFilterLabel(data.filterLabel ?? null);
+      setMetaFromCache(!!data.fromCache);
       setMetaState("ready");
     } catch (e: any) {
       setMetaState("error");
@@ -254,7 +256,7 @@ export default function MatchupsPage() {
           {metaState === "ready" && metaLive
             ? `${metaFilterLabel ?? "Simulator — Standard Last Week (All Lobbies)"} — fichier du ${metaStatsDate}${
                 metaTotalGames ? ` · Total Games Played ${metaTotalGames.toLocaleString("fr-FR")}` : ""
-              }.`
+              }.${metaFromCache ? " ⚠ instantané transmis par Claude (serveur bloqué par cdn.cardkaizoku.com)." : ""}`
             : metaState === "error"
             ? `Classement en direct indisponible (${metaError}) — snapshot de secours du 27 août 2026 affiché ci-dessous.`
             : "Chargement du classement en direct..."}

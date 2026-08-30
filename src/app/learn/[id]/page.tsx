@@ -51,6 +51,7 @@ function renderContent(text: string) {
 export default function LearnArticleDetailPage({ params }: { params: { id: string } }) {
   const [article, setArticle] = useState<LearnArticleDetail | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [translationError, setTranslationError] = useState<string | null>(null);
 
   useEffect(() => {
     setState("loading");
@@ -59,6 +60,7 @@ export default function LearnArticleDetailPage({ params }: { params: { id: strin
       .then((d) => {
         if (!d.ok) throw new Error(d.error ?? "Erreur");
         setArticle(d.article);
+        setTranslationError(d.translationError ?? null);
         setState("ready");
       })
       .catch(() => setState("error"));
@@ -96,7 +98,9 @@ export default function LearnArticleDetailPage({ params }: { params: { id: strin
               {renderContent(article.contentFr ?? article.content)}
               {!article.contentFr && (
                 <p className="text-[10px] text-steel/50 italic mt-2">
-                  Traduction française en cours de génération — recharge la page dans un instant, ou lis la version anglaise ci-dessous en attendant.
+                  {translationError
+                    ? `Traduction indisponible : ${translationError}`
+                    : "Traduction française en cours de génération — recharge la page dans un instant, ou lis la version anglaise ci-dessous en attendant."}
                 </p>
               )}
             </div>

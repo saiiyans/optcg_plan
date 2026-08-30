@@ -66,6 +66,11 @@ export default function MulliganQuizPage() {
           pédagogiques construits à partir du plan de jeu déjà présent dans l'app (Deck Profile) — pas des statistiques
           officielles, pas des mains réellement tirées en tournoi.
         </p>
+        <p className="text-xs text-steel/50 mt-1.5 max-w-xl">
+          Cases pointillées « carte du reste du deck » : c'est voulu, pas un bug — seules les 8 cartes clés du plan Mihawk
+          (Deck Profile) sont documentées une par une dans l'app, le reste de chaque main est représenté par une case
+          neutre plutôt qu'un numéro de carte deviné.
+        </p>
       </div>
 
       <div className="flex items-center justify-between text-xs font-mono text-steel/60">
@@ -92,7 +97,7 @@ export default function MulliganQuizPage() {
                 className="flex items-center justify-center text-center px-1 border border-dashed border-line rounded-md bg-panel2/50"
                 style={{ width: 64, height: Math.round(64 * 1.4) }}
               >
-                <span className="text-[8px] font-mono text-steel/40 leading-tight">carte non-clé</span>
+                <span className="text-[8px] font-mono text-steel/40 leading-tight">reste du deck</span>
               </div>
             )
           )}

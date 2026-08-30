@@ -544,6 +544,27 @@ model KeyCardEntry {
   @@index([cardNumber])
 }
 
+// --- Cache de secours cardkaizoku.com (ajouté le 30/08/2026) — leur CDN
+// (cdn.cardkaizoku.com) bloque désormais (403) TOUTE requête serveur-à-serveur
+// depuis Vercel, quels que soient les en-têtes envoyés (vérifié : même un
+// fetch Node.js avec un User-Agent de vrai navigateur reçoit un 403, alors
+// que le MÊME appel depuis un vrai navigateur réussit — c'est un blocage au
+// niveau IP/empreinte réseau des hébergeurs cloud, pas un problème
+// d'en-têtes qu'un changement de code peut réparer). fetchKaizokuLeakCards()
+// et fetchCardKaizokuTierList() essaient donc TOUJOURS le direct d'abord
+// (au cas où ça redevienne possible), et retombent sur ce cache s'il existe.
+// Rempli uniquement via POST /api/admin/cardkaizoku-cache, appelé par Claude
+// depuis un navigateur (accès non bloqué) à la demande du joueur — jamais
+// une valeur inventée. Une seule ligne (id fixe "singleton").
+model CardKaizokuCache {
+  id                String    @id @default("singleton")
+  cardDataJson      String?   // snapshot brut de card_data.json (cartes + leaks OP18/EB05...)
+  cardDataFetchedAt DateTime?
+  statsJson         String?   // snapshot brut du fichier stats_op{format}_lw_{date}.json le plus récent
+  statsFileDate     String?
+  statsFetchedAt    DateTime?
+}
+
 // --- Rubrique "Apprentissage" (nouvelle rubrique, demandée le 30/08/2026) —
 // articles de stratégie/fondamentaux OPTCG, récupérés EN DIRECT depuis
 // plusieurs sites (voir src/lib/learnScraper.ts) à chaque clic sur

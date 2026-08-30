@@ -45,7 +45,14 @@ const MIHAWK9 = { cardNumber: "OP14-119", label: "Mihawk (9 coût) — finisseur
 const LAW_BEPO = { cardNumber: "ST24-004", label: "Law & Bepo (10 coût) — finisseur" };
 
 function filler(n: number): MulliganHandCard {
-  return { cardNumber: null, label: `Carte non-clé #${n} (autre carte du deck, non détaillée ici)` };
+  // Libellé clarifié le 30/08/2026 : le joueur a signalé "il manque des
+  // cartes parfois", en pensant à un bug — c'est en réalité voulu (voir la
+  // note en tête de fichier), mais "Carte non-clé" seul prêtait à confusion
+  // sans plus de contexte visible directement sur la page (le blurb complet
+  // n'était que dans un commentaire de code). Le libellé et l'encart sous
+  // le titre de la page (mulligan-quiz/page.tsx) l'expliquent maintenant
+  // clairement, sans jamais inventer un numéro de carte à la place.
+  return { cardNumber: null, label: `Carte du reste du deck #${n} (non trackée carte par carte dans l'app)` };
 }
 
 export const MULLIGAN_SCENARIOS: MulliganScenario[] = [

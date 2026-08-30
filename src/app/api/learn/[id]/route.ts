@@ -42,20 +42,29 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   // 2) Traduction française — titre/résumé (si jamais passés par
   // /api/admin/learn-translate) ET contenu intégral, en un seul appel
   // Gemini groupé pour économiser le quota gratuit plutôt que d'en faire
-  // deux séparés.
+  // deux séparés. translationError est renvoyé au frontend (jamais avalé
+  // silencieusement) — sans ça, "traduction en cours de génération..."
+  // restait affiché indéfiniment sans dire POURQUOI (ex. GEMINI_API_KEY
+  // absente sur Vercel), un vrai bug de diagnostic signalé le 30/08/2026.
   const apiKey = process.env.GEMINI_API_KEY;
-  const needsTranslation = apiKey && (!titleFr || (content && !contentFr));
+  let translationError: string | null = null;
+  const needsTranslation = !titleFr || (content && !contentFr);
   if (needsTranslation) {
-    try {
-      const translated = await translateArticle(apiKey!, article.title, article.summary, content);
-      if (translated) {
-        if (!titleFr && translated.titleFr) { titleFr = translated.titleFr; dirty = true; }
-        if (!summaryFr && translated.summaryFr) { summaryFr = translated.summaryFr; dirty = true; }
-        if (content && !contentFr && translated.contentFr) { contentFr = translated.contentFr; dirty = true; }
+    if (!apiKey) {
+      translationError = "GEMINI_API_KEY non configurée sur Vercel — ajoute cette variable d'environnement puis redéploie.";
+    } else {
+      try {
+        const translated = await translateArticle(apiKey, article.title, article.summary, content);
+        if (translated) {
+          if (!titleFr && translated.titleFr) { titleFr = translated.titleFr; dirty = true; }
+          if (!summaryFr && translated.summaryFr) { summaryFr = translated.summaryFr; dirty = true; }
+          if (content && !contentFr && translated.contentFr) { contentFr = translated.contentFr; dirty = true; }
+        } else {
+          translationError = "Réponse Gemini non exploitable (voir logs Vercel) — réessaie dans un instant.";
+        }
+      } catch (e: any) {
+        translationError = e?.message ?? "Erreur réseau lors de l'appel à Gemini.";
       }
-    } catch {
-      // Pas de traduction disponible pour l'instant — la page retombe sur
-      // l'anglais, jamais une erreur bloquante pour l'affichage de l'article.
     }
   }
 
@@ -69,6 +78,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({
     ok: true,
     article: { ...article, content, contentFr, titleFr, summaryFr },
+    translationError,
   });
 }
 
@@ -102,7 +112,10 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre) :
       }),
     }
   );
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`API Gemini ${res.status}: ${errText.slice(0, 200)}`);
+  }
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   try {

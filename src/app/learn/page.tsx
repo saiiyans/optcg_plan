@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ADMIN_HEADERS } from "@/lib/adminHeaders";
 
 interface LearnArticle {
@@ -39,14 +39,28 @@ function formatDate(iso: string | null): string | null {
 }
 
 function ArticleCard({ a, pillar }: { a: LearnArticle; pillar?: boolean }) {
+  const router = useRouter();
   const date = formatDate(a.publishedAt);
   const hasFr = !!a.titleFr;
   const displayTitle = a.titleFr ?? a.title;
   const displaySummary = a.summaryFr ?? a.summary;
 
+  // BUG CORRIGÉ (30/08/2026) : seul le petit lien "Lire →" (11px, coin
+  // droit) menait vers la page détail — le joueur a signalé "les articles
+  // ne sont pas cliquables" en cliquant sur le titre/la carte elle-même,
+  // qui ne faisait rien. Toute la carte est maintenant cliquable (curseur
+  // pointeur + surbrillance au survol), sauf le lien "Source" externe qui
+  // stoppe la propagation pour garder son propre comportement (nouvel
+  // onglet vers le site d'origine, jamais mélangé avec la navigation interne).
   return (
     <div
-      className={`rounded-xl border p-4 transition-colors duration-150 ${
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(`/learn/${a.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") router.push(`/learn/${a.id}`);
+      }}
+      className={`rounded-xl border p-4 transition-colors duration-150 cursor-pointer hover:border-flame/50 ${
         pillar ? "border-flame/40 bg-flame/5" : "border-line bg-panel2"
       }`}
     >
@@ -61,24 +75,21 @@ function ArticleCard({ a, pillar }: { a: LearnArticle; pillar?: boolean }) {
 
       <div className="mt-2.5 pt-2 border-t border-line/60">
         {/* Lire → ouvre la page détail DANS l'app (traduite en français,
-            voir /learn/[id]) — la source anglaise originale reste indiquée
-            séparément juste en dessous, jamais cachée (demandé le 30/08/2026). */}
+            voir /learn/[id]) — toute la carte navigue maintenant vers cette
+            page ; la source anglaise originale reste indiquée séparément
+            juste en dessous, jamais cachée (demandé le 30/08/2026). */}
         <div className="flex items-center gap-2">
           <a
             href={a.url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="font-mono text-[11px] text-steel/70 hover:text-flame transition-colors duration-150"
           >
             🇬🇧 Source : {a.sourceLabel.split(" — ")[0] ?? a.sourceLabel}
           </a>
           {hasFr && a.title !== displayTitle && <span className="truncate italic text-[11px] text-steel/50">« {a.title} »</span>}
-          <Link
-            href={`/learn/${a.id}`}
-            className="ml-auto shrink-0 text-[11px] text-steel/70 hover:text-flame transition-colors duration-150"
-          >
-            Lire →
-          </Link>
+          <span className="ml-auto shrink-0 text-[11px] text-steel/70">Lire →</span>
         </div>
         <div className="flex items-center gap-2 mt-1 text-[11px] text-steel/50 font-mono">
           {a.durationMinutes && <span>⏱ {a.durationMinutes} min</span>}

@@ -88,6 +88,7 @@ export interface CardKaizokuTierResult {
   sourceLabel: string;
   filterLabel: string; // libellé exact du filtre utilisé sur le site source, ex "Standard Last Week (All Lobbies)"
   capturedAt: string;
+  fromCache: boolean; // true = données de secours (cache), le direct depuis Vercel est bloqué — voir CardKaizokuCache
 }
 
 function toYYYYMMDD(d: Date): string {
@@ -118,7 +119,7 @@ async function fetchWithTimeout(url: string): Promise<Response | null> {
   }
 }
 
-async function fetchLatestStatsFile(): Promise<{ data: RawKaizokuLeaderStat[]; fileDate: string; url: string }> {
+async function fetchLatestStatsFile(): Promise<{ data: RawKaizokuLeaderStat[]; fileDate: string; url: string; fromCache: boolean }> {
   let candidate = new Date();
   for (let i = 0; i < MAX_DAYS_BACK; i++) {
     const dateStr = toYYYYMMDD(candidate);
@@ -126,12 +127,24 @@ async function fetchLatestStatsFile(): Promise<{ data: RawKaizokuLeaderStat[]; f
     const res = await fetchWithTimeout(url);
     if (res) {
       const data = (await res.json()) as RawKaizokuLeaderStat[];
-      return { data, fileDate: `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`, url };
+      return { data, fileDate: `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`, url, fromCache: false };
     }
     candidate = new Date(candidate.getTime() - 24 * 60 * 60 * 1000);
   }
+
+  // Repli sur le cache (voir CardKaizokuCache dans schema.prisma) — rempli
+  // par Claude via un vrai navigateur, pas par le serveur lui-même (bloqué,
+  // voir le commentaire sur ce modèle). Mieux qu'une erreur permanente :
+  // un classement récent mais pas forcément du jour même, clairement
+  // identifié comme tel par fromCache.
+  const cache = await db.cardKaizokuCache.findUnique({ where: { id: "singleton" } });
+  if (cache?.statsJson && cache.statsFileDate) {
+    const data = JSON.parse(cache.statsJson) as RawKaizokuLeaderStat[];
+    return { data, fileDate: cache.statsFileDate, url: `${STATS_BASE}/stats_${STATS_FORMAT_CODE}_lw_${cache.statsFileDate.replace(/-/g, "")}.json`, fromCache: true };
+  }
+
   throw new Error(
-    `Impossible de trouver un fichier de classement récent sur ${STATS_BASE} (essayé ${MAX_DAYS_BACK} jours en arrière, format "${STATS_FORMAT_CODE}") — leur nommage de fichier a peut-être changé.`
+    `cdn.cardkaizoku.com bloque les requêtes directes depuis le serveur (protection anti-bot, pas un problème de nommage de fichier) et aucune donnée de secours n'est en cache — demande à Claude de l'actualiser depuis un navigateur.`
   );
 }
 
@@ -142,7 +155,7 @@ interface CardNameColorRow {
 }
 
 export async function fetchCardKaizokuTierList(): Promise<CardKaizokuTierResult> {
-  const { data, fileDate, url } = await fetchLatestStatsFile();
+  const { data, fileDate, url, fromCache } = await fetchLatestStatsFile();
   if (!Array.isArray(data) || data.length === 0) {
     throw new Error("Le fichier de classement récupéré est vide ou dans un format inattendu.");
   }
@@ -199,5 +212,6 @@ export async function fetchCardKaizokuTierList(): Promise<CardKaizokuTierResult>
     sourceLabel: SOURCE_LABEL,
     filterLabel: FILTER_LABEL,
     capturedAt: new Date().toISOString(),
+    fromCache,
   };
 }

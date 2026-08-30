@@ -205,7 +205,11 @@ export default function CardsPage() {
       setLeaksStatus(
         `[${data.leakSetCodes.join(", ")}] ${data.totalFound} carte(s) trouvée(s) — ${data.created} ajoutée(s), ${data.updated} mise(s) à jour${
           data.demoted > 0 ? `, ${data.demoted} set(s) sorti(s) officiellement repassé(s) en cartes normales` : ""
-        }.`
+        }.${
+          data.fromCache
+            ? " ⚠ cdn.cardkaizoku.com bloque le serveur (anti-bot) — données d'un dernier instantané transmis par Claude, pas la minute même. Demande-lui de relancer une actualisation s'il te faut du tout frais."
+            : ""
+        }`
       );
       loadCards();
       loadStats();

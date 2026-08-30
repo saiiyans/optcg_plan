@@ -1,26 +1,30 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { fetchOpTopDecksTierList } from "@/lib/opTopDecksTierScraper";
+import { fetchCardKaizokuTierList } from "@/lib/cardKaizokuTierScraper";
 
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/tier-list/auto-classify
  *
- * Relit EN DIRECT la page de decklists onepiecetopdecks.com (voir
- * opTopDecksTierScraper.ts) et applique le classement calculé à tous les
- * leaders qui n'ont pas déjà été corrigés à la main. Ne touche JAMAIS une
- * entrée marquée tierSource="manual". Ne modifie rien en cas d'échec de la
- * récupération — l'ancien classement reste affiché tel quel, seule l'erreur
- * remonte au frontend (même principe que /api/meta-matchups/refresh).
+ * SOURCE CHANGÉE le 30/08/2026 (demande explicite du joueur, plusieurs
+ * fois) : utilisait onepiecetopdecks.com (nombre de decklists soumises,
+ * pertinent avant la sortie officielle d'un set). OP17 étant sorti le
+ * 28/08/2026, cardkaizoku.com/ranking (taux de victoire réel de vrais
+ * matchs, filtre "Simulator — Standard Last Week (All Lobbies)") est
+ * maintenant la meilleure source disponible — voir cardKaizokuTierScraper.ts.
+ * L'ancien scraper onepiecetopdecks.com (opTopDecksTierScraper.ts) reste
+ * utilisé ailleurs (tier list des CARTES individuelles) et n'est pas
+ * supprimé, juste débranché d'ici.
  *
- * Les leaders sans numéro de carte confirmé reçoivent une clé synthétique
- * "CUSTOM-..." plutôt qu'un numéro de carte inventé, cohérent avec l'ajout
- * manuel côté interface.
+ * Ne touche JAMAIS une entrée marquée tierSource="manual". Ne modifie rien
+ * en cas d'échec de la récupération (y compris repli sur cache, voir
+ * CardKaizokuCache) — l'ancien classement reste affiché tel quel, seule
+ * l'erreur remonte au frontend.
  */
 export async function POST() {
   try {
-    const result = await fetchOpTopDecksTierList();
+    const result = await fetchCardKaizokuTierList();
 
     let applied = 0;
     let skippedManual = 0;
@@ -63,10 +67,12 @@ export async function POST() {
       removed,
       sourceLabel: result.sourceLabel,
       sourceUrl: result.sourceUrl,
-      formatLabel: result.formatLabel,
+      filterLabel: result.filterLabel,
+      totalGamesPlayed: result.totalGamesPlayed,
+      statsFileDate: result.statsFileDate,
       capturedAt: result.capturedAt,
-      totalDecksScanned: result.totalDecksScanned,
-      distinctLeaders: result.distinctLeaders,
+      totalConsidered: result.totalConsidered,
+      fromCache: result.fromCache,
     });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 200 });

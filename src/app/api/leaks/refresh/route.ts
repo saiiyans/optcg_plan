@@ -104,6 +104,7 @@ export async function POST() {
       sourceUrl: result.sourceUrl,
       sourceLabel: LEAK_SOURCE_LABEL,
       capturedAt: result.capturedAt,
+      fromCache: result.fromCache,
     });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message ?? String(e) }, { status: 200 });
