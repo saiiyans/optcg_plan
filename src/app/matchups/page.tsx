@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { OPTCG_RESOURCES, MATCHUP_GUIDES, META_LEADER_SNAPSHOT, META_SNAPSHOT_SOURCE } from "@/lib/matchupGuide";
 import { getMergedMatchups } from "@/lib/matchupMerge";
 import { DIFFICULTY_LABEL } from "@/lib/matchupCenter";
@@ -94,12 +94,68 @@ function MatchupDetailBody({ m }: { m: MergedMatchup }) {
   );
 }
 
+// --- Classement méta en direct (Card D. Kaizoku) — ajouté le 30/08/2026 en
+// remplacement du snapshot figé META_LEADER_SNAPSHOT (capturé à la main le
+// 27/08/2026, plus rafraîchissable). Réutilise /api/tier-list/simulator
+// (déjà utilisé par la Tier List Simulateur, source cdn.cardkaizoku.com,
+// filtre "OP17 Last Week, All Lobbies" — c'est le filtre par défaut du site,
+// celui demandé). META_LEADER_SNAPSHOT reste utilisé comme AFFICHAGE DE
+// SECOURS le temps du premier chargement / en cas d'erreur réseau, jamais
+// supprimé — jamais d'écran vide.
+interface LiveMetaEntry {
+  cardNumber: string | null;
+  displayName: string;
+  weightedWinRatePct: number;
+  playRatePct: number;
+}
+
 export default function MatchupsPage() {
   const [journalStats, setJournalStats] = useState<Record<string, { wins: number; losses: number; total: number }> | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [syncResult, setSyncResult] = useState<{ inserted: number; skipped: number; error?: string } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const [metaLive, setMetaLive] = useState<LiveMetaEntry[] | null>(null);
+  const [metaState, setMetaState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [metaError, setMetaError] = useState<string | null>(null);
+  const [metaStatsDate, setMetaStatsDate] = useState<string | null>(null);
+  const [metaTotalGames, setMetaTotalGames] = useState<number | null>(null);
+  const [metaFilterLabel, setMetaFilterLabel] = useState<string | null>(null);
+
+  async function loadMetaRanking() {
+    setMetaState("loading");
+    setMetaError(null);
+    try {
+      const res = await fetch("/api/tier-list/simulator");
+      const data = await res.json();
+      if (!data.ok) {
+        setMetaState("error");
+        setMetaError(data.error ?? "Erreur inconnue.");
+        return;
+      }
+      const top10: LiveMetaEntry[] = (data.entries ?? [])
+        .slice(0, 10)
+        .map((e: any) => ({
+          cardNumber: e.cardNumber,
+          displayName: e.displayName,
+          weightedWinRatePct: e.weightedWinRatePct,
+          playRatePct: e.playRatePct,
+        }));
+      setMetaLive(top10);
+      setMetaStatsDate(data.statsFileDate ?? null);
+      setMetaTotalGames(typeof data.totalGamesPlayed === "number" ? data.totalGamesPlayed : null);
+      setMetaFilterLabel(data.filterLabel ?? null);
+      setMetaState("ready");
+    } catch (e: any) {
+      setMetaState("error");
+      setMetaError(e?.message ?? "Erreur réseau.");
+    }
+  }
+
+  useEffect(() => {
+    loadMetaRanking();
+  }, []);
   // Sélection pour la vue côte à côte (iPad paysage / desktop, >= lg) —
   // distincte de `expanded` (accordéon mobile, plusieurs ouverts possible) :
   // un panneau de détail unique n'a de sens qu'avec une seule sélection à la
@@ -186,10 +242,23 @@ export default function MatchupsPage() {
           se rafraîchit sur clic) plutôt que de la remplacer : l'une montre
           QUI tu vas croiser, l'autre montre QUI bat QUI. */}
       <div className="card-tile rounded-sm p-4">
-        <div className="text-[11px] font-mono uppercase tracking-widest text-gold mb-0.5">
-          Classement méta actuelle — qui tu vas vraiment croiser
+        <div className="flex items-start justify-between gap-3 flex-wrap mb-0.5">
+          <div className="text-[11px] font-mono uppercase tracking-widest text-gold">
+            Classement méta actuelle — qui tu vas vraiment croiser
+          </div>
+          <button onClick={loadMetaRanking} disabled={metaState === "loading"} className="btn btn-primary text-[11px] px-2.5 py-1 shrink-0">
+            {metaState === "loading" ? "Actualisation..." : "🔄 Actualiser"}
+          </button>
         </div>
-        <div className="text-[11px] text-steel/50 mb-3">Snapshot du 27 août 2026 · pas de rafraîchissement automatique</div>
+        <div className="text-[11px] text-steel/50 mb-3">
+          {metaState === "ready" && metaLive
+            ? `${metaFilterLabel ?? "Simulator — Standard Last Week (All Lobbies)"} — fichier du ${metaStatsDate}${
+                metaTotalGames ? ` · Total Games Played ${metaTotalGames.toLocaleString("fr-FR")}` : ""
+              }.`
+            : metaState === "error"
+            ? `Classement en direct indisponible (${metaError}) — snapshot de secours du 27 août 2026 affiché ci-dessous.`
+            : "Chargement du classement en direct..."}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-separate border-spacing-y-1">
             <thead>
@@ -201,20 +270,26 @@ export default function MatchupsPage() {
               </tr>
             </thead>
             <tbody>
-              {META_LEADER_SNAPSHOT.map((l) => {
-                const isMihawk = l.cardNumber === "OP14-020";
+              {(metaState === "ready" && metaLive ? metaLive : META_LEADER_SNAPSHOT).map((l, i) => {
+                const cardNumber = "cardNumber" in l ? l.cardNumber : null;
+                const isMihawk = cardNumber === "OP14-020";
+                const name = "displayName" in l ? l.displayName : (l as any).name;
+                const playRate = "playRatePct" in l ? l.playRatePct : (l as any).playRate;
+                const winRate = "weightedWinRatePct" in l ? l.weightedWinRatePct : (l as any).wtdWinRate;
+                const rank = "rank" in l ? (l as any).rank : i + 1;
+                const trend = "trend" in l ? (l as any).trend : null;
                 return (
-                  <tr key={l.cardNumber} className={isMihawk ? "bg-flame/10" : "bg-panel2"}>
+                  <tr key={cardNumber ?? `${name}-${i}`} className={isMihawk ? "bg-flame/10" : "bg-panel2"}>
                     <td className="px-2 py-1.5 rounded-l font-mono text-steel/60">
-                      {l.rank}
-                      {l.trend === "up" && <span className="text-emerald-bright ml-0.5">↑</span>}
-                      {l.trend === "down" && <span className="text-red-400 ml-0.5">↓</span>}
+                      {rank}
+                      {trend === "up" && <span className="text-emerald-bright ml-0.5">↑</span>}
+                      {trend === "down" && <span className="text-red-400 ml-0.5">↓</span>}
                     </td>
                     <td className={`px-2 py-1.5 font-mono ${isMihawk ? "text-flame font-bold" : "text-white"}`}>
-                      {l.name} <span className="text-steel/40">({l.cardNumber})</span>
+                      {name} {cardNumber && <span className="text-steel/40">({cardNumber})</span>}
                     </td>
-                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-steel/80">{l.playRate.toFixed(2)}%</td>
-                    <td className="px-2 py-1.5 rounded-r text-right font-mono tabular-nums text-steel/80">{l.wtdWinRate.toFixed(2)}%</td>
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-steel/80">{playRate.toFixed(2)}%</td>
+                    <td className="px-2 py-1.5 rounded-r text-right font-mono tabular-nums text-steel/80">{winRate.toFixed(2)}%</td>
                   </tr>
                 );
               })}
@@ -226,7 +301,7 @@ export default function MatchupsPage() {
           <a href="https://www.cardkaizoku.com/ranking" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/70">
             cardkaizoku.com/ranking
           </a>{" "}
-          — {META_SNAPSHOT_SOURCE}
+          — {metaState === "ready" ? "Winrate pondéré = pondéré par taille d'échantillon. Rafraîchi en direct à chaque clic sur \"Actualiser\"." : META_SNAPSHOT_SOURCE}
         </div>
       </div>
 

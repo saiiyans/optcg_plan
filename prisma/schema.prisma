@@ -568,6 +568,17 @@ model LearnArticle {
   // texte fabriqué.
   titleFr         String?
   summaryFr       String?
+  // Contenu intégral de l'article (demandé le 30/08/2026 : les articles
+  // doivent être lisibles DANS l'app, en français, pas seulement un lien
+  // externe). Rempli à la demande (jamais pendant /api/learn/refresh, pour
+  // rester sous la limite de temps Vercel) : GET /api/learn/[id] le récupère
+  // au premier affichage de la page détail et le met en cache ici, sauf pour
+  // tcgprotectors où le flux Atom le fournit déjà gratuitement pendant le
+  // refresh (voir learnScraper.ts). Texte brut avec une mise en forme légère
+  // ("## " = sous-titre, "> " = citation) pour un rendu simple côté page
+  // détail, jamais du HTML brut stocké tel quel.
+  content         String?
+  contentFr       String?
   durationMinutes Int?
   publishedAt     DateTime?
   isPillar        Boolean   @default(false)

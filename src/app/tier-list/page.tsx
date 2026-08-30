@@ -390,25 +390,34 @@ export default function TierListPage() {
       <div className="card-tile p-5">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
           <div>
-            <h3 className="text-sm font-semibold text-ivory uppercase tracking-wide">Tier List du simulateur — Card D. Kaizoku</h3>
-            <div className="text-[10px] font-mono text-steel/50 mt-0.5">
-              {simData?.statsFileDate
-                ? `Données du ${new Date(simData.statsFileDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`
-                : simState === "loading"
-                ? "Chargement..."
-                : "Pas encore de données"}
+            <h3 className="text-sm font-semibold text-ivory uppercase tracking-wide">
+              Tier List du simulateur — Card D. Kaizoku
+            </h3>
+            <div className="text-[10px] font-mono text-steel/50 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span>{simData?.filterLabel ?? "Simulator — Standard Last Week (All Lobbies)"}</span>
+              {typeof simData?.totalGamesPlayed === "number" && (
+                <span className="text-steel/70">· Total Games Played {simData.totalGamesPlayed.toLocaleString("fr-FR")}</span>
+              )}
+              <span>
+                ·{" "}
+                {simData?.statsFileDate
+                  ? `Données du ${new Date(simData.statsFileDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`
+                  : simState === "loading"
+                  ? "Chargement..."
+                  : "Pas encore de données"}
+              </span>
             </div>
           </div>
           <button onClick={loadSimulator} disabled={simBusy} className="btn">
-            {simBusy ? "Actualisation..." : "🔄 Actualiser"}
+            {simBusy ? "Actualisation..." : "🔄 Actualiser (Simulator, Last Week)"}
           </button>
         </div>
         <p className="text-xs text-steel/60">
           Basé sur le taux de victoire pondéré ("Wtd WR") de vrais matchs enregistrés par les joueurs sur{" "}
-          <a href="https://www.cardkaizoku.com/ranking" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/80">
+          <a href="https://www.cardkaizoku.com/ranking?period=op17_lw" target="_blank" rel="noopener noreferrer" className="underline hover:text-steel/80">
             cardkaizoku.com/ranking
           </a>{" "}
-          — une mesure de performance réelle, différente du comptage de decklists de la tier list ci-dessus. Seuls les leaders avec au moins 300 matchs enregistrés sont classés, pour éviter qu'un tout petit échantillon fausse le résultat.
+          — exactement le filtre "Standard Last Week (All Lobbies)" du site (mode Simulator), une mesure de performance réelle, différente du comptage de decklists de la tier list ci-dessus. Seuls les leaders avec au moins 300 matchs enregistrés sont classés, pour éviter qu'un tout petit échantillon fausse le résultat.
         </p>
         {simError && (
           <div className="text-xs text-danger bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2 mt-2">

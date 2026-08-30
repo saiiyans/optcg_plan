@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ADMIN_HEADERS } from "@/lib/adminHeaders";
 
 interface LearnArticle {
@@ -59,16 +60,26 @@ function ArticleCard({ a, pillar }: { a: LearnArticle; pillar?: boolean }) {
       )}
 
       <div className="mt-2.5 pt-2 border-t border-line/60">
-        <a
-          href={a.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-[11px] text-steel/70 hover:text-flame transition-colors duration-150"
-        >
-          <span className="font-mono">🇬🇧 Source : {a.sourceLabel.split(" — ")[0] ?? a.sourceLabel}</span>
-          {hasFr && a.title !== displayTitle && <span className="truncate italic text-steel/50">« {a.title} »</span>}
-          <span className="ml-auto shrink-0">Lire →</span>
-        </a>
+        {/* Lire → ouvre la page détail DANS l'app (traduite en français,
+            voir /learn/[id]) — la source anglaise originale reste indiquée
+            séparément juste en dessous, jamais cachée (demandé le 30/08/2026). */}
+        <div className="flex items-center gap-2">
+          <a
+            href={a.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-[11px] text-steel/70 hover:text-flame transition-colors duration-150"
+          >
+            🇬🇧 Source : {a.sourceLabel.split(" — ")[0] ?? a.sourceLabel}
+          </a>
+          {hasFr && a.title !== displayTitle && <span className="truncate italic text-[11px] text-steel/50">« {a.title} »</span>}
+          <Link
+            href={`/learn/${a.id}`}
+            className="ml-auto shrink-0 text-[11px] text-steel/70 hover:text-flame transition-colors duration-150"
+          >
+            Lire →
+          </Link>
+        </div>
         <div className="flex items-center gap-2 mt-1 text-[11px] text-steel/50 font-mono">
           {a.durationMinutes && <span>⏱ {a.durationMinutes} min</span>}
           {date && <span>📅 {date}</span>}

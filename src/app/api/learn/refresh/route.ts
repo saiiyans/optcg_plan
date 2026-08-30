@@ -30,6 +30,7 @@ interface LearnArticleUrlRow {
 interface LearnArticleExistingRow {
   title: string;
   summary: string | null;
+  content: string | null;
 }
 
 interface SourceRefreshResult {
@@ -69,9 +70,16 @@ async function refreshSource(source: LearnSource, fetcher: () => Promise<LearnAr
     // d'un ancien texte affichée à côté du nouveau texte anglais.
     const existingArticle: LearnArticleExistingRow | null = await db.learnArticle.findUnique({
       where: { url: a.url },
-      select: { title: true, summary: true },
+      select: { title: true, summary: true, content: true },
     });
     const textChanged = existingArticle && (existingArticle.title !== a.title || existingArticle.summary !== a.summary);
+    // Contenu intégral : seul tcgprotectors le fournit ici (via Atom, voir
+    // learnScraper.ts) — pour opdecks/shonentcg, a.content est toujours null
+    // et on ne touche donc JAMAIS au contenu déjà mis en cache par un
+    // précédent affichage de la page détail (GET /api/learn/[id]), sauf si
+    // le texte anglais source a changé (title/summary), auquel cas le cache
+    // devient obsolète et on le vide pour qu'il soit re-récupéré.
+    const contentChanged = a.content !== null && existingArticle && existingArticle.content !== a.content;
 
     await db.learnArticle.upsert({
       where: { url: a.url },
@@ -79,6 +87,8 @@ async function refreshSource(source: LearnSource, fetcher: () => Promise<LearnAr
         title: a.title,
         summary: a.summary,
         ...(textChanged ? { titleFr: null, summaryFr: null } : {}),
+        ...(a.content !== null ? { content: a.content } : {}),
+        ...(textChanged || contentChanged ? { contentFr: null } : {}),
         durationMinutes: a.durationMinutes,
         publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
         sourceLabel: a.sourceLabel,
@@ -91,6 +101,7 @@ async function refreshSource(source: LearnSource, fetcher: () => Promise<LearnAr
         sourceLabel: a.sourceLabel,
         title: a.title,
         summary: a.summary,
+        content: a.content,
         durationMinutes: a.durationMinutes,
         publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
         isPillar: a.isPillar,

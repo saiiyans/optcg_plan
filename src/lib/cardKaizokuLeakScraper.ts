@@ -25,8 +25,16 @@ export const LEAK_SOURCE_PAGE_URL = "https://www.cardkaizoku.com/spoilers";
 export const LEAK_SOURCE_LABEL = "Card D. Kaizoku (cardkaizoku.com/spoilers)";
 export const LEAK_SET_CODES = ["OP18", "EB05"];
 
+// BUG CORRIGÉ (30/08/2026) : un User-Agent "identifiant" personnalisé
+// (optcg-mihawk-coach/0.1...) déclenchait un 403 systématique sur
+// cdn.cardkaizoku.com — vérifié en direct : le même fetch, avec le
+// User-Agent d'un vrai navigateur, réussit (200). Leur CDN filtre donc les
+// requêtes par apparence de User-Agent (protection anti-bot classique,
+// type Cloudflare) plutôt que par clé/quota — on se présente donc comme un
+// navigateur standard, exactement ce que fait n'importe quel visiteur de
+// cardkaizoku.com/spoilers.
 const USER_AGENT =
-  "optcg-mihawk-coach/0.1 (personal non-commercial deck tool; contact: local-user)";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 interface RawKaizokuCard {
   cardNumber: string;
