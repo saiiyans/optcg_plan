@@ -5,7 +5,7 @@ import { fetchOpDecksArticleContent, fetchShonenTcgArticleContent } from "@/lib/
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.6-flash"; // gemini-2.5-flash n'est plus proposé aux nouveaux comptes (404 constaté le 30/08/2026, message Google renvoyant explicitement vers gemini-3.6-flash)
 
 /**
  * GET /api/learn/:id — page détail d'un article Apprentissage, LISIBLE DANS

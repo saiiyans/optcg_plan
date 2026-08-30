@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const BATCH_SIZE = 5; // petits lots, comme l'import — reste largement sous les limites de temps
-const GEMINI_MODEL = "gemini-2.5-flash"; // gemini-2.5-flash-lite n'est plus proposé aux nouveaux comptes (erreur 404) — gemini-2.5-flash reste sur le palier gratuit
+const GEMINI_MODEL = "gemini-3.6-flash"; // gemini-2.5-flash (et gemini-2.5-flash-lite) ne sont plus proposés aux nouveaux comptes (404 constaté le 30/08/2026, message Google renvoyant explicitement vers gemini-3.6-flash)
 
 /**
  * POST /api/admin/generate-coach-content
