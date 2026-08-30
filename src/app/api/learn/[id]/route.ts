@@ -8,78 +8,99 @@ export const maxDuration = 30;
 const GEMINI_MODEL = "gemini-3.6-flash"; // gemini-2.5-flash n'est plus proposé aux nouveaux comptes (404 constaté le 30/08/2026, message Google renvoyant explicitement vers gemini-3.6-flash)
 
 /**
- * GET /api/learn/:id — page détail d'un article Apprentissage, LISIBLE DANS
- * L'APP en français (demandé le 30/08/2026 : "les articles doivent
- * apparaître dans une nouvelle page, et être traduits en français dedans").
+ * GET/POST /api/learn/:id — page détail d'un article Apprentissage, LISIBLE
+ * DANS L'APP en français (demandé le 30/08/2026).
  *
- * Le contenu intégral (content/contentFr) n'est PAS récupéré pendant
- * /api/learn/refresh (qui reste rapide, sous la limite Vercel même avec
- * ~20 articles) : il est récupéré ET traduit ICI, à la demande, au premier
- * affichage de cette page, puis mis en cache en base pour les visites
- * suivantes (aucun nouvel appel réseau/Gemini tant que le texte source n'a
- * pas changé — voir /api/learn/refresh qui vide le cache si le titre/résumé
- * anglais change). tcgprotectors fait exception : son flux Atom fournit déjà
- * le contenu gratuitement pendant le refresh (voir learnScraper.ts), donc il
- * est déjà là ici la plupart du temps.
+ * SÉPARÉ EN DEUX (30/08/2026) : la première version faisait TOUT dans un
+ * seul GET (récupération du contenu intégral ET appel Gemini) avant de
+ * répondre — un joueur a signalé "quand je clique c'est vide", parce que le
+ * lecteur restait sur le squelette de chargement pendant tout l'appel
+ * réseau à Gemini (souvent plusieurs secondes, plus encore quand ça échoue).
+ * Maintenant : GET répond dès que le texte anglais est prêt (rapide, aucun
+ * appel Gemini) et POST déclenche la traduction séparément, à l'affichage —
+ * le lecteur voit le texte anglais quasi instantanément, puis seul le petit
+ * encart de traduction en bas de page attend Gemini.
+ *
+ * `?rescrape=1` (GET) force une nouvelle récupération du contenu même si
+ * une version est déjà en cache — utile après une correction du scraper
+ * (voir learnScraper.ts, bug de tableau aplati corrigé le 30/08/2026) pour
+ * régénérer les articles déjà en cache sans purge manuelle de la base.
  */
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const article = await db.learnArticle.findUnique({ where: { id: params.id } });
   if (!article) return NextResponse.json({ ok: false, error: "Article introuvable." }, { status: 404 });
 
+  const forceRescrape = req.nextUrl.searchParams.get("rescrape") === "1";
   let content = article.content;
   let contentFr = article.contentFr;
-  let titleFr = article.titleFr;
-  let summaryFr = article.summaryFr;
   let dirty = false;
 
-  // 1) Contenu intégral anglais — récupéré à la demande si absent.
-  if (!content) {
-    if (article.source === "opdecks") content = await fetchOpDecksArticleContent(article.url);
-    else if (article.source === "shonentcg") content = await fetchShonenTcgArticleContent(article.url);
-    if (content) dirty = true;
-  }
-
-  // 2) Traduction française — titre/résumé (si jamais passés par
-  // /api/admin/learn-translate) ET contenu intégral, en un seul appel
-  // Gemini groupé pour économiser le quota gratuit plutôt que d'en faire
-  // deux séparés. translationError est renvoyé au frontend (jamais avalé
-  // silencieusement) — sans ça, "traduction en cours de génération..."
-  // restait affiché indéfiniment sans dire POURQUOI (ex. GEMINI_API_KEY
-  // absente sur Vercel), un vrai bug de diagnostic signalé le 30/08/2026.
-  const apiKey = process.env.GEMINI_API_KEY;
-  let translationError: string | null = null;
-  const needsTranslation = !titleFr || (content && !contentFr);
-  if (needsTranslation) {
-    if (!apiKey) {
-      translationError = "GEMINI_API_KEY non configurée sur Vercel — ajoute cette variable d'environnement puis redéploie.";
-    } else {
-      try {
-        const translated = await translateArticle(apiKey, article.title, article.summary, content);
-        if (translated) {
-          if (!titleFr && translated.titleFr) { titleFr = translated.titleFr; dirty = true; }
-          if (!summaryFr && translated.summaryFr) { summaryFr = translated.summaryFr; dirty = true; }
-          if (content && !contentFr && translated.contentFr) { contentFr = translated.contentFr; dirty = true; }
-        } else {
-          translationError = "Réponse Gemini non exploitable (voir logs Vercel) — réessaie dans un instant.";
-        }
-      } catch (e: any) {
-        translationError = e?.message ?? "Erreur réseau lors de l'appel à Gemini.";
-      }
+  if (!content || forceRescrape) {
+    let fresh: string | null = null;
+    if (article.source === "opdecks") fresh = await fetchOpDecksArticleContent(article.url);
+    else if (article.source === "shonentcg") fresh = await fetchShonenTcgArticleContent(article.url);
+    if (fresh && fresh !== content) {
+      content = fresh;
+      contentFr = null; // le texte anglais a changé (ou a été régénéré) : l'ancienne traduction ne correspond plus
+      dirty = true;
     }
   }
 
   if (dirty) {
-    await db.learnArticle.update({
-      where: { id: article.id },
-      data: { content, contentFr, titleFr, summaryFr },
-    });
+    await db.learnArticle.update({ where: { id: article.id }, data: { content, contentFr } });
   }
 
   return NextResponse.json({
     ok: true,
-    article: { ...article, content, contentFr, titleFr, summaryFr },
-    translationError,
+    article: { ...article, content, contentFr },
   });
+}
+
+export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+  const article = await db.learnArticle.findUnique({ where: { id: params.id } });
+  if (!article) return NextResponse.json({ ok: false, error: "Article introuvable." }, { status: 404 });
+
+  let content = article.content;
+  if (!content) {
+    if (article.source === "opdecks") content = await fetchOpDecksArticleContent(article.url);
+    else if (article.source === "shonentcg") content = await fetchShonenTcgArticleContent(article.url);
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({
+      ok: true,
+      titleFr: article.titleFr,
+      summaryFr: article.summaryFr,
+      contentFr: article.contentFr,
+      translationError: "GEMINI_API_KEY non configurée sur Vercel — ajoute cette variable d'environnement puis redéploie.",
+    });
+  }
+
+  let titleFr = article.titleFr;
+  let summaryFr = article.summaryFr;
+  let contentFr = article.contentFr;
+  let translationError: string | null = null;
+
+  try {
+    const translated = await translateArticle(apiKey, article.title, article.summary, content);
+    if (translated) {
+      titleFr = translated.titleFr ?? titleFr;
+      summaryFr = translated.summaryFr ?? summaryFr;
+      contentFr = translated.contentFr ?? contentFr;
+    } else {
+      translationError = "Réponse Gemini non exploitable (voir logs Vercel) — réessaie dans un instant.";
+    }
+  } catch (e: any) {
+    translationError = e?.message ?? "Erreur réseau lors de l'appel à Gemini.";
+  }
+
+  await db.learnArticle.update({
+    where: { id: article.id },
+    data: { content, contentFr, titleFr, summaryFr },
+  });
+
+  return NextResponse.json({ ok: true, titleFr, summaryFr, contentFr, translationError });
 }
 
 async function translateArticle(

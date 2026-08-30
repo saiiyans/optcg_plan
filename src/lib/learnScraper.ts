@@ -138,6 +138,48 @@ export async function fetchOpDecksLearnArticles(): Promise<LearnArticleRaw[]> {
 // légère mise en forme ("## " pour un sous-titre, "> " pour une citation)
 // plutôt que de tout aplatir sans structure.
 // ---------------------------------------------------------------------
+// BUG CORRIGÉ (30/08/2026) : un bloc contenant un <table> (ex. l'article "The
+// 2K Rule", tableau "5,7,9,11 ladder") faisait planter la lisibilité — un
+// simple $(el).text() aplatit toutes les cellules bord à bord sans le
+// moindre espace ("5,0001 card (any counter)6,0001 card..."), sans que rien
+// ne plante ni ne s'affiche vide : juste illisible, à la fois en anglais ET
+// dans la traduction française qui en découle (Gemini traduit fidèlement le
+// charabia qu'on lui donne). tableToText() rend chaque ligne du tableau
+// lisible ("cellule — cellule — cellule"), séparément du texte environnant.
+function tableToText($: cheerio.CheerioAPI, table: any): string {
+  const rows: string[] = [];
+  $(table)
+    .find("tr")
+    .each((_, tr) => {
+      const cells: string[] = [];
+      $(tr)
+        .find("th, td")
+        .each((_, cell) => {
+          const t = cleanText($(cell).text());
+          if (t) cells.push(t);
+        });
+      if (cells.length) rows.push(cells.join(" — "));
+    });
+  return rows.join("\n");
+}
+
+// Même souci potentiel pour une liste <ul>/<li> collée sans espace dans le
+// HTML source — on insère un séparateur visible entre éléments avant de lire
+// le texte, sur un clone (jamais sur le DOM original de l'article).
+function blockText($: cheerio.CheerioAPI, el: any): string {
+  const $el = $(el);
+  const clone = $el.clone();
+  const tableParts: string[] = [];
+  clone.find("table").each((_, t) => {
+    tableParts.push(tableToText($, t));
+  });
+  clone.find("table").remove();
+  clone.find("li").after(" · ");
+  clone.find("br").after(" ");
+  const rest = cleanText(clone.text());
+  return [rest, ...tableParts].filter(Boolean).join("\n");
+}
+
 export async function fetchOpDecksArticleContent(url: string): Promise<string | null> {
   try {
     const html = await politeFetchText(url);
@@ -151,11 +193,18 @@ export async function fetchOpDecksArticleContent(url: string): Promise<string | 
       .not("header")
       .each((_, el) => {
         const tag = (el as any).tagName?.toLowerCase();
-        const text = cleanText($(el).text());
-        if (!text) return;
-        if (tag === "h2" || tag === "h3") lines.push(`## ${text}`);
-        else if (tag === "blockquote") lines.push(`> ${text}`);
-        else lines.push(text);
+        if (tag === "h2" || tag === "h3") {
+          const text = cleanText($(el).text());
+          if (text) lines.push(`## ${text}`);
+          return;
+        }
+        if (tag === "blockquote") {
+          const text = cleanText($(el).text());
+          if (text) lines.push(`> ${text}`);
+          return;
+        }
+        const text = blockText($, el);
+        if (text) lines.push(text);
       });
 
     const content = lines.join("\n\n").trim();

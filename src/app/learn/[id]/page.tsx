@@ -51,17 +51,37 @@ function renderContent(text: string) {
 export default function LearnArticleDetailPage({ params }: { params: { id: string } }) {
   const [article, setArticle] = useState<LearnArticleDetail | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [translating, setTranslating] = useState(false);
   const [translationError, setTranslationError] = useState<string | null>(null);
 
+  // Chargement en 2 temps (corrigé le 30/08/2026, voir le commentaire dans
+  // /api/learn/[id]/route.ts) : le texte anglais s'affiche dès que GET
+  // répond (rapide, aucun appel Gemini) ; la traduction est demandée
+  // séparément juste après, en arrière-plan — plus d'écran vide pendant que
+  // Gemini répond (ou échoue).
   useEffect(() => {
     setState("loading");
+    setArticle(null);
+    setTranslationError(null);
     fetch(`/api/learn/${params.id}`)
       .then((r) => r.json())
       .then((d) => {
         if (!d.ok) throw new Error(d.error ?? "Erreur");
         setArticle(d.article);
-        setTranslationError(d.translationError ?? null);
         setState("ready");
+        if (d.article.content && !d.article.contentFr) {
+          setTranslating(true);
+          fetch(`/api/learn/${params.id}`, { method: "POST" })
+            .then((r) => r.json())
+            .then((t) => {
+              if (t.ok) {
+                setArticle((prev) => (prev ? { ...prev, titleFr: t.titleFr, summaryFr: t.summaryFr, contentFr: t.contentFr } : prev));
+                setTranslationError(t.translationError ?? null);
+              }
+            })
+            .catch(() => setTranslationError("Erreur réseau lors de l'appel à Gemini."))
+            .finally(() => setTranslating(false));
+        }
       })
       .catch(() => setState("error"));
   }, [params.id]);
@@ -76,6 +96,7 @@ export default function LearnArticleDetailPage({ params }: { params: { id: strin
         <div className="card-tile p-5">
           <div className="skeleton h-6 w-2/3 mb-3" />
           <div className="skeleton h-40" />
+          <p className="text-[11px] text-steel/50 mt-2 text-center">Chargement de l&rsquo;article...</p>
         </div>
       )}
 
@@ -98,9 +119,11 @@ export default function LearnArticleDetailPage({ params }: { params: { id: strin
               {renderContent(article.contentFr ?? article.content)}
               {!article.contentFr && (
                 <p className="text-[10px] text-steel/50 italic mt-2">
-                  {translationError
-                    ? `Traduction indisponible : ${translationError}`
-                    : "Traduction française en cours de génération — recharge la page dans un instant, ou lis la version anglaise ci-dessous en attendant."}
+                  {translating
+                    ? "Traduction française en cours..."
+                    : translationError
+                      ? `Traduction indisponible : ${translationError}`
+                      : "Traduction française non disponible — lis la version anglaise ci-dessus en attendant."}
                 </p>
               )}
             </div>
