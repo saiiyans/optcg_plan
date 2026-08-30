@@ -560,6 +560,14 @@ model LearnArticle {
   sourceLabel     String    // libellé humain affiché (nom du site + ce qu'il couvre)
   title           String
   summary         String?
+  // Traduction française automatique (API Gemini, même mécanisme que
+  // Card.officialTextFr/coachExplanationFr) — jamais affichée sans le
+  // texte original en dessous (voir /learn, lien "Source"). null tant que
+  // /api/admin/learn-translate n'est pas encore passé sur cet article ;
+  // l'app retombe sur le titre/résumé anglais en attendant, jamais un
+  // texte fabriqué.
+  titleFr         String?
+  summaryFr       String?
   durationMinutes Int?
   publishedAt     DateTime?
   isPillar        Boolean   @default(false)

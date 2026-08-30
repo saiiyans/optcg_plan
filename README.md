@@ -433,5 +433,39 @@ source échoue, ses articles déjà en base restent affichés tels quels
 (jamais vidés) et seule son erreur remonte dans le petit résumé sous le
 bouton — les deux autres sources s'actualisent normalement.
 
-Migration : nouvelle table `LearnArticle` — **exécute `npm run db:push`**
-après avoir récupéré ces changements.
+**Traduction française automatique** : juste après l'actualisation,
+`/learn` enchaîne automatiquement (aucun bouton séparé) des appels à
+`POST /api/admin/learn-translate` (protégée par `ADMIN_SECRET`, même
+mécanisme que `generate-coach-content`) qui traduit via l'API Gemini le
+titre + résumé de chaque article pas encore traduit, par petits lots.
+Le texte anglais original n'est **jamais** remplacé (`title`/`summary`
+intacts) : `titleFr`/`summaryFr` s'affichent à la place quand disponibles,
+avec un lien "🇬🇧 Source" vers l'article original sous chaque carte. Si le
+titre/résumé anglais change d'une actualisation à l'autre, la traduction
+stockée est invalidée (`titleFr`/`summaryFr` remis à `null`) pour être
+régénérée plutôt que de laisser une traduction obsolète affichée.
+
+Migration : nouvelle table `LearnArticle` + colonnes `titleFr`/`summaryFr`
+— **exécute `npm run db:push`** après avoir récupéré ces changements.
+
+## 21. Cartes "leak" (reveal avant sortie officielle)
+
+`Card.isLeak` marque les cartes d'un set encore en période de reveal —
+affichées dans `/cards` avec un badge "LEAK", filtrables par set, mais
+jamais mélangées aux decklists/tier lists tant que le set n'est pas sorti.
+
+**Remplace l'ancien import ponctuel** (`/api/admin/import-op17-leaks`,
+`src/lib/data/op17-confirmed.json` — un instantané figé capturé une seule
+fois avant la sortie d'OP17, jamais reconductible) par une source **live** :
+`src/lib/cardKaizokuLeakScraper.ts` relit `https://cdn.cardkaizoku.com/card_data.json`
+(alias stable, repéré via cardkaizoku.com/spoilers) à chaque clic sur le
+bouton **"🔮 Actualiser les leaks"** (`/cards`, panneau "Update card
+database") → `POST /api/leaks/refresh`.
+
+`LEAK_SET_CODES` dans `cardKaizokuLeakScraper.ts` est la seule liste des
+sets actuellement en reveal (`["OP18", "EB05"]` au 30/08/2026, OP17 en a
+été retiré à sa sortie officielle le 28/08/2026). **À mettre à jour à
+chaque nouveau cycle** : dès qu'un set sort et quitte cette liste, le
+prochain clic sur "Actualiser les leaks" repasse automatiquement
+`isLeak=false` sur toutes ses cartes déjà en base — aucune carte n'est
+jamais supprimée, seul le statut change.

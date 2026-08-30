@@ -16,6 +16,8 @@ interface LearnArticleRow {
   sourceLabel: string;
   title: string;
   summary: string | null;
+  titleFr: string | null;
+  summaryFr: string | null;
   durationMinutes: number | null;
   publishedAt: Date | null;
   isPillar: boolean;

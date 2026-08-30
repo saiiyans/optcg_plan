@@ -183,6 +183,39 @@ export default function CardsPage() {
   const [bulkSetStatus, setBulkSetStatus] = useState("");
   const [bulkSetProgress, setBulkSetProgress] = useState<{ done: number; total: number } | null>(null);
 
+  // --- Cartes "leak" (reveal avant sortie officielle) — voir
+  // /api/leaks/refresh et src/lib/cardKaizokuLeakScraper.ts. Remplace
+  // l'ancien import ponctuel à la main (op17-confirmed.json) : relit en
+  // direct cardkaizoku.com/spoilers à chaque clic, et repasse
+  // automatiquement isLeak=false sur les cartes d'un set qui vient de
+  // sortir officiellement (ex. OP17 le 28/08/2026).
+  const [leaksBusy, setLeaksBusy] = useState(false);
+  const [leaksStatus, setLeaksStatus] = useState("");
+
+  async function runLeaksRefresh() {
+    setLeaksBusy(true);
+    setLeaksStatus("Récupération des leaks en cours...");
+    try {
+      const res: Response = await fetch("/api/leaks/refresh", { method: "POST" });
+      const data: any = await res.json();
+      if (!data.ok) {
+        setLeaksStatus(`Erreur : ${data.error}`);
+        return;
+      }
+      setLeaksStatus(
+        `[${data.leakSetCodes.join(", ")}] ${data.totalFound} carte(s) trouvée(s) — ${data.created} ajoutée(s), ${data.updated} mise(s) à jour${
+          data.demoted > 0 ? `, ${data.demoted} set(s) sorti(s) officiellement repassé(s) en cartes normales` : ""
+        }.`
+      );
+      loadCards();
+      loadStats();
+    } catch (e: any) {
+      setLeaksStatus(`Erreur : ${e?.message ?? String(e)}`);
+    } finally {
+      setLeaksBusy(false);
+    }
+  }
+
   async function runSetImport() {
     const setCode = setCodeInput.trim().toUpperCase();
     if (!setCode) {
@@ -646,6 +679,21 @@ export default function CardsPage() {
                 </div>
               )}
               {bulkSetStatus && <div className="text-xs text-steel mt-2">{bulkSetStatus}</div>}
+            </div>
+
+            {/* Cartes leak (reveal avant sortie officielle) — sets
+                actuellement en période de reveal, voir LEAK_SET_CODES dans
+                cardKaizokuLeakScraper.ts (à mettre à jour à chaque nouveau
+                cycle). Dès qu'un set sort, ce même bouton repasse ses
+                cartes en isLeak=false automatiquement. */}
+            <div className="mt-4 pt-4 border-t border-line">
+              <div className="text-[10px] uppercase tracking-wider text-textMuted mb-2">
+                Cartes leak (spoilers avant sortie officielle — cardkaizoku.com/spoilers)
+              </div>
+              <button onClick={runLeaksRefresh} disabled={leaksBusy} className="btn btn-primary">
+                {leaksBusy ? "Actualisation..." : "🔮 Actualiser les leaks"}
+              </button>
+              {leaksStatus && <div className="text-xs text-steel mt-2">{leaksStatus}</div>}
             </div>
           </div>
         )}

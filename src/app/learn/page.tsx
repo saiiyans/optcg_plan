@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ADMIN_HEADERS } from "@/lib/adminHeaders";
 
 interface LearnArticle {
   id: string;
@@ -8,6 +9,8 @@ interface LearnArticle {
   sourceLabel: string;
   title: string;
   summary: string | null;
+  titleFr: string | null;
+  summaryFr: string | null;
   durationMinutes: number | null;
   publishedAt: string | null;
   isPillar: boolean;
@@ -36,26 +39,42 @@ function formatDate(iso: string | null): string | null {
 
 function ArticleCard({ a, pillar }: { a: LearnArticle; pillar?: boolean }) {
   const date = formatDate(a.publishedAt);
+  const hasFr = !!a.titleFr;
+  const displayTitle = a.titleFr ?? a.title;
+  const displaySummary = a.summaryFr ?? a.summary;
+
   return (
-    <a
-      href={a.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`block rounded-xl border p-4 transition-colors duration-150 hover:border-flame/60 ${
+    <div
+      className={`rounded-xl border p-4 transition-colors duration-150 ${
         pillar ? "border-flame/40 bg-flame/5" : "border-line bg-panel2"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <h4 className="text-sm font-semibold text-ivory leading-snug">{a.title}</h4>
+        <h4 className="text-sm font-semibold text-ivory leading-snug">{displayTitle}</h4>
         {pillar && <span className="badge badge-gold shrink-0 text-[10px]">Pilier</span>}
       </div>
-      {a.summary && <p className="text-xs text-textMuted mt-1.5 leading-relaxed">{a.summary}</p>}
-      <div className="flex items-center gap-2 mt-2 text-[11px] text-steel/70 font-mono">
-        {a.durationMinutes && <span>⏱ {a.durationMinutes} min</span>}
-        {date && <span>📅 {date}</span>}
-        <span className="ml-auto text-flame/80">Lire →</span>
+      {displaySummary && <p className="text-xs text-textMuted mt-1.5 leading-relaxed">{displaySummary}</p>}
+      {!hasFr && (
+        <p className="text-[10px] text-steel/50 mt-1.5 italic">Traduction française en cours de génération...</p>
+      )}
+
+      <div className="mt-2.5 pt-2 border-t border-line/60">
+        <a
+          href={a.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-[11px] text-steel/70 hover:text-flame transition-colors duration-150"
+        >
+          <span className="font-mono">🇬🇧 Source : {a.sourceLabel.split(" — ")[0] ?? a.sourceLabel}</span>
+          {hasFr && a.title !== displayTitle && <span className="truncate italic text-steel/50">« {a.title} »</span>}
+          <span className="ml-auto shrink-0">Lire →</span>
+        </a>
+        <div className="flex items-center gap-2 mt-1 text-[11px] text-steel/50 font-mono">
+          {a.durationMinutes && <span>⏱ {a.durationMinutes} min</span>}
+          {date && <span>📅 {date}</span>}
+        </div>
       </div>
-    </a>
+    </div>
   );
 }
 
@@ -63,6 +82,7 @@ export default function LearnPage() {
   const [articles, setArticles] = useState<LearnArticle[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [busy, setBusy] = useState(false);
+  const [statusText, setStatusText] = useState("");
   const [capturedAt, setCapturedAt] = useState<string | null>(null);
   const [refreshSummary, setRefreshSummary] = useState<SourceRefreshResult[] | null>(null);
 
@@ -81,15 +101,47 @@ export default function LearnPage() {
 
   useEffect(load, []);
 
+  // Traduit en boucle (petits lots) tous les articles pas encore traduits —
+  // déclenché automatiquement après un "Actualiser", jamais un bouton
+  // séparé (demandé explicitement). S'arrête proprement si GEMINI_API_KEY
+  // n'est pas configurée : les articles restent visibles en anglais.
+  const translateAll = async () => {
+    let guard = 0;
+    while (guard < 20) {
+      guard++;
+      const res: Response = await fetch("/api/admin/learn-translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...ADMIN_HEADERS },
+        body: JSON.stringify({ limit: 5 }),
+      });
+      const data: any = await res.json();
+      if (!data.ok) {
+        setStatusText(`Traduction interrompue : ${data.error}`);
+        return;
+      }
+      if (data.processed > 0) {
+        setStatusText(`Traduction en cours... ${data.remaining} article(s) restant(s).`);
+        load();
+      }
+      if (data.done) {
+        setStatusText("");
+        return;
+      }
+    }
+  };
+
   const refresh = async () => {
     setBusy(true);
+    setStatusText("Récupération des sources...");
     try {
       const res: Response = await fetch("/api/learn/refresh", { method: "POST" });
       const data: any = await res.json();
       setRefreshSummary(data.sources ?? null);
+      load();
+      setStatusText("Traduction en français...");
+      await translateAll();
     } finally {
       setBusy(false);
-      load();
     }
   };
 
@@ -103,9 +155,10 @@ export default function LearnPage() {
           <div>
             <h1 className="text-lg font-bold text-ivory">📚 Apprentissage</h1>
             <p className="text-xs text-textMuted mt-1 max-w-2xl">
-              Articles de fondamentaux et de stratégie OPTCG, récupérés en direct depuis plusieurs sites à chaque
-              clic sur « Actualiser ». Les 4 articles « Pilier » ci-dessous sont la base de la méthodologie du
-              coach (2K Rule, économie du DON!!, erreurs de débutant/défense, rôles de matchup).
+              Articles de fondamentaux et de stratégie OPTCG, récupérés en direct depuis plusieurs sites et traduits
+              automatiquement en français à chaque clic sur « Actualiser » — la source originale (en anglais) reste
+              toujours indiquée sous chaque article. Les 4 articles « Pilier » ci-dessous sont la base de la
+              méthodologie du coach (2K Rule, économie du DON!!, erreurs de débutant/défense, rôles de matchup).
             </p>
             {capturedAt && (
               <p className="text-[11px] text-steel/60 mt-1.5 font-mono">
@@ -118,6 +171,8 @@ export default function LearnPage() {
             {busy ? "Actualisation..." : "🔄 Actualiser"}
           </button>
         </div>
+
+        {statusText && <div className="mt-2 text-[11px] text-steel/70 font-mono">{statusText}</div>}
 
         {refreshSummary && (
           <div className="mt-3 pt-3 border-t border-line flex flex-wrap gap-2 text-[11px]">

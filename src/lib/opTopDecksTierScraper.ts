@@ -1,6 +1,7 @@
 import { scrapeTournamentDeckTable } from "@/lib/scraper";
 import { db } from "@/lib/db";
 import { tierByRankPercentile, type TierLetter } from "@/lib/tierBucketing";
+import { parseCompactDecklist } from "@/lib/deckParser";
 
 /**
  * Tier list "méta" calculée EN DIRECT à partir de la page de decklists
@@ -50,12 +51,20 @@ interface CardNameColorRow {
 /**
  * Extrait le numéro de carte du Leader depuis le format compact de la
  * colonne "Deck Composition" (ex: "1nOP14-020a4nEB01-015a..." → OP14-020).
- * Même logique que isStrictMihawkRow dans scraper.ts, généralisée à
- * n'importe quel leader plutôt que filtrée sur Mihawk uniquement.
+ *
+ * BUG CORRIGÉ (30/08/2026) : la version précédente utilisait sa propre
+ * regex `/^1n([A-Z0-9-]+)a/i` — sous le flag /i, le "a" de fin ET le "n"
+ * séparateur des entrées suivantes appartiennent TOUS DEUX à la classe
+ * [A-Z0-9-] (équivalents insensibles à la casse de "A" et "N"), donc le "+"
+ * gourmand engloutissait tout le reste du decklist et ne backtrackait que
+ * jusqu'au DERNIER "a" de la chaîne entière — capturant un fatras du genre
+ * "OP17-039A4NOP08-051A4NOP17-..." au lieu de "OP17-039" pour la plupart
+ * des decks. Reprend maintenant parseCompactDecklist (deckParser.ts), qui
+ * découpe d'abord la chaîne sur "a" en tokens isolés avant de matcher
+ * chacun avec `^...$` — sans cette ambiguïté, déjà testé/utilisé ailleurs.
  */
 function extractLeaderCardNumber(rawDecklist: string): string | null {
-  const m = rawDecklist.match(/^1n([A-Z0-9-]+)a/i);
-  return m ? m[1].toUpperCase() : null;
+  return parseCompactDecklist(rawDecklist).leader?.cardNumber ?? null;
 }
 
 export async function fetchOpTopDecksTierList(): Promise<OpTopDecksTierResult> {

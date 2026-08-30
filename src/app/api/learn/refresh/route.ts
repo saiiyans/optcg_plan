@@ -27,6 +27,11 @@ interface LearnArticleUrlRow {
   url: string;
 }
 
+interface LearnArticleExistingRow {
+  title: string;
+  summary: string | null;
+}
+
 interface SourceRefreshResult {
   source: LearnSource;
   ok: boolean;
@@ -57,11 +62,23 @@ async function refreshSource(source: LearnSource, fetcher: () => Promise<LearnAr
   }
 
   for (const a of articles) {
+    // Si le titre/résumé anglais a changé depuis la dernière fois, la
+    // traduction française stockée (titleFr/summaryFr) ne correspond plus
+    // au texte source — on la vide pour que /api/admin/learn-translate la
+    // regénère au prochain passage, plutôt que de laisser une traduction
+    // d'un ancien texte affichée à côté du nouveau texte anglais.
+    const existingArticle: LearnArticleExistingRow | null = await db.learnArticle.findUnique({
+      where: { url: a.url },
+      select: { title: true, summary: true },
+    });
+    const textChanged = existingArticle && (existingArticle.title !== a.title || existingArticle.summary !== a.summary);
+
     await db.learnArticle.upsert({
       where: { url: a.url },
       update: {
         title: a.title,
         summary: a.summary,
+        ...(textChanged ? { titleFr: null, summaryFr: null } : {}),
         durationMinutes: a.durationMinutes,
         publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
         sourceLabel: a.sourceLabel,
