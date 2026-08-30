@@ -91,7 +91,16 @@ export function NavLinks({ variant }: { variant: "top" | "bottom" }) {
     return (
       <>
         {PRIMARY_ITEMS.map((item) => {
-          const groupItems = ITEMS.filter((i) => i.group === item.group && i.href !== item.href);
+          // BUG CORRIGÉ (30/08/2026) : ACCUEIL porte group="jouer" (voir sa
+          // définition plus haut, commentée "group ignoré ici" — un
+          // commentaire qui décrivait une intention jamais vraie dans ce
+          // calcul). Sans le cas particulier ci-dessous, Accueil héritait
+          // silencieusement de TOUS les groupItems de "jouer" (Journal,
+          // Jour J, Quiz Mulligan) et déclenchait donc SON PROPRE menu
+          // déroulant en plus de celui de Journal dès que openGroup="jouer"
+          // — deux panneaux superposés à l'écran en même temps. Accueil ne
+          // doit jamais avoir de menu déroulant, quel que soit son `group`.
+          const groupItems = item.href === "/" ? [] : ITEMS.filter((i) => i.group === item.group && i.href !== item.href);
           const isActiveGroup = item.href === "/" ? pathname === "/" : activeGroup === item.group;
           if (groupItems.length === 0) {
             return (
