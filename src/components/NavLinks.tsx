@@ -31,6 +31,7 @@ const ITEMS: NavItem[] = [
   { href: "/journal", label: "Journal", icon: "📓", group: "jouer", primary: true },
   { href: "/tournament-day", label: "Jour J", icon: "⚔️", group: "jouer" },
   { href: "/mulligan-quiz", label: "Quiz Mulligan", icon: "🧠", group: "jouer" },
+  { href: "/tournaments-asia", label: "Tournois Asie", icon: "🌏", group: "jouer" },
 
   { href: "/matchups", label: "Coach & Matchups", icon: "🎯", group: "coach", primary: true },
   { href: "/deck-profile", label: "Deck Profile", icon: "🦅", group: "coach" },
