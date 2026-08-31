@@ -3,9 +3,24 @@ import { db } from "@/lib/db";
 import { fetchOpDecksArticleContent, fetchShonenTcgArticleContent } from "@/lib/learnScraper";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+// 30s ne suffisait pas : bug corrigé le 31/08/2026 ci-dessous ajoute une
+// 2e tentative Gemini quand la 1ère est tronquée, et un seul appel prend
+// déjà ~20-35s. 90s laisse la marge nécessaire (Vercel Hobby autorise
+// jusqu'à 300s de toute façon depuis 2026, donc aucun risque de dépasser
+// un quota réel).
+export const maxDuration = 90;
 
 const GEMINI_MODEL = "gemini-3.6-flash"; // gemini-2.5-flash n'est plus proposé aux nouveaux comptes (404 constaté le 30/08/2026, message Google renvoyant explicitement vers gemini-3.6-flash)
+
+// 3000 était TROP JUSTE pour titre + résumé + article ENTIER traduits en
+// français (le français est généralement ~15-20% plus long que l'anglais
+// en tokens) : Gemini coupait sa réponse en plein milieu de la valeur
+// "contentFr", ce qui cassait JSON.parse et faisait échouer TOUTE la
+// traduction (bug signalé le 31/08/2026 : "la traduction n'apparaît
+// toujours pas"). 8192 est le vrai correctif ; parseTranslationResponse()
+// ci-dessous ajoute en plus un filet de sécurité si jamais ça arrive
+// quand même sur un article particulièrement long.
+const MAX_OUTPUT_TOKENS = 8192;
 
 /**
  * GET/POST /api/learn/:id — page détail d'un article Apprentissage, LISIBLE
@@ -103,13 +118,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true, titleFr, summaryFr, contentFr, translationError });
 }
 
-async function translateArticle(
-  apiKey: string,
-  title: string,
-  summary: string | null,
-  content: string | null
-): Promise<{ titleFr: string; summaryFr: string | null; contentFr: string | null } | null> {
-  const prompt = `Traduis en français cet article de stratégie pour le jeu de cartes One Piece Card Game (OPTCG). Garde les termes de jeu propres au TCG tels quels quand c'est l'usage (DON!!, Leader, Trigger, Counter...). Conserve la mise en forme légère du contenu (lignes commençant par "## " ou "> ") telle quelle, traduis juste le texte.
+function buildTranslationPrompt(title: string, summary: string | null, content: string | null): string {
+  return `Traduis en français cet article de stratégie pour le jeu de cartes One Piece Card Game (OPTCG). Garde les termes de jeu propres au TCG tels quels quand c'est l'usage (DON!!, Leader, Trigger, Counter...). Conserve la mise en forme légère du contenu (lignes commençant par "## " ou "> ") telle quelle, traduis juste le texte.
 
 Titre (anglais) : ${title}
 ${summary ? `Résumé (anglais) : ${summary}` : "(pas de résumé disponible)"}
@@ -121,7 +131,9 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre) :
   "summaryFr": ${summary ? '"traduction française fidèle du résumé"' : "null"},
   "contentFr": ${content ? '"traduction française fidèle du contenu intégral, avec la même mise en forme légère"' : "null"}
 }`;
+}
 
+async function callGeminiTranslate(apiKey: string, prompt: string): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
@@ -129,7 +141,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre) :
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 3000 },
+        generationConfig: { responseMimeType: "application/json", maxOutputTokens: MAX_OUTPUT_TOKENS },
       }),
     }
   );
@@ -138,13 +150,85 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre) :
     throw new Error(`API Gemini ${res.status}: ${errText.slice(0, 200)}`);
   }
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
+
+function unescapeJsonStringFragment(s: string): string {
+  // Défait les échappements JSON de base à la main — utilisé uniquement
+  // par l'extraction tolérante ci-dessous, quand le texte n'est PAS un
+  // JSON valide (donc JSON.parse n'est pas utilisable dessus).
+  return s.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+}
+
+/**
+ * Filet de sécurité ajouté le 31/08/2026 suite au bug "la traduction
+ * n'apparaît toujours pas" : même avec MAX_OUTPUT_TOKENS augmenté, un
+ * article particulièrement long pourrait encore faire tronquer la réponse
+ * Gemini en plein milieu de la valeur "contentFr", ce qui rend le JSON
+ * invalide. Plutôt que de tout jeter dans ce cas (comportement précédent),
+ * on essaie d'abord un JSON.parse strict (cas normal), puis si ça échoue on
+ * extrait titleFr/summaryFr/contentFr à la main par expression régulière —
+ * ces champs sont dans cet ordre dans le prompt, donc titleFr et summaryFr
+ * (courts) arrivent AVANT contentFr (long) et restent lisibles même si
+ * contentFr est coupé net à la fin. Le champ `clean` indique si on a pu
+ * s'appuyer sur un JSON.parse strict (donc pas besoin de retenter).
+ */
+function parseTranslationResponse(
+  rawText: string
+): { titleFr: string; summaryFr: string | null; contentFr: string | null; clean: boolean } | null {
+  const cleaned = rawText.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+
   try {
-    const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
     const parsed = JSON.parse(cleaned);
-    if (!parsed?.titleFr) return null;
-    return { titleFr: parsed.titleFr, summaryFr: parsed.summaryFr ?? null, contentFr: parsed.contentFr ?? null };
+    if (parsed?.titleFr) {
+      return { titleFr: parsed.titleFr, summaryFr: parsed.summaryFr ?? null, contentFr: parsed.contentFr ?? null, clean: true };
+    }
   } catch {
-    return null;
+    // JSON invalide (probablement tronqué) : on tente l'extraction tolérante ci-dessous.
   }
+
+  const titleMatch = cleaned.match(/"titleFr"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (!titleMatch) return null; // même le titre est illisible : rien de fiable à récupérer sur cette tentative
+
+  const summaryMatch = cleaned.match(/"summaryFr"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  // Pas de guillemet fermant EXIGÉ pour contentFr : s'il est tronqué, on
+  // récupère quand même tout ce qui a été généré avant la coupure.
+  const contentMatch = cleaned.match(/"contentFr"\s*:\s*"((?:[^"\\]|\\.)*)/);
+
+  return {
+    titleFr: unescapeJsonStringFragment(titleMatch[1]),
+    summaryFr: summaryMatch ? unescapeJsonStringFragment(summaryMatch[1]) : null,
+    contentFr: contentMatch ? unescapeJsonStringFragment(contentMatch[1]) : null,
+    clean: false,
+  };
+}
+
+async function translateArticle(
+  apiKey: string,
+  title: string,
+  summary: string | null,
+  content: string | null
+): Promise<{ titleFr: string; summaryFr: string | null; contentFr: string | null } | null> {
+  const prompt = buildTranslationPrompt(title, summary, content);
+
+  // Jusqu'à 2 tentatives (même logique que /api/admin/quiz-build) : garde un
+  // résultat partiel (tronqué) en secours dès la 1ère tentative réussie au
+  // sens large, mais retente une fois si ce n'était pas un JSON propre — la
+  // 2e réponse de Gemini est parfois complète alors que la 1ère ne l'était
+  // pas (non déterministe).
+  let fallback: { titleFr: string; summaryFr: string | null; contentFr: string | null } | null = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    let text: string;
+    try {
+      text = await callGeminiTranslate(apiKey, prompt);
+    } catch (e) {
+      if (attempt === 2 && !fallback) throw e; // 2 échecs réseau de suite, rien en secours : on remonte l'erreur
+      continue;
+    }
+    const parsed = parseTranslationResponse(text);
+    if (!parsed) continue; // rien d'exploitable (même le titre est illisible) : retente
+    if (parsed.clean) return parsed; // JSON complet et valide : terminé, inutile de retenter
+    fallback = fallback ?? parsed; // résultat partiel (tronqué) : gardé en secours si la 2e tentative échoue aussi
+  }
+  return fallback;
 }
