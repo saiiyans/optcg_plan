@@ -609,3 +609,105 @@ model LearnArticle {
 
   @@index([source])
 }
+
+// ---------------------------------------------------------------------
+// --- Rubrique "Quiz des effets" (nouvelle rubrique, demandée le
+// 31/08/2026) — mémorisation des effets des cartes clés de la méta OP17,
+// façon "Qui veut gagner des millions ?" (identité graphique originale,
+// aucun élément de l'émission repris).
+//
+// QuizCard NE DUPLIQUE JAMAIS le texte officiel/l'image/les stats d'une
+// carte : ces champs restent lus en direct depuis Card (via cardNumber, pas
+// de relation stricte pour ne jamais bloquer si une carte est retirée) au
+// moment de servir une question, pour ne jamais désynchroniser les deux.
+// QuizCard porte uniquement les métadonnées PROPRES au quiz : difficulté
+// calculée, archétypes sourcés, score méta, et les 3 mauvaises réponses
+// pré-générées (Gemini, hors ligne, jamais en direct pendant une partie —
+// voir /api/admin/quiz-build) puis validées par quizValidation.ts.
+// status="incomplete" tant que officialText/officialTextFr/wrongAnswers ne
+// sont pas tous vérifiés : une carte incomplete n'est JAMAIS servie en jeu.
+// ---------------------------------------------------------------------
+model QuizCard {
+  id               String   @id @default(cuid())
+  cardNumber       String   @unique
+  difficulty       Int      @default(1) // 1 (facile) à 3 (difficile) — calculé depuis le texte officiel, voir quizDifficulty.ts
+  archetypesJson   String   @default("[]") // JSON string[] — leaders/archétypes où la carte est jouée, sourcé (voir quizCandidates.ts)
+  metaScore        Float    @default(0) // signal réel (tier/winrate du leader, ou présence dans une liste sourcée) — jamais un chiffre inventé
+  wrongAnswersJson String?  // JSON string[3] — généré + validé hors ligne, jamais pendant une partie
+  wrongAnswersMeta String?  // JSON — quel(s) attribut(s) modifié(s) par mauvaise réponse (traçabilité, cahier des charges section 6)
+  explanationFr    String?  // explication française simplifiée de l'utilisation stratégique de la carte
+  status           String   @default("pending") // "pending" (candidate, pas encore prête) | "ready" (jouable) | "incomplete" (donnée manquante ou invalide)
+  incompleteReason String?  // pourquoi "incomplete" — jamais laissé vide sans raison si status=incomplete
+  sourceNote       String?  // d'où vient la sélection de cette carte (ex. "cardkaizoku.com simulator, tier S, 2026-08-30")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  mastery QuizMastery?
+
+  @@index([status])
+  @@index([difficulty])
+}
+
+// Maîtrise individuelle par carte (0 à 5 étoiles) + répétition espacée
+// simple (section 11 du cahier des charges). Une ligne par QuizCard, créée
+// à sa première apparition dans une partie.
+model QuizMastery {
+  id                     String    @id @default(cuid())
+  quizCardId             String    @unique
+  quizCard               QuizCard  @relation(fields: [quizCardId], references: [id])
+  level                  Int       @default(0) // 0 (jamais étudiée) à 5 (maîtrisée)
+  appearances            Int       @default(0)
+  correct                Int       @default(0)
+  incorrect              Int       @default(0)
+  currentStreak          Int       @default(0)
+  bestStreak             Int       @default(0)
+  avgResponseMs          Int?
+  lastReviewedAt         DateTime?
+  nextReviewAt           DateTime?
+  wrongAnswersPickedJson String    @default("[]") // JSON string[] — historique des mauvaises réponses choisies par le joueur (cible la révision)
+  updatedAt              DateTime  @updatedAt
+
+  @@index([nextReviewAt])
+  @@index([level])
+}
+
+// Une session de quiz (Millionnaire OU Entraînement), avec son résumé.
+// Séparé de Match (vraies parties OPTCG, table existante) — jamais mélangé,
+// demande explicite du joueur (section 12).
+model QuizSession {
+  id                  String    @id @default(cuid())
+  mode                String    // "millionaire" | "training"
+  startedAt           DateTime  @default(now())
+  finishedAt          DateTime?
+  questionsTotal      Int       @default(0)
+  questionsCorrect    Int       @default(0)
+  scoreReached        Int       @default(0) // palier Millionnaire atteint (0 en mode Entraînement)
+  endedByError         Boolean   @default(false)
+  avgResponseMs       Int?
+  jokersUsedJson      String    @default("[]") // JSON string[] — jokers utilisés durant cette session
+  trainingFilterJson  String?   // JSON — filtres choisis en mode Entraînement
+
+  attempts QuizAttempt[]
+
+  @@index([mode])
+  @@index([startedAt])
+}
+
+// Une question répondue au sein d'une session — trace complète, sert aux
+// stats "cartes qui causent le plus d'erreurs" et à la liste "À revoir".
+model QuizAttempt {
+  id            String      @id @default(cuid())
+  sessionId     String
+  session       QuizSession @relation(fields: [sessionId], references: [id])
+  cardNumber    String      // pas de relation stricte : garde la trace même si la QuizCard est retirée plus tard
+  correct       Boolean
+  selectedIndex Int         // 0 à 3, position réellement affichée au joueur
+  correctIndex  Int         // 0 à 3
+  responseMs    Int?
+  jokerUsed     String?     // "fifty_fifty" | "coach_hint" | "swap_card" | null
+  questionOrder Int         // position dans la session (1..15 en Millionnaire, 1..N en Entraînement)
+  createdAt     DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([cardNumber])
+}

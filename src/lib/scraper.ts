@@ -219,29 +219,54 @@ export async function scrapeCardDetail(cardNumber: string): Promise<ScrapedCard>
   const setMatch = cardNumber.match(/^([A-Z]+\d*)-/);
   const setCode = setMatch ? setMatch[1] : "UNKNOWN";
 
-  // Le texte d'effet officiel est le paragraphe qui suit le bloc de stats et
-  // précède la ligne "Illustrated by". On prend le texte le plus long parmi
-  // les paragraphes candidats pour limiter les faux positifs.
+  // BUG CORRIGÉ (31/08/2026) : limitlesstcg.com a changé la structure de sa
+  // page fiche carte — le texte d'effet n'est plus dans un <p> (l'ancien
+  // sélecteur "$('p')" ne trouve plus RIEN, confirmé en inspectant une page
+  // réelle en direct : le bloc actuel est un <div class="card-text-section">
+  // à l'intérieur de <div class="card-text">). Sans ce correctif,
+  // scrapeCardDetail() renvoyait officialText=null pour absolument toutes
+  // les cartes, y compris Mihawk OP14-020 dont le texte était déjà correct
+  // en base — un import relancé sur une carte déjà en base écrasait donc
+  // silencieusement sa bonne valeur avec null (voir /api/import/batch, qui
+  // ne préserve jamais l'ancienne valeur si le scraper renvoie null).
   //
-  // Le marqueur ([On Play], [Activate: Main]...) est cherché n'importe où
-  // dans le paragraphe, pas seulement au tout début : beaucoup de Leaders
-  // ont une clause passive avant leur capacité active, ex. Mihawk OP14-020
-  // "If your opponent's Leader has the <Slash> attribute, this Leader
-  // gains +1000 power. [Activate: Main] [Once Per Turn] ..." — un ancrage
-  // strict en début de chaîne ratait systématiquement ce genre de texte
-  // (100% des Leaders verts étaient concernés avant ce correctif).
+  // Chaque carte a plusieurs .card-text-section (nom/id, stats, effet,
+  // types, illustrateur...). On prend, parmi celles qui contiennent un
+  // mot-clé de capacité connu ([On Play], [Main], [Counter], [Trigger]...),
+  // la plus longue — même logique qu'avant, juste sur le bon sélecteur.
+  // Le marqueur est cherché n'importe où dans le bloc, pas seulement en
+  // tête : beaucoup de Leaders ont une clause passive avant leur capacité
+  // active, ex. Mihawk OP14-020 "If your opponent's Leader has the <Slash>
+  // attribute, this Leader gains +1000 power. [Activate: Main]...".
+  // Un [Trigger] peut apparaître seul dans son propre bloc, OU accolé à la
+  // suite du texte principal dans le même bloc (cartes Event avec [Main] +
+  // [Trigger]) — les deux cas sont gérés.
   let officialText: string | null = null;
   let triggerText: string | null = null;
-  $("p").each((_, el) => {
-    const t = $(el).text().trim();
-    if (!t) return;
-    if (/^\[Trigger\]/i.test(t)) {
-      triggerText = t.replace(/^\[Trigger\]\s*/i, "");
-    } else if (
-      /\[(On Play|When Attacking|Activate|Your Turn|On K\.O\.|DON!!|On Opponent's Attack|End of Your Turn)/i.test(t) &&
-      (!officialText || t.length > officialText.length)
+  $(".card-text-section").each((_, el) => {
+    // Un <br> entre deux phrases (ex. clause passive puis capacité active
+    // de Mihawk) ne produit aucun espace via .text() une fois retiré du
+    // DOM : sans ce clone+remplacement, "power." et "[Activate" se
+    // retrouvent collés ("power.[Activate"). Corrigé sur un clone, jamais
+    // sur le DOM original de la page.
+    const clone = $(el).clone();
+    clone.find("br").replaceWith(" ");
+    const raw = clone.text().replace(/\s+/g, " ").trim();
+    if (!raw) return;
+    const triggerMatch = raw.match(/\[Trigger\]\s*([\s\S]*)$/i);
+    let text = raw;
+    if (triggerMatch) {
+      triggerText = triggerMatch[1].trim() || triggerText;
+      if (/^\[Trigger\]/i.test(raw)) return; // bloc entièrement dédié au Trigger, rien d'autre à en tirer
+      text = raw.slice(0, triggerMatch.index).trim();
+    }
+    if (
+      /\[(On Play|When Attacking|Activate|Your Turn|On K\.O\.|DON!!|On Opponent's Attack|End of Your Turn|Main|Counter|Blocker|Rush|Double Attack|Banish)/i.test(
+        text
+      ) &&
+      (!officialText || text.length > officialText.length)
     ) {
-      officialText = t;
+      officialText = text;
     }
   });
 

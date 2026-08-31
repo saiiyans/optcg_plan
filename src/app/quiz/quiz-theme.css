@@ -1,0 +1,214 @@
+/**
+ * Identité visuelle dédiée au Quiz des effets — "bleu nuit + or", demandée
+ * explicitement (cahier des charges du 31/08/2026) pour se démarquer du
+ * reste de l'app, SANS logo ni élément visuel copié d'une émission TV
+ * existante (pas de roue, pas de plateau, pas de typographie imitant un
+ * jeu télévisé précis — uniquement une palette sombre premium + des
+ * paliers façon "échelle de gains", vocabulaire générique du genre
+ * quiz-argent). Scoping : toutes les classes sont préfixées .quiz- et
+ * n'agissent que dans .quiz-theme, donc aucun risque de fuite vers le
+ * reste de l'app (qui suit sa propre charte, voir globals.css).
+ * Respecte les mêmes règles que le reste de l'app : pas de dégradé sur le
+ * texte, pas d'italique, pas de MAJUSCULES forcées.
+ */
+
+.quiz-theme {
+  --quiz-bg: #0a0e1a;
+  --quiz-panel: #10182c;
+  --quiz-panel2: #141f38;
+  --quiz-line: rgba(245, 196, 81, 0.14);
+  --quiz-line-strong: rgba(245, 196, 81, 0.28);
+  --quiz-gold: #f5c451;
+  --quiz-gold-dim: #3a3115;
+  --quiz-ivory: #f0f0f0;
+  --quiz-steel: #93a0bd;
+  --quiz-emerald: #36d98b;
+  --quiz-emerald-dim: #0f2a20;
+  --quiz-danger: #ff5c64;
+  --quiz-danger-dim: #2c1214;
+  background: var(--quiz-bg);
+  border-radius: 20px;
+  color: var(--quiz-ivory);
+}
+
+.quiz-panel {
+  background: var(--quiz-panel);
+  border: 1px solid var(--quiz-line);
+  border-radius: 16px;
+}
+
+.quiz-panel2 {
+  background: var(--quiz-panel2);
+  border: 1px solid var(--quiz-line);
+  border-radius: 12px;
+}
+
+.quiz-eyebrow {
+  color: var(--quiz-gold);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: normal;
+}
+
+.quiz-title {
+  color: var(--quiz-ivory);
+  font-weight: 800;
+}
+
+.quiz-gold-text {
+  color: var(--quiz-gold);
+}
+
+.quiz-btn {
+  background: var(--quiz-panel2);
+  border: 1px solid var(--quiz-line-strong);
+  color: var(--quiz-ivory);
+  border-radius: 12px;
+  padding: 0.65rem 1.1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+.quiz-btn:hover:not(:disabled) {
+  border-color: var(--quiz-gold);
+}
+.quiz-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.quiz-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quiz-btn-gold {
+  background: var(--quiz-gold-dim);
+  border-color: var(--quiz-gold);
+  color: var(--quiz-gold);
+}
+
+/* --- Boutons de réponse (A/B/C/D) --- */
+.quiz-answer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  background: var(--quiz-panel2);
+  border: 1.5px solid var(--quiz-line-strong);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  color: var(--quiz-ivory);
+  font-size: 0.92rem;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+.quiz-answer:hover:not(:disabled) {
+  border-color: var(--quiz-gold);
+  transform: translateY(-1px);
+}
+.quiz-answer:disabled {
+  cursor: default;
+}
+.quiz-answer.is-selected-pending {
+  border-color: var(--quiz-gold);
+  background: var(--quiz-gold-dim);
+}
+.quiz-answer.is-correct {
+  border-color: var(--quiz-emerald);
+  background: var(--quiz-emerald-dim);
+  color: var(--quiz-emerald);
+}
+.quiz-answer.is-wrong {
+  border-color: var(--quiz-danger);
+  background: var(--quiz-danger-dim);
+  color: var(--quiz-danger);
+}
+.quiz-answer.is-faded {
+  opacity: 0.35;
+}
+.quiz-answer.is-eliminated {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.quiz-answer-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 999px;
+  border: 1.5px solid var(--quiz-line-strong);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--quiz-gold);
+}
+.quiz-answer.is-correct .quiz-answer-letter {
+  border-color: var(--quiz-emerald);
+  color: var(--quiz-emerald);
+}
+.quiz-answer.is-wrong .quiz-answer-letter {
+  border-color: var(--quiz-danger);
+  color: var(--quiz-danger);
+}
+
+/* --- Zone d'effet masquée sur l'image de carte --- */
+.quiz-mask {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: linear-gradient(180deg, rgba(10, 14, 26, 0.94), rgba(10, 14, 26, 0.98));
+  border: 1px dashed var(--quiz-line-strong);
+  border-radius: 8px;
+  backdrop-filter: blur(3px);
+  transition: opacity 0.4s ease;
+}
+.quiz-mask.is-revealed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- Échelle des gains (mode Millionnaire) --- */
+.quiz-ladder-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--quiz-steel);
+}
+.quiz-ladder-step.is-current {
+  background: var(--quiz-gold-dim);
+  color: var(--quiz-gold);
+  font-weight: 700;
+}
+.quiz-ladder-step.is-past {
+  color: var(--quiz-emerald);
+}
+.quiz-ladder-step.is-safe {
+  border: 1px dashed var(--quiz-line-strong);
+}
+
+.quiz-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--quiz-panel2);
+  border: 1px solid var(--quiz-line-strong);
+  color: var(--quiz-steel);
+}
+.quiz-badge-gold {
+  border-color: var(--quiz-gold);
+  color: var(--quiz-gold);
+  background: var(--quiz-gold-dim);
+}

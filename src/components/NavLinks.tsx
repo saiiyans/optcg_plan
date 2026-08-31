@@ -32,6 +32,13 @@ const ITEMS: NavItem[] = [
   { href: "/tournament-day", label: "Jour J", icon: "⚔️", group: "jouer" },
   { href: "/mulligan-quiz", label: "Quiz Mulligan", icon: "🧠", group: "jouer" },
   { href: "/tournaments-asia", label: "Tournois Asie", icon: "🌏", group: "jouer" },
+  // Quiz des effets (demande du 31/08/2026) : le cahier des charges demandait
+  // une nouvelle "section" de nav dédiée, mais la nav de l'app est
+  // volontairement plafonnée à 5 destinations principales (voir commentaires
+  // plus haut — contrainte tactile mobile explicite, pas un oubli) — ajouté
+  // ici comme rubrique secondaire du groupe "Jouer", au même niveau que Quiz
+  // Mulligan, plutôt que de casser cette contrainte pour une 6e icône fixe.
+  { href: "/quiz", label: "Quiz des effets", icon: "👑", group: "jouer" },
 
   { href: "/matchups", label: "Coach & Matchups", icon: "🎯", group: "coach", primary: true },
   { href: "/deck-profile", label: "Deck Profile", icon: "🦅", group: "coach" },
