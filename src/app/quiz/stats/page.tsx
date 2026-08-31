@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ADMIN_HEADERS } from "@/lib/adminHeaders";
 import { MASTERY_LABELS } from "@/lib/quizSpacedRepetition";
+import { QUIZ_CANDIDATES } from "@/lib/quizCandidates";
 
 interface Overview {
   ok: boolean;
@@ -187,11 +188,21 @@ export default function QuizStatsPage() {
         ))}
       </div>
 
-      {overview.incompleteCount > 0 && (
+      {overview.readyCount + overview.incompleteCount < QUIZ_CANDIDATES.length && (
+        // BUG CORRIGÉ (31/08/2026) : ce bloc était gardé par
+        // `incompleteCount > 0`, ce qui le cachait complètement sur une
+        // base toute neuve (0 QuizCard, ready=0 ET incomplete=0) — donc
+        // exactement le cas où le joueur en a le plus besoin (aucune carte
+        // n'a encore été construite du tout), le bouton était invisible et
+        // /quiz/millionaire échouait avec "pas assez de cartes prêtes" sans
+        // aucun moyen de corriger ça depuis l'interface. Condition
+        // corrigée : le bouton apparaît tant qu'il reste des candidats de
+        // QUIZ_CANDIDATES jamais traités, peu importe l'état de départ.
         <div className="quiz-panel2 p-4 space-y-2">
           <p className="text-xs text-[var(--quiz-steel)]">
-            {overview.incompleteCount} carte(s) candidate(s) pas encore prête(s) (texte officiel manquant en base, ou
-            traduction/mauvaises réponses pas encore validées par l'IA).
+            {overview.readyCount === 0 && overview.incompleteCount === 0
+              ? `Aucune carte de quiz construite pour le moment (${QUIZ_CANDIDATES.length} candidates au total). Lance la construction pour pouvoir jouer.`
+              : `${overview.incompleteCount} carte(s) candidate(s) pas encore prête(s) (texte officiel manquant en base, ou traduction/mauvaises réponses pas encore validées par l'IA).`}
           </p>
           <button onClick={buildMoreCards} disabled={building} className="quiz-btn quiz-btn-gold">
             {building ? "Construction…" : "Construire plus de cartes"}

@@ -230,6 +230,29 @@ export async function scrapeCardDetail(cardNumber: string): Promise<ScrapedCard>
   // silencieusement sa bonne valeur avec null (voir /api/import/batch, qui
   // ne préserve jamais l'ancienne valeur si le scraper renvoie null).
   //
+  // 2e CORRECTIF (31/08/2026, même journée) : la liste de mots-clés
+  // ci-dessous était encore incomplète — vérifié en relançant l'import sur
+  // les 75 cartes candidates du Quiz des effets, 9 revenaient avec
+  // officialText=null malgré un texte bien présent sur la page réelle
+  // (vérifié à la main pour chacune). Deux causes distinctes :
+  //  1. Mots-clés absents de la liste : "[Opponent's Turn]" (ex. Enel
+  //     OP05-098, Luffy & Ace ST30-001), "[On Your Opponent's Attack]" (ex.
+  //     Edward.Newgate OP17-001) — ajoutés ci-dessous.
+  //  2. Cartes avec une capacité entièrement en prose, SANS AUCUN mot-clé
+  //     entre crochets (ex. Monkey.D.Luffy OP11-040 : "This effect can be
+  //     activated at the start of your turn. If you have 8 or more DON!!
+  //     cards..." ; Roronoa Zoro OP17-095 : "If there is a Character with a
+  //     cost of 12 or more..."). Une simple liste de mots-clés ne peut
+  //     jamais être exhaustive pour ce cas — ajout d'un repli structurel
+  //     (fallback) juste en dessous : si AUCUN bloc ne matche un mot-clé,
+  //     on prend le plus long bloc restant après avoir exclu ceux qui ne
+  //     sont clairement PAS du texte d'effet (nom/numéro de carte, ligne de
+  //     stats, traits/types, "Illustration by ..."), à condition qu'il
+  //     ressemble à une vraie phrase (contient un point). Un vrai "vanilla"
+  //     sans AUCUN texte d'effet (ex. Kawamatsu OP12-023, juste "Slash •
+  //     +2000 Counter") ne matche toujours rien nulle part — c'est correct,
+  //     jamais inventé, reste status="incomplete" côté Quiz des effets.
+  //
   // Chaque carte a plusieurs .card-text-section (nom/id, stats, effet,
   // types, illustrateur...). On prend, parmi celles qui contiennent un
   // mot-clé de capacité connu ([On Play], [Main], [Counter], [Trigger]...),
@@ -241,8 +264,13 @@ export async function scrapeCardDetail(cardNumber: string): Promise<ScrapedCard>
   // Un [Trigger] peut apparaître seul dans son propre bloc, OU accolé à la
   // suite du texte principal dans le même bloc (cartes Event avec [Main] +
   // [Trigger]) — les deux cas sont gérés.
+  const KEYWORD_PATTERN =
+    /\[(On Play|When Attacking|Activate|Your Turn|Opponent's Turn|On K\.O\.|DON!!|On Opponent's Attack|On Your Opponent's Attack|Once Per Turn|End of Your Turn|Main|Counter|Blocker|Rush|Double Attack|Banish)/i;
+
   let officialText: string | null = null;
   let triggerText: string | null = null;
+  const candidateBlocks: string[] = []; // tous les blocs qui restent après avoir écarté nom/stats/types/illustrateur — pour le repli structurel plus bas
+
   $(".card-text-section").each((_, el) => {
     // Un <br> entre deux phrases (ex. clause passive puis capacité active
     // de Mihawk) ne produit aucun espace via .text() une fois retiré du
@@ -260,15 +288,29 @@ export async function scrapeCardDetail(cardNumber: string): Promise<ScrapedCard>
       if (/^\[Trigger\]/i.test(raw)) return; // bloc entièrement dédié au Trigger, rien d'autre à en tirer
       text = raw.slice(0, triggerMatch.index).trim();
     }
-    if (
-      /\[(On Play|When Attacking|Activate|Your Turn|On K\.O\.|DON!!|On Opponent's Attack|End of Your Turn|Main|Counter|Blocker|Rush|Double Attack|Banish)/i.test(
-        text
-      ) &&
-      (!officialText || text.length > officialText.length)
-    ) {
+    if (KEYWORD_PATTERN.test(text) && (!officialText || text.length > officialText.length)) {
       officialText = text;
     }
+
+    // Blocs clairement écartés du repli structurel : nom/numéro de carte,
+    // ligne de stats (Cost/Power/Life/Counter/Rarity/Block/Standard...),
+    // traits/types (courts, sans ponctuation de phrase), illustrateur.
+    const looksLikeNameOrNumber = text === name || text.includes(cardNumber) || new RegExp(`^${cardNumber}`, "i").test(text);
+    const looksLikeStatsLine = /^(Character|Event|Stage|Leader)\s*•|^\d+\s*(Cost|Power|Life)\b|^(Common|Uncommon|Rare|Super Rare|Secret Rare|Leader|Promo)\b|^Block\s*\d|^Standard/i.test(text);
+    const looksLikeIllustrator = /Illustrat/i.test(text);
+    const looksLikeSentence = /[.;:]/.test(text) || text.length > 60; // une vraie capacité contient presque toujours une ponctuation de phrase, ou est assez longue pour ne pas être une simple liste de traits
+    if (!looksLikeNameOrNumber && !looksLikeStatsLine && !looksLikeIllustrator && looksLikeSentence) {
+      candidateBlocks.push(text);
+    }
   });
+
+  // Repli structurel (voir commentaire ci-dessus) : aucun bloc ne contenait
+  // de mot-clé reconnu, mais un bloc "phrase" plausible existe — on prend
+  // le plus long plutôt que de renvoyer null pour une carte qui a
+  // pourtant bien un texte d'effet réel sur la page.
+  if (!officialText && candidateBlocks.length > 0) {
+    officialText = candidateBlocks.reduce((longest, t) => (t.length > longest.length ? t : longest), "");
+  }
 
   const types =
     $("a[href*='type%3A'], a[href*='type=']")

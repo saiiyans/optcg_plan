@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     cardNumbers = await selectMillionaireDeck();
     if (cardNumbers.length < 5) {
       return NextResponse.json(
-        { ok: false, error: "Pas assez de cartes prêtes pour lancer une partie Millionnaire (voir /quiz/admin)." },
+        { ok: false, error: "Pas assez de cartes prêtes pour lancer une partie Millionnaire (voir /quiz/stats)." },
         { status: 400 }
       );
     }
