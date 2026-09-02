@@ -6,9 +6,18 @@ import { computeDifficulty } from "@/lib/quizDifficulty";
 import { validateAnswerSet } from "@/lib/quizEngine";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// 60s ne suffisait pas : bug constaté le 02/09/2026 (504 Gateway Timeout en
+// production dès que le secret admin a enfin fonctionné) — un lot de 5
+// cartes peut demander jusqu'à 2 appels Gemini CHACUNE (validateAnswerSet
+// peut rejeter la 1ère tentative), et un seul appel Gemini a déjà été
+// mesuré à ~19-20s sur cette appli (voir /api/learn/[id]/route.ts). Avec
+// les pauses volontaires entre appels (anti rate-limit), 5 cartes pouvaient
+// largement dépasser 60s. 180s laisse une vraie marge (Vercel Hobby
+// autorise jusqu'à 300s depuis 2026, donc aucun risque de dépasser un
+// quota réel) ; BATCH_SIZE réduit à 3 en plus, par prudence.
+export const maxDuration = 180;
 
-const BATCH_SIZE = 5; // même volume que generate-coach-content — reste sous la limite Vercel
+const BATCH_SIZE = 3; // réduit de 5 à 3 le 02/09/2026 (voir maxDuration ci-dessus) — reste sous la limite Vercel même dans le pire cas (2 tentatives Gemini par carte)
 const GEMINI_MODEL = "gemini-3.6-flash";
 
 const CHANGE_TYPES = [
@@ -214,7 +223,13 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre) :
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1200 },
+        // 1200 -> 2000 par prudence (marge pour les cartes candidates les
+        // plus longues du lot des 200 visées, même si le cas testé le
+        // 02/09/2026 — OP14-020, 295 caractères — était largement en
+        // dessous : voir le log de diagnostic ci-dessous si ça échoue
+        // quand même, la vraie cause n'est probablement PAS le budget de
+        // tokens ici, contrairement au bug similaire de /api/learn/[id].
+        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000 },
       }),
     }
   );
@@ -224,21 +239,89 @@ Réponds UNIQUEMENT avec un objet JSON valide (rien d'autre) :
   }
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  try {
-    const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
-    const parsed = JSON.parse(cleaned);
-    if (!Array.isArray(parsed?.wrongAnswers) || parsed.wrongAnswers.length !== 3) return null;
-    const wrongAnswers = parsed.wrongAnswers.map((w: any) => ({
-      text: String(w?.text ?? "").trim(),
-      changed: CHANGE_TYPES.includes(w?.changed) ? w.changed : "other",
-    }));
-    if (wrongAnswers.some((w: { text: string }) => !w.text)) return null;
-    return {
-      officialTextFr: needsTranslation ? String(parsed?.officialTextFr ?? "").trim() || null : null,
-      explanationFr: String(parsed?.explanationFr ?? "").trim(),
-      wrongAnswers,
-    };
-  } catch {
+  const finishReason = data.candidates?.[0]?.finishReason;
+  const parsed = parseGeminiCardResponse(text, needsTranslation);
+  if (!parsed) {
+    // Diagnostic ajouté le 02/09/2026 (bug "Réponse Gemini non exploitable"
+    // constaté en direct sur OP14-020, alors que le texte source ne fait
+    // que 295 caractères — donc probablement PAS un simple dépassement de
+    // maxOutputTokens). Sans ce log, impossible de savoir ce que Gemini a
+    // réellement renvoyé (pas de clé API en local pour reproduire). Va dans
+    // Vercel → Deployments → déploiement actif → Logs, filtre sur
+    // "GEMINI-CARD-PARSE-FAIL", et regarde `finishReason` et `rawTextPreview`.
+    console.error("[GEMINI-CARD-PARSE-FAIL]", JSON.stringify({ finishReason, rawTextPreview: text.slice(0, 500) }));
     return null;
   }
+  return { officialTextFr: parsed.officialTextFr, explanationFr: parsed.explanationFr, wrongAnswers: parsed.wrongAnswers };
+}
+
+const CHANGE_TYPES_SET = new Set<string>(CHANGE_TYPES);
+
+function unescapeJsonStringFragment(s: string): string {
+  return s.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+}
+
+function extractWrongAnswersLenient(cleaned: string): { text: string; changed: string }[] {
+  // Récupère chaque objet { "text": "...", "changed": "..." } COMPLET, même
+  // si le tableau englobant n'est jamais refermé (réponse tronquée) — un
+  // objet coupé en plein milieu n'est volontairement PAS récupéré, jamais
+  // de mauvaise réponse à moitié inventée mise en jeu.
+  const items: { text: string; changed: string }[] = [];
+  const re = /\{\s*"text"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"changed"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(cleaned)) && items.length < 3) {
+    items.push({ text: unescapeJsonStringFragment(m[1]), changed: CHANGE_TYPES_SET.has(m[2]) ? m[2] : "other" });
+  }
+  return items;
+}
+
+/**
+ * Ajouté le 02/09/2026 suite au bug "Réponse Gemini non exploitable" :
+ * avant, une réponse pas STRICTEMENT valide en JSON (tronquée par
+ * maxOutputTokens, ou légèrement mal formée) faisait tout jeter et la
+ * carte finissait "incomplete" sans aucune information exploitable. Cette
+ * fonction essaie d'abord un JSON.parse strict (cas normal), puis si ça
+ * échoue tente une extraction tolérante par regex — mais reste stricte sur
+ * le FOND : exactement 3 mauvaises réponses complètes exigées, et la
+ * traduction si elle est requise. Jamais de carte à moitié fiable mise en
+ * jeu — si l'extraction tolérante ne trouve pas tout, on renvoie null
+ * comme avant (voir le log de diagnostic juste au-dessus dans callGemini).
+ */
+function parseGeminiCardResponse(
+  rawText: string,
+  needsTranslation: boolean
+): { officialTextFr: string | null; explanationFr: string; wrongAnswers: { text: string; changed: string }[] } | null {
+  const cleaned = rawText.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed?.wrongAnswers) && parsed.wrongAnswers.length === 3) {
+      const wrongAnswers = parsed.wrongAnswers.map((w: any) => ({
+        text: String(w?.text ?? "").trim(),
+        changed: CHANGE_TYPES.includes(w?.changed) ? w.changed : "other",
+      }));
+      if (!wrongAnswers.some((w: { text: string }) => !w.text)) {
+        const officialTextFr = needsTranslation ? String(parsed?.officialTextFr ?? "").trim() || null : null;
+        if (!needsTranslation || officialTextFr) {
+          return { officialTextFr, explanationFr: String(parsed?.explanationFr ?? "").trim(), wrongAnswers };
+        }
+      }
+    }
+  } catch {
+    // JSON invalide : on tente l'extraction tolérante ci-dessous.
+  }
+
+  const explanationMatch = cleaned.match(/"explanationFr"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const officialTextFrMatch = cleaned.match(/"officialTextFr"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const wrongAnswers = extractWrongAnswersLenient(cleaned);
+
+  if (wrongAnswers.length !== 3) return null;
+  if (!explanationMatch) return null;
+  if (needsTranslation && !officialTextFrMatch) return null;
+
+  return {
+    officialTextFr: needsTranslation ? unescapeJsonStringFragment(officialTextFrMatch![1]) : null,
+    explanationFr: unescapeJsonStringFragment(explanationMatch[1]),
+    wrongAnswers,
+  };
 }
